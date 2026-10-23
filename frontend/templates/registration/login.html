@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block titulo %}Ingresar · {{ NOMBRE_NEGOCIO }}{% endblock %}
+{% block contenido %}
+<section class="login card shadow-sm" aria-labelledby="titulo-login">
+  <div class="card-body">
+    <h1 id="titulo-login" class="h4 mb-4">Ingresar</h1>
+    <p>{{ NOMBRE_NEGOCIO }}</p>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      {% for field in form %}
+      <div class="mb-3">
+        {{ field.label_tag }}{{ field }}{{ field.errors }}
+      </div>
+      {% endfor %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+      <button type="submit" class="btn btn-primary w-100">Entrar</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

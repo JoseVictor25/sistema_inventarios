@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup: pantalla de caja</title>
+<style>
+:root{--border:#d9dde3;--border-strong:#9aa3af;--surface-1:#f3f5f8;--surface-2:#ffffff;--text-primary:#1f2933;--text-secondary:#5f6b7a;
+--bg-accent:#e3efff;--text-accent:#0b5ed7;--bg-success:#e3f5e8;--text-success:#1b7a3a;--bg-warning:#fff3d6;--text-warning:#8a5a00;
+--bg-danger:#fde8e8;--text-danger:#b42318;--radius:8px}
+body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:0;padding:16px;background:#e9ecf1;color:var(--text-primary)}
+input,select,button{font:inherit;font-size:13px;padding:6px 8px;border:0.5px solid var(--border-strong);border-radius:var(--radius);background:#fff;color:var(--text-primary)}
+button{cursor:pointer}
+.aviso{max-width:760px;margin:0 auto 12px;font-size:12px;color:var(--text-secondary)}
+.cj{max-width:760px;margin:0 auto}
+.cj *{box-sizing:border-box}
+.cj .nav{display:flex;gap:4px;align-items:center;padding:8px 12px;border-bottom:0.5px solid var(--border);background:var(--surface-1);flex-wrap:wrap}
+.cj .nav span.i{font-size:13px;padding:6px 10px;border-radius:var(--radius);color:var(--text-secondary)}
+.cj .nav span.on{background:var(--bg-accent);color:var(--text-accent);font-weight:500}
+.cj .chip{margin-left:auto;font-size:12px;padding:4px 10px;border-radius:var(--radius)}
+.cj .body{padding:14px}
+.cj h3{font-size:14px;font-weight:500;margin:0 0 8px}
+.cj .sub{font-size:12px;color:var(--text-secondary);margin:0}
+.cj .mg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0 12px}
+.cj .mc{background:var(--surface-1);border-radius:var(--radius);padding:10px 12px}
+.cj .mc .l{font-size:12px;color:var(--text-secondary)}
+.cj .mc .v{font-size:18px;font-weight:500;color:var(--text-primary)}
+.cj .row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.cj .row input,.cj .row select{height:34px;font-size:13px}
+.cj .box{border:0.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-top:12px}
+.cj .mv{display:flex;justify-content:space-between;gap:8px;font-size:13px;padding:6px 0;border-bottom:0.5px solid var(--border)}
+.cj .mv:last-child{border-bottom:none}
+.cj .msg{font-size:13px;margin-top:8px;color:var(--text-danger)}
+.cj .kv{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:var(--text-secondary)}
+.cj .kv b{font-weight:500;color:var(--text-primary)}
+</style>
+</head>
+<body>
+<p class="aviso">Mockup de referencia (datos de ejemplo). No usa Django ni la plantilla final: fija la distribución y el comportamiento de la pantalla de caja. Ver sección 9.11 de la especificación.</p>
+<div class="cj" id="cj" style="border:0.5px solid var(--border);border-radius:12px;background:var(--surface-2);overflow:hidden"></div>
+<script>
+var D={ini:200,ef:1240,qr:480,tr:215,nv:17};
+var S;
+function reset(){S={st:'apertura',ini:D.ini,hora:'08:00',movs:[{t:'Egreso',m:25,c:'Compra de bolsas',h:'10:40'}],cont:null}}
+reset();
+var root=document.getElementById('cj');
+function f(n){return 'Bs '+n.toFixed(2)}
+function r2(n){return Math.round(n*100)/100}
+function esc(s){return s.replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function sum(t){return S.movs.filter(function(x){return x.t===t}).reduce(function(a,x){return a+x.m},0)}
+function esp(){return r2(S.ini+D.ef+sum('Ingreso')-sum('Egreso'))}
+function nav(){
+  var c=S.st==='abierta'?'<span class="chip" style="background:var(--bg-success);color:var(--text-success)">Caja abierta desde las '+S.hora+'</span>':
+  S.st==='cerrada'?'<span class="chip" style="background:var(--surface-1);color:var(--text-secondary)">Caja cerrada</span>':
+  '<span class="chip" style="background:var(--bg-warning);color:var(--text-warning)">Sin turno abierto</span>';
+  return '<div class="nav"><span class="i">Venta</span><span class="i on">Caja</span><span class="i">Compras</span><span class="i">Inventario</span><span class="i">Reportes</span><span class="i">Catálogo</span>'+c+'</div>';
+}
+function metrics(){
+  return '<div class="mg">'+
+  '<div class="mc"><div class="l">Monto inicial</div><div class="v">'+f(S.ini)+'</div></div>'+
+  '<div class="mc"><div class="l">Ventas en efectivo</div><div class="v">'+f(D.ef)+'</div></div>'+
+  '<div class="mc"><div class="l">Ventas con QR</div><div class="v">'+f(D.qr)+'</div></div>'+
+  '<div class="mc"><div class="l">Transferencias</div><div class="v">'+f(D.tr)+'</div></div>'+
+  '<div class="mc"><div class="l">Ingresos extra</div><div class="v">'+f(sum('Ingreso'))+'</div></div>'+
+  '<div class="mc"><div class="l">Egresos</div><div class="v">'+f(sum('Egreso'))+'</div></div></div>';
+}
+function render(){
+  var h=nav()+'<div class="body">';
+  if(S.st==='apertura'){
+    h+='<h3>Abrir caja</h3><p class="sub">Cuenta el efectivo con el que empieza el turno. Sin caja abierta no se pueden registrar ventas.</p>'+
+    '<div class="row"><input type="number" id="ini" min="0" step="1" value="'+S.ini+'" aria-label="Monto inicial en efectivo" style="width:140px"><input type="text" id="turno" maxlength="30" placeholder="Turno (opcional)" aria-label="Turno" style="width:150px"><button data-a="abrir" style="height:34px">Abrir caja</button></div><div class="msg" id="err" role="alert"></div>';
+  }else if(S.st==='abierta'){
+    h+='<h3>Turno actual'+(S.turno?' · '+esc(S.turno):'')+'</h3><p class="sub">Abierto por vendedor · '+S.hora+' · '+D.nv+' ventas registradas</p>'+metrics()+
+    '<div class="kv" style="border-top:0.5px solid var(--border);padding-top:8px"><span>Efectivo esperado en caja</span><span style="font-size:18px;font-weight:500;color:var(--text-primary)">'+f(esp())+'</span></div>'+
+    '<p class="sub">Monto inicial + ventas en efectivo + ingresos − egresos. QR y transferencias no entran al conteo.</p>'+
+    '<div class="box"><h3>Movimientos de caja</h3>';
+    if(S.movs.length){S.movs.forEach(function(m){
+      var ing=m.t==='Ingreso';
+      h+='<div class="mv"><span>'+m.h+' · '+esc(m.c)+'</span><span style="font-weight:500;color:'+(ing?'var(--text-success)':'var(--text-danger)')+'">'+(ing?'+ ':'− ')+f(m.m)+'</span></div>';
+    })}else{h+='<p class="sub">Todavía no hay movimientos en este turno.</p>'}
+    h+='<div class="row"><select id="mt" aria-label="Tipo de movimiento"><option>Egreso</option><option>Ingreso</option></select>'+
+    '<input type="number" id="mm" min="0" step="0.5" placeholder="Monto" style="width:90px" aria-label="Monto"><input type="text" id="mc" placeholder="Concepto, por ejemplo pago de flete" style="flex:1;min-width:140px" aria-label="Concepto"><button data-a="mov" style="height:34px">Agregar movimiento</button></div><div class="msg" id="err" role="alert"></div></div>'+
+    '<div class="box"><h3>Cerrar caja</h3><p class="sub">Cuenta el efectivo que hay en la caja e ingrésalo.</p>'+
+    '<div class="row"><input type="number" id="cnt" min="0" step="0.5" placeholder="Monto contado" style="width:150px" aria-label="Monto contado"><button data-a="cerrar" style="height:34px">Cerrar caja</button></div><div class="msg" id="err2" role="alert"></div></div>';
+  }else{
+    var d=r2(S.cont-esp());
+    var badge=d===0?'<span class="chip" style="margin:0;background:var(--bg-success);color:var(--text-success)">Cuadra</span>':
+    d>0?'<span class="chip" style="margin:0;background:var(--bg-warning);color:var(--text-warning)">Sobra '+f(d)+'</span>':
+    '<span class="chip" style="margin:0;background:var(--bg-danger);color:var(--text-danger)">Falta '+f(-d)+'</span>';
+    h+='<h3>Cierre de caja'+(S.turno?' · '+esc(S.turno):'')+'</h3><p class="sub">Turno de '+S.hora+' a las '+S.cierre+' · '+D.nv+' ventas</p>'+
+    '<div class="box"><div class="kv"><span>Efectivo esperado</span><b>'+f(esp())+'</b></div>'+
+    '<div class="kv"><span>Efectivo contado</span><b>'+f(S.cont)+'</b></div>'+
+    '<div class="kv" style="align-items:center"><span>Diferencia</span>'+badge+'</div></div>'+
+    '<div class="box"><div class="kv"><span>Ventas en efectivo</span><b>'+f(D.ef)+'</b></div><div class="kv"><span>Ventas con QR</span><b>'+f(D.qr)+'</b></div><div class="kv"><span>Transferencias</span><b>'+f(D.tr)+'</b></div><div class="kv"><span>Total vendido en el turno</span><b>'+f(D.ef+D.qr+D.tr)+'</b></div></div>'+
+    '<p class="sub" style="margin-top:8px">El cierre queda guardado con el usuario, la fecha, el monto contado y la diferencia.</p>'+
+    '<div class="row"><button data-a="nuevo" style="height:34px">Abrir nuevo turno</button></div>';
+  }
+  root.innerHTML=h+'</div>';
+}
+function err(id,t){var e=document.getElementById(id);if(e)e.textContent=t}
+root.addEventListener('click',function(e){
+  var b=e.target.closest('[data-a]');if(!b)return;
+  var a=b.getAttribute('data-a');
+  if(a==='abrir'){
+    var v=parseFloat(document.getElementById('ini').value);
+    if(isNaN(v)||v<0){err('err','Ingresa el monto inicial en efectivo.');return}
+    S.ini=r2(v);S.turno=document.getElementById('turno').value.trim().slice(0,30);S.st='abierta';render();
+  }else if(a==='mov'){
+    var m=parseFloat(document.getElementById('mm').value),c=document.getElementById('mc').value.trim();
+    if(isNaN(m)||m<=0){err('err','Ingresa un monto mayor a cero.');return}
+    if(!c){err('err','Escribe el concepto del movimiento.');return}
+    var n=new Date(),hh=('0'+n.getHours()).slice(-2)+':'+('0'+n.getMinutes()).slice(-2);
+    S.movs.push({t:document.getElementById('mt').value,m:r2(m),c:c,h:hh});render();
+  }else if(a==='cerrar'){
+    var k=parseFloat(document.getElementById('cnt').value);
+    if(isNaN(k)||k<0){err('err2','Ingresa el monto contado antes de cerrar.');return}
+    var n2=new Date();S.cierre=('0'+n2.getHours()).slice(-2)+':'+('0'+n2.getMinutes()).slice(-2);
+    S.cont=r2(k);S.st='cerrada';render();
+  }else if(a==='nuevo'){reset();render()}
+});
+render();
+</script>
+</body>
+</html>

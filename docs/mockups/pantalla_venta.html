@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup: pantalla de venta (POS)</title>
+<style>
+:root{--border:#d9dde3;--border-strong:#9aa3af;--surface-1:#f3f5f8;--surface-2:#ffffff;--text-primary:#1f2933;--text-secondary:#5f6b7a;
+--bg-accent:#e3efff;--text-accent:#0b5ed7;--bg-success:#e3f5e8;--text-success:#1b7a3a;--bg-warning:#fff3d6;--text-warning:#8a5a00;
+--bg-danger:#fde8e8;--text-danger:#b42318;--radius:8px}
+body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:0;padding:16px;background:#e9ecf1;color:var(--text-primary)}
+input,select,button{font:inherit;font-size:13px;padding:6px 8px;border:0.5px solid var(--border-strong);border-radius:var(--radius);background:#fff;color:var(--text-primary)}
+button{cursor:pointer}
+.aviso{max-width:760px;margin:0 auto 12px;font-size:12px;color:var(--text-secondary)}
+.pv{max-width:760px;margin:0 auto}
+.pv *{box-sizing:border-box}
+.pv .nav{display:flex;gap:4px;align-items:center;padding:8px 12px;border-bottom:0.5px solid var(--border);background:var(--surface-1);flex-wrap:wrap}
+.pv .nav span.i{font-size:13px;padding:6px 10px;border-radius:var(--radius);color:var(--text-secondary)}
+.pv .nav span.on{background:var(--bg-accent);color:var(--text-accent);font-weight:500}
+.pv .chip{margin-left:auto;font-size:12px;padding:4px 10px;border-radius:var(--radius);background:var(--bg-success);color:var(--text-success)}
+.pv .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:0}
+.pv .col{padding:12px}
+.pv .col+.col{border-left:0.5px solid var(--border)}
+.pv h3{font-size:14px;font-weight:500;margin:0 0 8px}
+.pv .prod{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;width:100%;text-align:left;padding:8px 10px;margin-bottom:6px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--surface-2);cursor:pointer;height:auto}
+.pv .prod:hover{border-color:var(--border-strong);background:var(--surface-1)}
+.pv .nm{font-size:13px;font-weight:500;color:var(--text-primary)}
+.pv .sub{font-size:12px;color:var(--text-secondary)}
+.pv .bd{font-size:11px;padding:2px 6px;border-radius:var(--radius);margin-left:4px;white-space:nowrap}
+.pv .line{border:0.5px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:6px;background:var(--surface-2)}
+.pv .row{display:flex;gap:6px;align-items:center;margin-top:6px}
+.pv .row select{flex:1;min-width:0;height:32px;font-size:13px}
+.pv .row input{width:64px;height:32px;font-size:13px}
+.pv .tot{display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary);margin-top:6px}
+.pv .big{font-size:22px;font-weight:500;color:var(--text-primary)}
+.pv .msg{font-size:13px;margin-top:8px}
+@media (max-width:560px){.pv .grid{grid-template-columns:minmax(0,1fr)}.pv .col+.col{border-left:none;border-top:0.5px solid var(--border)}}
+</style>
+</head>
+<body>
+<p class="aviso">Mockup de referencia (datos de ejemplo). No usa Django ni la plantilla final: fija la distribución y el comportamiento de la pantalla de venta. Ver sección 9.11 de la especificación.</p>
+<div class="pv" style="border:0.5px solid var(--border);border-radius:12px;background:var(--surface-2);overflow:hidden">
+  <div class="nav">
+    <span class="i on">Venta</span>
+    <span class="i">Caja</span><span class="i">Compras</span><span class="i">Inventario</span><span class="i">Reportes</span><span class="i">Catálogo</span>
+    <span class="chip">Caja abierta desde las 08:00</span>
+  </div>
+  <div class="grid">
+    <div class="col">
+      <h3>Productos</h3>
+      <input type="text" id="q" placeholder="Buscar producto" style="width:100%;margin-bottom:8px" aria-label="Buscar producto">
+      <div id="plist"></div>
+    </div>
+    <div class="col">
+      <h3>Venta actual</h3>
+      <div id="cart"></div>
+      <div style="border-top:0.5px solid var(--border);margin-top:8px;padding-top:8px">
+        <div class="tot"><span>Unidades a descontar</span><span id="units">0</span></div>
+        <div class="tot" style="align-items:baseline"><span>Total</span><span class="big" id="total">Bs 0.00</span></div>
+        <div class="row">
+          <select id="pay" aria-label="Método de pago"><option>Efectivo</option><option>QR</option><option>Transferencia</option></select>
+          <input type="number" id="recv" min="0" step="1" placeholder="Recibido" style="width:96px" aria-label="Monto recibido">
+        </div>
+        <div class="tot"><span id="chglbl">Cambio</span><span id="chg">Bs 0.00</span></div>
+        <div class="row">
+          <button id="ok" style="flex:1;height:36px">Confirmar venta</button>
+          <button id="clr" style="height:36px">Vaciar</button>
+        </div>
+        <div class="msg" id="msg" role="status"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+var P=[
+{id:1,n:'Colágeno hidratado 300 g',c:'Suplementos',s:38,l:'L-0391',v:'12/03/2027',pr:[['Unidad',1,50],['Cuarta',3,135],['Docena',12,480]]},
+{id:2,n:'Aceite de coco 250 ml',c:'Aceites',s:24,l:'L-0377',v:'30/06/2027',pr:[['Unidad',1,35],['Cuarta',3,95],['Docena',12,360]]},
+{id:3,n:'Jarabe para riñones 500 ml',c:'Jarabes',s:15,l:'L-0344',v:'05/11/2026',w:1,pr:[['Unidad',1,40],['Cuarta',3,110],['Docena',12,420]]},
+{id:4,n:'Pomada de árnica 50 g',c:'Pomadas',s:60,l:'L-0402',v:'18/09/2027',pr:[['Unidad',1,20],['Cuarta',3,54],['Docena',12,200]]},
+{id:5,n:'Vela aromática lavanda',c:'Aromáticos',s:120,l:'L-0410',v:'—',pr:[['Unidad',1,15],['Media docena',6,80],['Caja (50 u.)',50,600]]},
+{id:6,n:'Espirulina 120 cápsulas',c:'Suplementos',s:9,l:'L-0388',v:'22/04/2027',pr:[['Unidad',1,45],['Cuarta',3,125],['Docena',12,480]]}
+];
+var cart=[];
+function f(n){return 'Bs '+n.toFixed(2)}
+function pr(id){return P.filter(function(p){return p.id===id})[0]}
+function plist(){
+  var t=document.getElementById('q').value.toLowerCase();
+  var h='';
+  P.filter(function(p){return p.n.toLowerCase().indexOf(t)>-1||p.c.toLowerCase().indexOf(t)>-1}).forEach(function(p){
+    var b='';
+    if(p.s<=10)b+='<span class="bd" style="background:var(--bg-danger);color:var(--text-danger)">Stock bajo</span>';
+    if(p.w)b+='<span class="bd" style="background:var(--bg-warning);color:var(--text-warning)">Vence pronto</span>';
+    h+='<button class="prod" data-add="'+p.id+'"><span><span class="nm">'+p.n+'</span><br><span class="sub">'+p.c+' · '+p.s+' u. · desde '+f(p.pr[0][2])+'</span></span><span>'+b+'</span></button>';
+  });
+  document.getElementById('plist').innerHTML=h||'<p class="sub">No hay productos con ese nombre.</p>';
+}
+function draw(){
+  var h='',tot=0,un=0;
+  cart.forEach(function(it,i){
+    var p=pr(it.p),pp=p.pr[it.i],sub=pp[2]*it.q,u=pp[1]*it.q;
+    tot+=sub;un+=u;
+    var opts=p.pr.map(function(x,k){return '<option value="'+k+'"'+(k===it.i?' selected':'')+'>'+x[0]+' · '+f(x[2])+'</option>'}).join('');
+    h+='<div class="line"><div style="display:flex;justify-content:space-between;gap:8px"><span class="nm">'+p.n+'</span><span class="nm">'+f(sub)+'</span></div>'+
+    '<div class="sub">Lote '+p.l+(p.v!=='—'?' · vence '+p.v:'')+' · descuenta '+u+' u.</div>'+
+    '<div class="row"><select data-pi="'+i+'" aria-label="Presentación">'+opts+'</select><input type="number" min="1" step="1" value="'+it.q+'" data-qi="'+i+'" aria-label="Cantidad"><button data-rm="'+i+'" aria-label="Quitar" style="height:32px;padding:0 8px">✕</button></div></div>';
+  });
+  document.getElementById('cart').innerHTML=h||'<p class="sub">Toca un producto de la lista para agregarlo.</p>';
+  document.getElementById('units').textContent=un;
+  document.getElementById('total').textContent=f(tot);
+  chg();
+}
+function total(){return cart.reduce(function(a,it){return a+pr(it.p).pr[it.i][2]*it.q},0)}
+function chg(){
+  var ef=document.getElementById('pay').value==='Efectivo';
+  document.getElementById('recv').style.display=ef?'':'none';
+  document.getElementById('chglbl').style.display=ef?'':'none';
+  document.getElementById('chg').style.display=ef?'':'none';
+  var r=parseFloat(document.getElementById('recv').value)||0;
+  document.getElementById('chg').textContent=f(Math.max(0,r-total()));
+}
+function msg(t,ok){var m=document.getElementById('msg');m.textContent=t;m.style.color=ok?'var(--text-success)':'var(--text-danger)'}
+document.getElementById('q').addEventListener('input',plist);
+document.getElementById('plist').addEventListener('click',function(e){
+  var b=e.target.closest('[data-add]');if(!b)return;
+  var id=+b.getAttribute('data-add'),ex=cart.filter(function(x){return x.p===id&&x.i===0})[0];
+  if(ex)ex.q+=1;else cart.push({p:id,i:0,q:1});
+  msg('');draw();
+});
+document.getElementById('cart').addEventListener('change',function(e){
+  var t=e.target;
+  if(t.hasAttribute('data-pi')){cart[+t.getAttribute('data-pi')].i=+t.value}
+  if(t.hasAttribute('data-qi')){var v=Math.max(1,Math.round(+t.value||1));cart[+t.getAttribute('data-qi')].q=v}
+  msg('');draw();
+});
+document.getElementById('cart').addEventListener('click',function(e){
+  var b=e.target.closest('[data-rm]');if(!b)return;
+  cart.splice(+b.getAttribute('data-rm'),1);msg('');draw();
+});
+document.getElementById('pay').addEventListener('change',function(){msg('');chg()});
+document.getElementById('recv').addEventListener('input',function(){msg('');chg()});
+document.getElementById('clr').addEventListener('click',function(){cart=[];msg('');draw()});
+document.getElementById('ok').addEventListener('click',function(){
+  if(!cart.length){msg('Agrega al menos un producto a la venta.');return}
+  var need={};
+  cart.forEach(function(it){need[it.p]=(need[it.p]||0)+pr(it.p).pr[it.i][1]*it.q});
+  for(var k in need){var p=pr(+k);if(need[k]>p.s){msg('No alcanza el stock de '+p.n+': quedan '+p.s+' unidades.');return}}
+  var ef=document.getElementById('pay').value==='Efectivo';
+  if(ef&&(parseFloat(document.getElementById('recv').value)||0)<total()){msg('El monto recibido no cubre el total.');return}
+  var un=0;for(var k2 in need){pr(+k2).s-=need[k2];un+=need[k2]}
+  var t=total();
+  cart=[];document.getElementById('recv').value='';
+  plist();draw();
+  msg('Venta registrada por '+f(t)+'. Se descontaron '+un+' unidades del inventario.',true);
+});
+plist();draw();
+</script>
+</body>
+</html>

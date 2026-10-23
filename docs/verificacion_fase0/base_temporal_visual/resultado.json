@@ -1,0 +1,139 @@
+{
+  "paginas": [],
+  "solicitudes": [
+    "http://127.0.0.1:61455/login/?verificacion=8bfc35dd35b44993a1992236cddd4e18"
+  ],
+  "respuestas": [],
+  "http_local": [
+    {
+      "ruta": "/",
+      "metodo": "GET",
+      "estado": 302
+    },
+    {
+      "ruta": "/login/",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/login/",
+      "metodo": "POST",
+      "estado": 302
+    },
+    {
+      "ruta": "/",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/adminlte/css/adminlte.min.css",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/adminlte/js/adminlte.min.js",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/htmx/htmx.min.js",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/chartjs/chart.umd.min.js",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/tom-select/js/tom-select.complete.min.js",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/css/app.css",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/js/app.js",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/img/favicon.svg",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/logout/",
+      "metodo": "POST",
+      "estado": 302
+    },
+    {
+      "ruta": "/login/",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/",
+      "metodo": "GET",
+      "estado": 302
+    },
+    {
+      "ruta": "/login/",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/login/",
+      "metodo": "GET",
+      "estado": 200
+    }
+  ],
+  "externas_detectadas": [],
+  "errores": [
+    "RuntimeError: Tiempo de espera en /login/ (1280px): no se pudo obtener un documento desde WebView2. No se evaluaron las bibliotecas ni el diseño. Sondeo: None"
+  ],
+  "base_temporal": {
+    "archivo_temporal": "datos_prueba.sqlite3",
+    "tabla_usuario": "usuarios_usuario",
+    "tabla_verificada": true,
+    "usuario": "usuario_prueba"
+  },
+  "autenticacion_http": {
+    "aprobada": true,
+    "login": true,
+    "inicio": true,
+    "logout": true,
+    "recursos_verificados": [
+      "vendor/adminlte/css/adminlte.min.css",
+      "vendor/adminlte/js/adminlte.min.js",
+      "vendor/bootstrap/js/bootstrap.bundle.min.js",
+      "vendor/htmx/htmx.min.js",
+      "vendor/chartjs/chart.umd.min.js",
+      "vendor/tom-select/css/tom-select.bootstrap5.min.css",
+      "vendor/tom-select/js/tom-select.complete.min.js",
+      "css/app.css",
+      "js/app.js",
+      "img/favicon.svg"
+    ]
+  },
+  "autenticacion_navegador": false,
+  "automatizacion_aprobada": false,
+  "avisos_transporte": [
+    "ConnectionResetError"
+  ],
+  "revision_visual": "Pendiente de revisión humana; no se generan capturas.",
+  "solo_http_aprobado": false
+}

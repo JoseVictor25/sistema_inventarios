@@ -1,0 +1,22 @@
+/* Estilos propios. Al integrar la plantilla (Bootstrap), conserva aquí solo lo tuyo. */
+body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:0;color:#222;background:#f6f7f9}
+.menu{display:flex;gap:14px;align-items:center;padding:10px 16px;background:#fff;border-bottom:1px solid #ddd}
+.menu a{text-decoration:none;color:#0b5ed7}
+.menu .pendiente{color:#999}
+.menu .derecha{margin-left:auto}
+.contenido{padding:16px;max-width:1100px;margin:0 auto}
+.mensaje{padding:8px 12px;border-radius:6px;margin-bottom:10px;background:#e8f1ff}
+.mensaje.success{background:#e6f6ea}.mensaje.error{background:#fde8e8}
+.login{max-width:340px;margin:60px auto;background:#fff;padding:20px;border-radius:8px;border:1px solid #ddd}
+
+/* Ajustes de accesibilidad y disposición propios, también útiles sin vendor. */
+body { font-family: system-ui, "Segoe UI", Arial, sans-serif; }
+.menu { flex-wrap: wrap; }
+.menu .active { font-weight: 700; text-decoration: underline; }
+.menu form { display: inline; }
+.login input:not([type="hidden"]) { display: block; width: 100%; box-sizing: border-box; padding: .6rem; border: 1px solid #89939e; border-radius: .375rem; }
+.login label { display: block; margin-top: 1rem; margin-bottom: .4rem; }
+.login button { margin-top: 1rem; padding: .6rem 1rem; cursor: pointer; }
+.errorlist { color: #a51d2d; }
+:focus-visible { outline: 3px solid #0b5ed7; outline-offset: 3px; }
+@media (max-width: 575px) { .menu .derecha { margin-left: 0; } .login { margin: 1rem auto; } }

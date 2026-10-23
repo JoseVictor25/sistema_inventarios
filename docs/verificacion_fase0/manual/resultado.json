@@ -1,0 +1,273 @@
+{
+  "paginas": [
+    {
+      "ruta": "/login/",
+      "titulo": "Ingresar · Tienda de prueba",
+      "ancho": 1266,
+      "listo": "complete",
+      "desbordamiento": false,
+      "errores": [],
+      "bloqueos": [],
+      "bootstrap": "object",
+      "adminlte": "object",
+      "htmx": "object",
+      "chart": "function",
+      "tomselect": "function",
+      "css": [
+        {
+          "url": "http://127.0.0.1:56191/static/vendor/adminlte/css/adminlte.min.css",
+          "reglas": 2058
+        },
+        {
+          "url": "http://127.0.0.1:56191/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+          "reglas": 114
+        },
+        {
+          "url": "http://127.0.0.1:56191/static/css/app.css",
+          "reglas": 20
+        }
+      ],
+      "scripts": [
+        "http://127.0.0.1:56191/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+        "http://127.0.0.1:56191/static/vendor/adminlte/js/adminlte.min.js",
+        "http://127.0.0.1:56191/static/vendor/htmx/htmx.min.js",
+        "http://127.0.0.1:56191/static/vendor/chartjs/chart.umd.min.js",
+        "http://127.0.0.1:56191/static/vendor/tom-select/js/tom-select.complete.min.js",
+        "http://127.0.0.1:56191/static/js/app.js"
+      ],
+      "recursos": [
+        "http://127.0.0.1:56191/static/vendor/adminlte/css/adminlte.min.css",
+        "http://127.0.0.1:56191/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+        "http://127.0.0.1:56191/static/css/app.css",
+        "http://127.0.0.1:56191/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+        "http://127.0.0.1:56191/static/vendor/adminlte/js/adminlte.min.js",
+        "http://127.0.0.1:56191/static/vendor/htmx/htmx.min.js",
+        "http://127.0.0.1:56191/static/vendor/chartjs/chart.umd.min.js",
+        "http://127.0.0.1:56191/static/vendor/tom-select/js/tom-select.complete.min.js",
+        "http://127.0.0.1:56191/static/js/app.js",
+        "http://127.0.0.1:56191/favicon.ico"
+      ],
+      "pagina": "login",
+      "ancho_solicitado": 1280,
+      "fallos": []
+    },
+    {
+      "ruta": "/login/",
+      "titulo": "Server Error (500)",
+      "ancho": 1536,
+      "listo": "complete",
+      "desbordamiento": false,
+      "errores": [],
+      "bloqueos": [],
+      "bootstrap": "undefined",
+      "adminlte": "undefined",
+      "htmx": "undefined",
+      "chart": "undefined",
+      "tomselect": "undefined",
+      "css": [],
+      "scripts": [],
+      "recursos": [],
+      "pagina": "login",
+      "ancho_solicitado": 390,
+      "fallos": [
+        "Biblioteca no ejecutada: bootstrap",
+        "Biblioteca no ejecutada: adminlte",
+        "Biblioteca no ejecutada: htmx",
+        "Biblioteca no ejecutada: chart",
+        "Biblioteca no ejecutada: tomselect",
+        "Faltan hojas CSS aplicadas o scripts requeridos."
+      ]
+    },
+    {
+      "ruta": "/vista-inicio/",
+      "titulo": "Tienda de prueba",
+      "ancho": 1266,
+      "listo": "complete",
+      "desbordamiento": false,
+      "errores": [],
+      "bloqueos": [],
+      "bootstrap": "object",
+      "adminlte": "object",
+      "htmx": "object",
+      "chart": "function",
+      "tomselect": "function",
+      "css": [
+        {
+          "url": "http://127.0.0.1:56191/static/vendor/adminlte/css/adminlte.min.css",
+          "reglas": 2058
+        },
+        {
+          "url": "http://127.0.0.1:56191/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+          "reglas": 114
+        },
+        {
+          "url": "http://127.0.0.1:56191/static/css/app.css",
+          "reglas": 20
+        }
+      ],
+      "scripts": [
+        "http://127.0.0.1:56191/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+        "http://127.0.0.1:56191/static/vendor/adminlte/js/adminlte.min.js",
+        "http://127.0.0.1:56191/static/vendor/htmx/htmx.min.js",
+        "http://127.0.0.1:56191/static/vendor/chartjs/chart.umd.min.js",
+        "http://127.0.0.1:56191/static/vendor/tom-select/js/tom-select.complete.min.js",
+        "http://127.0.0.1:56191/static/js/app.js"
+      ],
+      "recursos": [
+        "http://127.0.0.1:56191/static/vendor/adminlte/css/adminlte.min.css",
+        "http://127.0.0.1:56191/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+        "http://127.0.0.1:56191/static/css/app.css",
+        "http://127.0.0.1:56191/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+        "http://127.0.0.1:56191/static/vendor/adminlte/js/adminlte.min.js",
+        "http://127.0.0.1:56191/static/vendor/htmx/htmx.min.js",
+        "http://127.0.0.1:56191/static/vendor/chartjs/chart.umd.min.js",
+        "http://127.0.0.1:56191/static/vendor/tom-select/js/tom-select.complete.min.js",
+        "http://127.0.0.1:56191/static/js/app.js"
+      ],
+      "pagina": "inicio",
+      "ancho_solicitado": 1280,
+      "fallos": []
+    }
+  ],
+  "solicitudes": [
+    "http://127.0.0.1:56191/login/",
+    "http://127.0.0.1:56191/static/vendor/adminlte/css/adminlte.min.css",
+    "http://127.0.0.1:56191/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+    "http://127.0.0.1:56191/static/css/app.css",
+    "http://127.0.0.1:56191/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+    "http://127.0.0.1:56191/static/vendor/adminlte/js/adminlte.min.js",
+    "http://127.0.0.1:56191/static/vendor/htmx/htmx.min.js",
+    "http://127.0.0.1:56191/static/vendor/chartjs/chart.umd.min.js",
+    "http://127.0.0.1:56191/static/vendor/tom-select/js/tom-select.complete.min.js",
+    "http://127.0.0.1:56191/static/js/app.js",
+    "http://127.0.0.1:56191/favicon.ico",
+    "http://127.0.0.1:56191/login/",
+    "http://127.0.0.1:56191/vista-inicio/"
+  ],
+  "respuestas": [
+    {
+      "url": "data:text/html;charset=utf-8;base64,PGh0bWw+PGJvZHk+UHJ1ZWJhIGluaWNpYWw8L2JvZHk+PC9odG1sPg==",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:56191/login/",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:56191/static/vendor/adminlte/css/adminlte.min.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:56191/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:56191/static/css/app.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:56191/static/vendor/adminlte/js/adminlte.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:56191/static/vendor/htmx/htmx.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:56191/static/js/app.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:56191/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:56191/static/vendor/tom-select/js/tom-select.complete.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:56191/static/vendor/chartjs/chart.umd.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:56191/favicon.ico",
+      "estado": 404
+    },
+    {
+      "url": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4NCjxwYXRoIGQ9Ik0xLjI2IDkuNkE2Ljk3IDYuOTcgMCAwMTggNGMzLjIgMCA2LjA2IDIuMzMgNi43NCA1LjZhLjUuNSAwIDAwLjk4LS4yQTcuOTcgNy45NyAwIDAwOCAzIDcuOTcgNy45NyAwIDAwLjI4IDkuNGEuNS41IDAgMDAuOTguMnoiIGZpbGw9IldpbmRvd1RleHQiLz48cGF0aCBkPSJNOCA2YTMuNSAzLjUgMCAxMDAgNyAzLjUgMy41IDAgMDAwLTd6TTUuNSA5LjVhMi41IDIuNSAwIDExNSAwIDIuNSAyLjUgMCAwMS01IDB6IiBmaWxsPSJXaW5kb3dUZXh0Ii8+DQo8L3N2Zz4=",
+      "estado": 200
+    },
+    {
+      "url": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4NCjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMCkiIGZpbGw9IldpbmRvd1RleHQiPjxwYXRoIGQ9Ik0uODUuMTVhLjUuNSAwIDEwLS43LjdsMy41IDMuNUE4LjEgOC4xIDAgMDAuMjggOS40YS41LjUgMCAwMC45OC4yIDcuMDkgNy4wOSAwIDAxMy4xLTQuNTNsMS42IDEuNTlhMy41IDMuNSAwIDEwNC44OCA0Ljg5bDQuMyA0LjNhLjUuNSAwIDAwLjcxLS43bC0xNS0xNXptOS4yNyAxMC42OGEyLjUgMi41IDAgMTEtMy40NS0zLjQ1bDMuNDUgMy40NXoiLz48cGF0aCBkPSJNOC4xMiA2bDMuMzggMy4zOEEzLjUgMy41IDAgMDA4LjEyIDZ6Ii8+PHBhdGggZD0iTTggNGMtLjU3IDAtMS4xMy4wNy0xLjY3LjIxbC0uOC0uOEE3LjY1IDcuNjUgMCAwMTggM2MzLjcgMCA2Ljk0IDIuNjcgNy43MiA2LjRhLjUuNSAwIDAxLS45OC4yQTYuOTcgNi45NyAwIDAwOCA0eiIvPjwvZz48ZGVmcz48Y2xpcFBhdGggaWQ9ImNsaXAwIj48cGF0aCBmaWxsPSIjZmZmZmZmIiBkPSJNMCAwaDE2djE2SDB6Ii8+PC9jbGlwUGF0aD48L2RlZnM+DQo8L3N2Zz4=",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:56191/login/",
+      "estado": 500
+    },
+    {
+      "url": "http://127.0.0.1:56191/vista-inicio/",
+      "estado": 200
+    }
+  ],
+  "http_local": [
+    {
+      "ruta": "/login/",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/adminlte/css/adminlte.min.css",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/css/app.css",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/adminlte/js/adminlte.min.js",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/htmx/htmx.min.js",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/chartjs/chart.umd.min.js",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/tom-select/js/tom-select.complete.min.js",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/js/app.js",
+      "estado": 200
+    },
+    {
+      "ruta": "/favicon.ico",
+      "estado": 404
+    },
+    {
+      "ruta": "/login/",
+      "estado": 500
+    },
+    {
+      "ruta": "/vista-inicio/",
+      "estado": 200
+    }
+  ],
+  "externas_detectadas": [],
+  "errores": [
+    "RuntimeError: No terminó de cargar /vista-inicio/."
+  ],
+  "automatizacion_aprobada": false,
+  "revision_visual": "Pendiente de revisión humana; no se generan capturas."
+}

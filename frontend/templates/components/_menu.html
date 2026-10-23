@@ -1,0 +1,17 @@
+<nav class="app-header navbar navbar-expand bg-body menu" aria-label="Navegación principal">
+  <a class="navbar-brand" href="{% url 'core:inicio' %}">{{ NOMBRE_NEGOCIO }}</a>
+  <a class="nav-link {% if request.resolver_match.app_name == 'core' %}active{% endif %}"
+     {% if request.resolver_match.app_name == 'core' %}aria-current="page"{% endif %}
+     href="{% url 'core:inicio' %}">Inicio</a>
+  <span class="pendiente nav-link disabled" aria-disabled="true">Venta</span>
+  <span class="pendiente nav-link disabled" aria-disabled="true">Caja</span>
+  <span class="pendiente nav-link disabled" aria-disabled="true">Compras</span>
+  <span class="pendiente nav-link disabled" aria-disabled="true">Inventario</span>
+  <span class="pendiente nav-link disabled" aria-disabled="true">Reportes</span>
+  <span class="pendiente nav-link disabled" aria-disabled="true">Catálogo</span>
+  <span class="derecha">{{ user.get_username }}
+    <form method="post" action="{% url 'usuarios:logout' %}" class="d-inline">
+      {% csrf_token %}<button class="btn btn-outline-secondary btn-sm" type="submit">Salir</button>
+    </form>
+  </span>
+</nav>

@@ -1,0 +1,35 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+  <title>{% block titulo %}{{ NOMBRE_NEGOCIO }}{% endblock %}</title>
+  {% if recursos_frontend_listos %}
+  <link rel="stylesheet" href="{% static 'vendor/adminlte/css/adminlte.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/tom-select/css/tom-select.bootstrap5.min.css' %}">
+  {% endif %}
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block css %}{% endblock %}
+</head>
+<body class="layout-top-nav bg-body-tertiary" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  <div class="app-wrapper">
+    {% if user.is_authenticated %}{% include "components/_menu.html" %}{% endif %}
+    <main class="app-main" id="contenido-principal">
+      <div class="app-content py-4"><div class="container-fluid contenido">
+        {% include "components/_mensajes.html" %}
+        {% block contenido %}{% endblock %}
+      </div></div>
+    </main>
+  </div>
+  {% if recursos_frontend_listos %}
+  <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+  <script src="{% static 'vendor/adminlte/js/adminlte.min.js' %}"></script>
+  <script src="{% static 'vendor/htmx/htmx.min.js' %}"></script>
+  <script src="{% static 'vendor/chartjs/chart.umd.min.js' %}"></script>
+  <script src="{% static 'vendor/tom-select/js/tom-select.complete.min.js' %}"></script>
+  {% endif %}
+  <script src="{% static 'js/app.js' %}"></script>
+  {% block js %}{% endblock %}
+</body>
+</html>

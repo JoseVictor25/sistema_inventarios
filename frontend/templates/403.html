@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block titulo %}Acceso restringido{% endblock %}
+{% block contenido %}
+<div class="alert alert-danger" role="alert">No tienes permiso para esta acción.</div>
+<a href="{% url 'core:inicio' %}">Volver al inicio</a>
+{% endblock %}

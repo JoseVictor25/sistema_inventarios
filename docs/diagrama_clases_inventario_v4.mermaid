@@ -1,0 +1,198 @@
+classDiagram
+direction TB
+
+class EntidadAuditable {
+  <<abstract>>
+  +string creadoPor
+  +datetime creadoEn
+  +string modificadoPor
+  +datetime modificadoEn
+}
+
+class Categoria {
+  +int id
+  +string nombre
+  +bool activa
+}
+
+class Producto {
+  +int id
+  +string codigo
+  +string nombre
+  +string descripcion
+  +int stockMinimo
+  +bool activo
+  +stockActual() int
+}
+
+class AtributoProducto {
+  +int id
+  +string nombre
+  +string valor
+}
+
+class Presentacion {
+  +int id
+  +string nombre
+  +int unidadesEquivalentes
+  +decimal precioVenta
+}
+
+class Proveedor {
+  +int id
+  +string nombre
+  +string tipo
+  +string contacto
+  +string origen
+}
+
+class Compra {
+  +int id
+  +date fecha
+  +decimal total
+  +string observacion
+}
+
+class DetalleCompra {
+  +int id
+  +int cantidadUnidades
+  +decimal costoUnitario
+  +decimal subtotal
+}
+
+class Lote {
+  +int id
+  +string codigoLote
+  +date fechaVencimiento
+  +int cantidadInicial
+  +int cantidadActual
+  +decimal costoUnitario
+}
+
+class Venta {
+  +int id
+  +datetime fecha
+  +decimal total
+}
+
+class DetalleVenta {
+  +int id
+  +int cantidadPresentaciones
+  +int unidadesTotales
+  +decimal precioAplicado
+  +decimal subtotal
+}
+
+class DetalleVentaLote {
+  +int id
+  +int cantidadUnidades
+}
+
+class MovimientoInventario {
+  +int id
+  +string tipo
+  +int cantidad
+  +datetime fecha
+  +string motivo
+}
+
+class MetodoPago {
+  +int id
+  +string nombre
+  +bool esEfectivo
+  +bool activo
+}
+
+class Pago {
+  +int id
+  +decimal monto
+  +string referencia
+}
+
+class Caja {
+  +int id
+  +datetime fechaApertura
+  +datetime fechaCierre
+  +decimal montoInicial
+  +decimal montoContado
+  +string estado
+  +string turno
+  +string observacion
+  +montoEsperado() decimal
+  +diferencia() decimal
+}
+
+class MovimientoCaja {
+  +int id
+  +string tipo
+  +decimal monto
+  +string concepto
+  +datetime fecha
+}
+
+class Usuario {
+  +int id
+  +string username
+  +string nombre
+  +bool activo
+}
+
+class Rol {
+  +int id
+  +string nombre
+  +string descripcion
+}
+
+class Permiso {
+  +int id
+  +string codigo
+  +string descripcion
+}
+
+class LogAuditoria {
+  +int id
+  +datetime fecha
+  +string accion
+  +string entidad
+  +int entidadId
+  +string valorAnterior
+  +string valorNuevo
+}
+
+EntidadAuditable <|-- Producto
+EntidadAuditable <|-- Presentacion
+EntidadAuditable <|-- Proveedor
+EntidadAuditable <|-- Compra
+EntidadAuditable <|-- Venta
+EntidadAuditable <|-- Caja
+
+Categoria "0..1" -- "0..*" Categoria : subcategorias
+Categoria "1" -- "0..*" Producto : clasifica
+Producto "1" -- "0..*" AtributoProducto : tiene
+Producto "1" -- "1..*" Presentacion : se vende en
+
+Proveedor "1" -- "0..*" Compra : abastece
+Compra "1" *-- "1..*" DetalleCompra : contiene
+Producto "1" -- "0..*" DetalleCompra : se compra en
+DetalleCompra "1" -- "1" Lote : genera
+Producto "1" -- "0..*" Lote : tiene
+
+Caja "1" -- "0..*" Venta : registra
+Venta "1" *-- "1..*" DetalleVenta : contiene
+Venta "1" -- "1..*" Pago : se paga con
+MetodoPago "1" -- "0..*" Pago : clasifica
+Presentacion "1" -- "0..*" DetalleVenta : se vende como
+DetalleVenta "1" -- "1..*" DetalleVentaLote : descuenta de
+Lote "1" -- "0..*" DetalleVentaLote : sale en
+
+Caja "1" -- "0..*" MovimientoCaja : tiene
+Lote "1" -- "0..*" MovimientoInventario : registra
+
+Usuario "1" -- "0..*" Caja : abre
+Usuario "0..1" -- "0..*" Caja : cierra
+Usuario "1" -- "0..*" Venta : realiza
+Usuario "1" -- "0..*" Compra : registra
+Usuario "1" -- "0..*" MovimientoInventario : ejecuta
+Usuario "1" -- "0..*" LogAuditoria : genera
+Rol "1" -- "0..*" Usuario : asignado a
+Rol "0..*" -- "0..*" Permiso : otorga

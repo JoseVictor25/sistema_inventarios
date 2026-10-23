@@ -1,0 +1,725 @@
+{
+  "paginas": [
+    {
+      "documento": "0858bc195a49427a9ada75f42791f35c",
+      "ruta": "/login/",
+      "titulo": "Ingresar · Tienda de prueba",
+      "ancho": 1266,
+      "usuario": "",
+      "listo": "complete",
+      "desbordamiento": false,
+      "errores": [],
+      "bloqueos": [],
+      "bootstrap": "object",
+      "adminlte": "object",
+      "htmx": "object",
+      "chart": "function",
+      "tomselect": "function",
+      "css": [
+        {
+          "url": "http://127.0.0.1:57463/static/vendor/adminlte/css/adminlte.min.css",
+          "reglas": 2058
+        },
+        {
+          "url": "http://127.0.0.1:57463/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+          "reglas": 114
+        },
+        {
+          "url": "http://127.0.0.1:57463/static/css/app.css",
+          "reglas": 20
+        }
+      ],
+      "scripts": [
+        "http://127.0.0.1:57463/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+        "http://127.0.0.1:57463/static/vendor/adminlte/js/adminlte.min.js",
+        "http://127.0.0.1:57463/static/vendor/htmx/htmx.min.js",
+        "http://127.0.0.1:57463/static/vendor/chartjs/chart.umd.min.js",
+        "http://127.0.0.1:57463/static/vendor/tom-select/js/tom-select.complete.min.js",
+        "http://127.0.0.1:57463/static/js/app.js"
+      ],
+      "recursos": [
+        "http://127.0.0.1:57463/static/vendor/adminlte/css/adminlte.min.css",
+        "http://127.0.0.1:57463/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+        "http://127.0.0.1:57463/static/css/app.css",
+        "http://127.0.0.1:57463/static/vendor/adminlte/js/adminlte.min.js",
+        "http://127.0.0.1:57463/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+        "http://127.0.0.1:57463/static/vendor/htmx/htmx.min.js",
+        "http://127.0.0.1:57463/static/vendor/chartjs/chart.umd.min.js",
+        "http://127.0.0.1:57463/static/vendor/tom-select/js/tom-select.complete.min.js",
+        "http://127.0.0.1:57463/static/js/app.js",
+        "http://127.0.0.1:57463/static/img/favicon.svg"
+      ],
+      "pagina": "login",
+      "ancho_solicitado": 1280,
+      "fallos": []
+    },
+    {
+      "documento": "74f1a2d236134c6c83a677c48da6de49",
+      "ruta": "/login/",
+      "titulo": "Ingresar · Tienda de prueba",
+      "ancho": 376,
+      "usuario": "",
+      "listo": "complete",
+      "desbordamiento": false,
+      "errores": [],
+      "bloqueos": [],
+      "bootstrap": "object",
+      "adminlte": "object",
+      "htmx": "object",
+      "chart": "function",
+      "tomselect": "function",
+      "css": [
+        {
+          "url": "http://127.0.0.1:57463/static/vendor/adminlte/css/adminlte.min.css",
+          "reglas": 2058
+        },
+        {
+          "url": "http://127.0.0.1:57463/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+          "reglas": 114
+        },
+        {
+          "url": "http://127.0.0.1:57463/static/css/app.css",
+          "reglas": 20
+        }
+      ],
+      "scripts": [
+        "http://127.0.0.1:57463/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+        "http://127.0.0.1:57463/static/vendor/adminlte/js/adminlte.min.js",
+        "http://127.0.0.1:57463/static/vendor/htmx/htmx.min.js",
+        "http://127.0.0.1:57463/static/vendor/chartjs/chart.umd.min.js",
+        "http://127.0.0.1:57463/static/vendor/tom-select/js/tom-select.complete.min.js",
+        "http://127.0.0.1:57463/static/js/app.js"
+      ],
+      "recursos": [
+        "http://127.0.0.1:57463/static/vendor/adminlte/css/adminlte.min.css",
+        "http://127.0.0.1:57463/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+        "http://127.0.0.1:57463/static/css/app.css",
+        "http://127.0.0.1:57463/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+        "http://127.0.0.1:57463/static/vendor/adminlte/js/adminlte.min.js",
+        "http://127.0.0.1:57463/static/vendor/htmx/htmx.min.js",
+        "http://127.0.0.1:57463/static/vendor/chartjs/chart.umd.min.js",
+        "http://127.0.0.1:57463/static/vendor/tom-select/js/tom-select.complete.min.js",
+        "http://127.0.0.1:57463/static/js/app.js"
+      ],
+      "pagina": "login",
+      "ancho_solicitado": 390,
+      "fallos": []
+    },
+    {
+      "documento": "00c987ca2cc04232b4f146433ff14408",
+      "ruta": "/",
+      "titulo": "Tienda de prueba",
+      "ancho": 1266,
+      "usuario": "usuario_prueba\n    \n      Salir\n    \n  ",
+      "listo": "complete",
+      "desbordamiento": false,
+      "errores": [],
+      "bloqueos": [],
+      "bootstrap": "object",
+      "adminlte": "object",
+      "htmx": "object",
+      "chart": "function",
+      "tomselect": "function",
+      "css": [
+        {
+          "url": "http://127.0.0.1:57463/static/vendor/adminlte/css/adminlte.min.css",
+          "reglas": 2058
+        },
+        {
+          "url": "http://127.0.0.1:57463/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+          "reglas": 114
+        },
+        {
+          "url": "http://127.0.0.1:57463/static/css/app.css",
+          "reglas": 20
+        }
+      ],
+      "scripts": [
+        "http://127.0.0.1:57463/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+        "http://127.0.0.1:57463/static/vendor/adminlte/js/adminlte.min.js",
+        "http://127.0.0.1:57463/static/vendor/htmx/htmx.min.js",
+        "http://127.0.0.1:57463/static/vendor/chartjs/chart.umd.min.js",
+        "http://127.0.0.1:57463/static/vendor/tom-select/js/tom-select.complete.min.js",
+        "http://127.0.0.1:57463/static/js/app.js"
+      ],
+      "recursos": [
+        "http://127.0.0.1:57463/static/vendor/adminlte/css/adminlte.min.css",
+        "http://127.0.0.1:57463/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+        "http://127.0.0.1:57463/static/css/app.css",
+        "http://127.0.0.1:57463/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+        "http://127.0.0.1:57463/static/vendor/adminlte/js/adminlte.min.js",
+        "http://127.0.0.1:57463/static/vendor/htmx/htmx.min.js",
+        "http://127.0.0.1:57463/static/vendor/chartjs/chart.umd.min.js",
+        "http://127.0.0.1:57463/static/vendor/tom-select/js/tom-select.complete.min.js",
+        "http://127.0.0.1:57463/static/js/app.js"
+      ],
+      "pagina": "inicio",
+      "ancho_solicitado": 1280,
+      "fallos": []
+    },
+    {
+      "documento": "256a2401d77c49b5a9cc939e6df451d0",
+      "ruta": "/",
+      "titulo": "Tienda de prueba",
+      "ancho": 376,
+      "usuario": "usuario_prueba\n    \n      Salir\n    \n  ",
+      "listo": "complete",
+      "desbordamiento": false,
+      "errores": [],
+      "bloqueos": [],
+      "bootstrap": "object",
+      "adminlte": "object",
+      "htmx": "object",
+      "chart": "function",
+      "tomselect": "function",
+      "css": [
+        {
+          "url": "http://127.0.0.1:57463/static/vendor/adminlte/css/adminlte.min.css",
+          "reglas": 2058
+        },
+        {
+          "url": "http://127.0.0.1:57463/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+          "reglas": 114
+        },
+        {
+          "url": "http://127.0.0.1:57463/static/css/app.css",
+          "reglas": 20
+        }
+      ],
+      "scripts": [
+        "http://127.0.0.1:57463/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+        "http://127.0.0.1:57463/static/vendor/adminlte/js/adminlte.min.js",
+        "http://127.0.0.1:57463/static/vendor/htmx/htmx.min.js",
+        "http://127.0.0.1:57463/static/vendor/chartjs/chart.umd.min.js",
+        "http://127.0.0.1:57463/static/vendor/tom-select/js/tom-select.complete.min.js",
+        "http://127.0.0.1:57463/static/js/app.js"
+      ],
+      "recursos": [
+        "http://127.0.0.1:57463/static/vendor/adminlte/css/adminlte.min.css",
+        "http://127.0.0.1:57463/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+        "http://127.0.0.1:57463/static/css/app.css",
+        "http://127.0.0.1:57463/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+        "http://127.0.0.1:57463/static/vendor/adminlte/js/adminlte.min.js",
+        "http://127.0.0.1:57463/static/vendor/htmx/htmx.min.js",
+        "http://127.0.0.1:57463/static/vendor/chartjs/chart.umd.min.js",
+        "http://127.0.0.1:57463/static/vendor/tom-select/js/tom-select.complete.min.js",
+        "http://127.0.0.1:57463/static/js/app.js"
+      ],
+      "pagina": "inicio",
+      "ancho_solicitado": 390,
+      "fallos": []
+    }
+  ],
+  "solicitudes": [
+    "http://127.0.0.1:57463/login/?verificacion=c2d59a3c4252400e9b406bf02775cd70",
+    "http://127.0.0.1:57463/static/vendor/adminlte/css/adminlte.min.css",
+    "http://127.0.0.1:57463/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+    "http://127.0.0.1:57463/static/css/app.css",
+    "http://127.0.0.1:57463/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+    "http://127.0.0.1:57463/static/vendor/adminlte/js/adminlte.min.js",
+    "http://127.0.0.1:57463/static/vendor/htmx/htmx.min.js",
+    "http://127.0.0.1:57463/static/vendor/chartjs/chart.umd.min.js",
+    "http://127.0.0.1:57463/static/vendor/tom-select/js/tom-select.complete.min.js",
+    "http://127.0.0.1:57463/static/js/app.js",
+    "http://127.0.0.1:57463/static/img/favicon.svg",
+    "http://127.0.0.1:57463/login/?verificacion=84a7839f1d4c4d6a91e69fd6d421b18d",
+    "http://127.0.0.1:57463/login/?verificacion=84a7839f1d4c4d6a91e69fd6d421b18d",
+    "http://127.0.0.1:57463/",
+    "http://127.0.0.1:57463/?verificacion=265dab2504db4556b81c764fe874ab4b",
+    "http://127.0.0.1:57463/?verificacion=2e88ce68160344a7a673d61d731edca4",
+    "http://127.0.0.1:57463/logout/",
+    "http://127.0.0.1:57463/login/",
+    "http://127.0.0.1:57463/",
+    "http://127.0.0.1:57463/login/?next=/"
+  ],
+  "respuestas": [
+    {
+      "url": "http://127.0.0.1:57463/login/?verificacion=c2d59a3c4252400e9b406bf02775cd70",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/img/favicon.svg",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/login/?verificacion=84a7839f1d4c4d6a91e69fd6d421b18d",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/adminlte/css/adminlte.min.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/css/app.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/adminlte/js/adminlte.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/htmx/htmx.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/chartjs/chart.umd.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/tom-select/js/tom-select.complete.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/js/app.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/login/?verificacion=84a7839f1d4c4d6a91e69fd6d421b18d",
+      "estado": 302
+    },
+    {
+      "url": "http://127.0.0.1:57463/",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/adminlte/css/adminlte.min.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/css/app.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/adminlte/js/adminlte.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/htmx/htmx.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/chartjs/chart.umd.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/tom-select/js/tom-select.complete.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/js/app.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/?verificacion=265dab2504db4556b81c764fe874ab4b",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/adminlte/css/adminlte.min.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/css/app.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/adminlte/js/adminlte.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/htmx/htmx.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/chartjs/chart.umd.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/tom-select/js/tom-select.complete.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/js/app.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/?verificacion=2e88ce68160344a7a673d61d731edca4",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/adminlte/css/adminlte.min.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/css/app.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/adminlte/js/adminlte.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/htmx/htmx.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/chartjs/chart.umd.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/tom-select/js/tom-select.complete.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/js/app.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/logout/",
+      "estado": 302
+    },
+    {
+      "url": "http://127.0.0.1:57463/login/",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/adminlte/css/adminlte.min.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/css/app.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/adminlte/js/adminlte.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/htmx/htmx.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/chartjs/chart.umd.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/tom-select/js/tom-select.complete.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/js/app.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/",
+      "estado": 302
+    },
+    {
+      "url": "http://127.0.0.1:57463/login/?next=/",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/adminlte/css/adminlte.min.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/css/app.css",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/adminlte/js/adminlte.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/htmx/htmx.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/chartjs/chart.umd.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/vendor/tom-select/js/tom-select.complete.min.js",
+      "estado": 200
+    },
+    {
+      "url": "http://127.0.0.1:57463/static/js/app.js",
+      "estado": 200
+    }
+  ],
+  "http_local": [
+    {
+      "ruta": "/",
+      "metodo": "GET",
+      "estado": 302
+    },
+    {
+      "ruta": "/login/",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/login/",
+      "metodo": "POST",
+      "estado": 302
+    },
+    {
+      "ruta": "/",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/adminlte/css/adminlte.min.css",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/adminlte/js/adminlte.min.js",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/htmx/htmx.min.js",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/chartjs/chart.umd.min.js",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/tom-select/js/tom-select.complete.min.js",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/css/app.css",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/js/app.js",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/img/favicon.svg",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/logout/",
+      "metodo": "POST",
+      "estado": 302
+    },
+    {
+      "ruta": "/login/",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/",
+      "metodo": "GET",
+      "estado": 302
+    },
+    {
+      "ruta": "/login/",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/login/",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/adminlte/css/adminlte.min.css",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/css/app.css",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/tom-select/css/tom-select.bootstrap5.min.css",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/adminlte/js/adminlte.min.js",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/bootstrap/js/bootstrap.bundle.min.js",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/htmx/htmx.min.js",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/js/app.js",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/tom-select/js/tom-select.complete.min.js",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/vendor/chartjs/chart.umd.min.js",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/static/img/favicon.svg",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/login/",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/login/",
+      "metodo": "POST",
+      "estado": 302
+    },
+    {
+      "ruta": "/",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/logout/",
+      "metodo": "POST",
+      "estado": 302
+    },
+    {
+      "ruta": "/login/",
+      "metodo": "GET",
+      "estado": 200
+    },
+    {
+      "ruta": "/",
+      "metodo": "GET",
+      "estado": 302
+    },
+    {
+      "ruta": "/login/",
+      "metodo": "GET",
+      "estado": 200
+    }
+  ],
+  "externas_detectadas": [],
+  "errores": [],
+  "base_temporal": {
+    "archivo_temporal": "datos_prueba.sqlite3",
+    "tabla_usuario": "usuarios_usuario",
+    "tabla_verificada": true,
+    "usuario": "usuario_prueba"
+  },
+  "autenticacion_http": {
+    "aprobada": true,
+    "conexion_anticipada": true,
+    "login": true,
+    "inicio": true,
+    "logout": true,
+    "recursos_verificados": [
+      "vendor/adminlte/css/adminlte.min.css",
+      "vendor/adminlte/js/adminlte.min.js",
+      "vendor/bootstrap/js/bootstrap.bundle.min.js",
+      "vendor/htmx/htmx.min.js",
+      "vendor/chartjs/chart.umd.min.js",
+      "vendor/tom-select/css/tom-select.bootstrap5.min.css",
+      "vendor/tom-select/js/tom-select.complete.min.js",
+      "css/app.css",
+      "js/app.js",
+      "img/favicon.svg"
+    ]
+  },
+  "autenticacion_navegador": true,
+  "automatizacion_aprobada": true,
+  "avisos_transporte": [
+    "TimeoutError",
+    "TimeoutError",
+    "TimeoutError"
+  ],
+  "revision_visual": "Pendiente de revisión humana; no se generan capturas.",
+  "solo_http_aprobado": false
+}

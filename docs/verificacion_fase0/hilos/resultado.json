@@ -1,0 +1,17 @@
+{
+  "paginas": [],
+  "solicitudes": [],
+  "respuestas": [
+    {
+      "url": "data:text/html;charset=utf-8;base64,PGh0bWw+PGJvZHk+UHJ1ZWJhIGluaWNpYWw8L2JvZHk+PC9odG1sPg==",
+      "estado": 200
+    }
+  ],
+  "http_local": [],
+  "externas_detectadas": [],
+  "errores": [
+    "RuntimeError: WebView2 no cargó HTML mínimo en 10 segundos."
+  ],
+  "automatizacion_aprobada": false,
+  "revision_visual": "Pendiente de revisión humana; no se generan capturas."
+}

@@ -1,0 +1,53 @@
+{
+  "paquetes": [
+    {
+      "paquete": "admin-lte",
+      "version": "4.0.2",
+      "licencia": "MIT",
+      "origen": "https://registry.npmjs.org/admin-lte/4.0.2",
+      "integridad": "sha512-eBevnpfJ47uWcM2ui5xCPikB4DcSsx4kOUPSjQUu33BnZJ437OR1twi7idPJ1+3OukHZ1eg+9BnAdjVTHmoedQ=="
+    },
+    {
+      "paquete": "bootstrap",
+      "version": "5.3.8",
+      "licencia": "MIT",
+      "origen": "https://registry.npmjs.org/bootstrap/5.3.8",
+      "integridad": "sha512-HP1SZDqaLDPwsNiqRqi5NcP0SSXciX2s9E+RyqJIIqGo+vJeN5AJVM98CXmW/Wux0nQ5L7jeWUdplCEf0Ee+tg=="
+    },
+    {
+      "paquete": "htmx.org",
+      "version": "2.0.8",
+      "licencia": "0BSD",
+      "origen": "https://registry.npmjs.org/htmx.org/2.0.8",
+      "integridad": "sha512-fm297iru0iWsNJlBrjvtN7V9zjaxd+69Oqjh4F/Vq9Wwi2kFisLcrLCiv5oBX0KLfOX/zG8AUo9ROMU5XUB44Q=="
+    },
+    {
+      "paquete": "chart.js",
+      "version": "4.5.1",
+      "licencia": "MIT",
+      "origen": "https://registry.npmjs.org/chart.js/4.5.1",
+      "integridad": "sha512-GIjfiT9dbmHRiYi6Nl2yFCq7kkwdkp1W/lp2J99rX0yo9tgJGn3lKQATztIjb5tVtevcBtIdICNWqlq5+E8/Pw=="
+    },
+    {
+      "paquete": "tom-select",
+      "version": "2.4.3",
+      "licencia": "Apache-2.0",
+      "origen": "https://registry.npmjs.org/tom-select/2.4.3",
+      "integridad": "sha512-MFFrMxP1bpnAMPbdvPCZk0KwYxLqhYZso39torcdoefeV/NThNyDu8dV96/INJ5XQVTL3O55+GqQ78Pkj5oCfw=="
+    }
+  ],
+  "archivos": {
+    "adminlte/css/adminlte.min.css": "95a94aea26a9b8d2868670145a87057737e79e137dcadebb376916f23f11532c",
+    "adminlte/js/adminlte.min.js": "b264b73ad4fc2126126aef430959889c0ec9afc2b3ecbc866166cc724982bf4c",
+    "adminlte/LICENSE": "9e8b0d4e7ce8c13e67a2373d5094910c263fd95b1e49bdf45dc2a9813be5996b",
+    "bootstrap/js/bootstrap.bundle.min.js": "e4fd49181388c48ec5040bd3fe66f57c29c8e67fcd8502b3354b96ec7ab47cc7",
+    "bootstrap/LICENSE": "4620c84ad5ce8602ff65640ed6b7c8b78ebb9e036584f0ebc1ccc88206a4bb51",
+    "htmx/htmx.min.js": "22283ef68cb7545914f0a88a1bdedc7256a703d1d580c1d255217d0a50d31313",
+    "htmx/LICENSE": "d3d2456f76414f2456104660ebd65aff1c04cd7966b942bdabd63f3cdb316a38",
+    "chartjs/chart.umd.min.js": "48444a82d4edcb5bec0f1965faacdde18d9c17db3063d042abada2f705c9f54a",
+    "chartjs/LICENSE.md": "41a84aa2caba645f966a18d9c2056b73e6d3a81d80bc0046bc0011a2634d4cce",
+    "tom-select/css/tom-select.bootstrap5.min.css": "95032d7f381d6c6f2e7cc094e544e15c6eb95acbf90885c690714608703af0c1",
+    "tom-select/js/tom-select.complete.min.js": "b797005cf23378fb38448b80dc57a33313a5c577b841765743bb1f289c4d53e6",
+    "tom-select/LICENSE": "f15dc64ea1f373c8af0ee7c020064360497addf335c9c2bcf27c3a6f56a6f0bd"
+  }
+}
