@@ -20,3 +20,16 @@ backend/datos/
 !.env.example
 *.sqlite3-*
 *.log
+*.log.*
+
+# Copias locales: nunca versionar datos del negocio.
+*.db
+*.db-*
+*.bak
+*.backup
+*.sqlite
+*.sqlite-*
+respaldos/
+backups/
+respaldo*.zip
+backup*.zip

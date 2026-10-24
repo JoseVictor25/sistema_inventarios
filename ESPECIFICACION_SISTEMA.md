@@ -141,7 +141,9 @@ y prepara un archivo SQLite temporal migrado, con usuario y autenticación reale
 Login/inicio/logout y diez recursos HTTP pasaron; el recorrido WebView2 aún no
 se completó en la sesión del agente (timeout sin documento inspeccionable).
 La revisión visual y JavaScript del frontend sigue pendiente. Ver `docs/FASE_0_RESULTADOS.md`.
-No se ha iniciado la fase 1.
+La fase 1 tiene modelos, datos iniciales y administración implementados.
+Las correcciones de integridad se validan en copias aisladas; su aplicación a
+la base real queda pendiente de autorización. Ver `docs/AUDITORIA_FASE_1.md`.
 
 Recursos locales instalados y verificados contra su manifiesto: AdminLTE 4.0.2,
 Bootstrap 5.3.8, HTMX 2.0.8, Chart.js 4.5.1 y Tom Select 2.4.3. Licencias locales
@@ -639,6 +641,31 @@ Referencia para escribir los `models.py` sin ambigüedad. Sintaxis abreviada: `C
 - **Textos de estado:** `TextChoices` dentro del modelo (ver 6.6).
 - Los modelos marcados ◆ en la sección 7 heredan de `EntidadAuditable`. Los campos `creado_por` y `modificado_por` **los asigna el servicio** (ayudante `asignar_auditoria(instancia, usuario)` en `core/utils.py`); no dependen de middleware.
 - Cada `Meta` define `ordering` y las restricciones listadas; los nombres de las restricciones son descriptivos y únicos.
+
+**Precisiones de implementación de fase 1 (2026-10-24):**
+
+- Orden estable para los cinco modelos cuyo orden no se concretaba arriba:
+  `Usuario`: `["username"]`; `DetalleCompra`, `DetalleVenta`, `DetalleVentaLote`
+  y `Pago`: `["pk"]`. Es orden de presentación, sin prioridad de negocio nueva.
+- Se materializa la regla de dinero no negativo mediante `CheckConstraint` en
+  `Presentacion.precio_venta`, `Compra.total`, `DetalleCompra.costo_unitario`,
+  `DetalleCompra.subtotal`, `Lote.costo_unitario`, `DetalleVenta.precio_aplicado`,
+  `DetalleVenta.subtotal` y `Caja.monto_contado`. El último admite `NULL`;
+  todos admiten cero y llevan `validar_dinero`. No se limita la diferencia de caja:
+  puede ser negativa según RN-13. Las restricciones positivas de pagos y movimientos
+  de caja se mantienen.
+- Admin consulta compras, ventas y sus detalles/pagos sin altas, modificaciones ni
+  borrados independientes (RN-19 y servicios de 8.1/8.3). Los inlines tienen la misma
+  protección. Lotes y movimientos de inventario son de solo lectura: una escritura
+  aislada omitiría la actualización conjunta de stock y bitácora de 8.2/8.3.
+  Las altas de negocio se implementarán en sus fases, no en esta corrección.
+- Las cajas cerradas y sus movimientos no se editan ni eliminan en Admin (RN-13).
+  Tampoco se permite agregar o trasladar movimientos a una caja cerrada.
+  Se conserva la administración existente de turnos abiertos.
+- Archivos auxiliares: `core/admin.py` comparte la protección de consulta;
+  `caja/forms.py` valida el destino de movimientos administrativos;
+  `core/tests/test_regresiones_fase1.py` comprueba integridad, administración,
+  ordenamiento, idempotencia y preservación de registros al migrar.
 
 ```
 # ---------- usuarios ----------

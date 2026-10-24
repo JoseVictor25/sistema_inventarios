@@ -1,3 +1,45 @@
+"""Admin del inventario: Lote y MovimientoInventario."""
 from django.contrib import admin
 
-# Register your models here.
+from apps.core.admin import SoloLecturaAdminMixin
+
+from .models import Lote, MovimientoInventario
+
+
+@admin.register(Lote)
+class LoteAdmin(SoloLecturaAdminMixin, admin.ModelAdmin):
+    list_display = [
+        "codigo_lote",
+        "producto",
+        "cantidad_actual",
+        "cantidad_inicial",
+        "costo_unitario",
+        "fecha_vencimiento",
+    ]
+    list_filter = ["fecha_vencimiento", "producto"]
+    search_fields = ["codigo_lote", "producto__nombre", "producto__codigo"]
+    readonly_fields = ["cantidad_inicial"]
+
+    def has_delete_permission(self, request, obj=None):
+        # Los lotes representan historial de compras e inventario
+        return False
+
+
+@admin.register(MovimientoInventario)
+class MovimientoInventarioAdmin(SoloLecturaAdminMixin, admin.ModelAdmin):
+    list_display = ["id", "lote", "tipo", "cantidad", "fecha", "motivo", "usuario"]
+    list_filter = ["tipo", "fecha"]
+    search_fields = ["lote__codigo_lote", "lote__producto__nombre", "motivo"]
+    readonly_fields = ["lote", "tipo", "cantidad", "fecha", "motivo", "usuario"]
+
+    def has_add_permission(self, request):
+        # El servicio crea movimiento y stock juntos; nunca un alta aislada.
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        # RN-19: inmutable
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        # RN-19: inmutable
+        return False
