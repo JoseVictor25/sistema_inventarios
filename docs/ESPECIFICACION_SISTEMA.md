@@ -141,9 +141,10 @@ y prepara un archivo SQLite temporal migrado, con usuario y autenticación reale
 Login/inicio/logout y diez recursos HTTP pasaron; el recorrido WebView2 aún no
 se completó en la sesión del agente (timeout sin documento inspeccionable).
 La revisión visual y JavaScript del frontend sigue pendiente. Ver `docs/FASE_0_RESULTADOS.md`.
-La fase 1 tiene modelos, datos iniciales y administración implementados.
-Las correcciones de integridad se validan en copias aisladas; su aplicación a
-la base real queda pendiente de autorización. Ver `docs/AUDITORIA_FASE_1.md`.
+Las fases 0 y 1 fueron confirmadas como completadas por el usuario al autorizar
+la fase 2, incluidas las migraciones de fase 1. El texto anterior conserva el
+registro histórico de la preparación. Ver `docs/AUDITORIA_FASE_1.md` y los
+resultados de la fase 2 en `docs/FASE_2_RESULTADOS.md`.
 
 Recursos locales instalados y verificados contra su manifiesto: AdminLTE 4.0.2,
 Bootstrap 5.3.8, HTMX 2.0.8, Chart.js 4.5.1 y Tom Select 2.4.3. Licencias locales
@@ -924,8 +925,8 @@ Reglas generales:
 CSS/JS del inventario local existen; actualmente se cumple y se sirven localmente.
 Si faltaran, se omiten enlaces vendor para evitar 404, sin carga remota alternativa.
 Este mecanismo no sustituye la validación del manifiesto y la revisión visual.
-`permisos` continúa pendiente de la fase 2. Las entradas de módulos aún vacíos
-se conservan deshabilitadas, sin inventar rutas.
+`permisos` contiene los códigos efectivos de negocio del usuario en la fase 2.
+Las entradas de módulos aún vacíos se conservan deshabilitadas, sin inventar rutas.
 
 ### 9.1 Inicio y sistema (`core`)
 
@@ -944,7 +945,38 @@ se conservan deshabilitadas, sin inventar rutas.
 | Salir | `POST /logout/` ✔ | `usuarios:logout` | — | — |
 | Lista de usuarios | `/usuarios/` | `usuarios:lista` | `usuarios/usuario_lista.html` | `usuarios` |
 | Crear / editar usuario | `/usuarios/nuevo/`, `/usuarios/<int:pk>/editar/` | `usuarios:usuario_crear`, `usuarios:usuario_editar` | `usuarios/usuario_form.html` | `form`, `roles` |
-| Roles y permisos | `/usuarios/roles/` | `usuarios:rol_lista` | `usuarios/rol_lista.html` | `roles`, `permisos` |
+| Roles y permisos | `/usuarios/roles/` | `usuarios:rol_lista` | `usuarios/rol_lista.html` | `roles`, `catalogo_permisos`, `filas`; `permisos` conserva los códigos efectivos globales |
+
+### Implementación de fase 2 y decisiones autorizadas
+
+- Las cuatro pantallas ordinarias de usuarios y roles exigen `gestionar_usuarios`
+  tanto en GET como en POST. Lista y matriz son solo GET; alta y edición admiten
+  GET/POST con CSRF. Los anónimos van al login; autenticados sin permiso reciben 403.
+- Se editan exclusivamente `username`, `first_name`, `last_name`, `rol` e `is_active`.
+  El alta añade contraseña y confirmación, con los validadores configurados de Django
+  y almacenamiento mediante hash. La edición conserva la contraseña.
+- No se puede editar ni desactivar la propia cuenta, ni modificar superusuarios
+  desde estas pantallas. La prohibición se aplica en vistas y servicios.
+- Los formularios rechazan POST que incluyan privilegios técnicos (`is_staff`,
+  `is_superuser`, grupos o permisos internos), contraseña fuera del alta y otros
+  campos protegidos. Los servicios reciben argumentos explícitos y conservan los
+  privilegios técnicos existentes al editar una cuenta ordinaria.
+- Se asignan roles existentes. No hay altas, ediciones ni bajas de roles/permisos,
+  ni asignación individual de permisos de negocio. La matriz inicial permanece intacta.
+- Usuario sin rol o inactivo: ningún permiso de negocio. El superusuario activo
+  conserva acceso. La autenticación de Django rechaza cuentas inactivas, incluso
+  cuando una sesión anterior existe; una petición no autenticada se redirige al login.
+- `tiene_permiso` y `codigos_permitidos` consultan los permisos del rol sin guardarlos
+  en la sesión; un cambio de rol se refleja en la siguiente petición. El menú de
+  usuarios/roles aparece solo con `gestionar_usuarios`. El rol Dueño no convierte
+  al usuario en staff ni superusuario y no concede por sí mismo acceso a Django Admin.
+- Archivos: `usuarios/forms.py`, `usuarios/services.py`, `usuarios/views.py`,
+  `usuarios/urls.py`, `core/permissions.py`, `core/context_processors.py`, las tres
+  plantillas de `frontend/templates/usuarios/`, `components/_menu.html` y
+  `usuarios/tests/test_fase2.py`. No se requieren cambios de esquema.
+- Servicios `crear_usuario` y `editar_usuario`: validan permisos y datos antes de
+  guardar; `editar_usuario` vuelve a consultar el objetivo para comprobar su protección.
+  No se ofrecen eliminación de usuarios ni restablecimiento de contraseñas ordinario.
 
 ### 9.3 Catálogo (`catalogo`)
 
@@ -1211,7 +1243,7 @@ Los roles y permisos iniciales se crean en la primera ejecución con un comando 
 
 ### Cómo se aplican
 
-**En el backend** (`apps/core/permissions.py`, por crear): un decorador que revisa el permiso antes de ejecutar la vista. El superusuario siempre pasa.
+**En el backend** (`apps/core/permissions.py`, implementado en fase 2): un decorador que revisa el permiso antes de ejecutar la vista. El superusuario autenticado y activo siempre pasa.
 
 ```python
 @login_required
@@ -1222,7 +1254,7 @@ def compra_crear(request):
 
 Si el usuario no tiene el permiso, recibe una página 403 con un mensaje claro: *"No tienes permiso para esta acción."*
 
-**En el frontend:** el context processor de `core` agrega la variable `permisos` (lista de códigos del usuario; se añade a `context_processors.py` cuando exista el modelo `Rol`). Las plantillas ocultan lo que no corresponde:
+**En el frontend:** el context processor de `core` agrega la variable `permisos` (lista de códigos efectivos del usuario, implementada en fase 2). Las plantillas ocultan lo que no corresponde:
 
 ```html
 {% if "ver_costos" in permisos %}
@@ -1380,9 +1412,9 @@ Orden recomendado. La **caja va antes de la venta** porque no se puede vender si
 
 ### Fases
 
-- [ ] **Fase 0 — Preparación:** elegir la plantilla Bootstrap e integrarla siguiendo la sección 9.12 (queda lista en `frontend/templates/base.html`); crear `backend/.env`; iniciar git; crear `core/exceptions.py`, `core/validators.py` y `core/permissions.py`.
-- [ ] **Fase 1 — Base de datos:** `models.py` de todas las apps, migraciones, `admin.py`, comando `cargar_datos_iniciales` (roles, permisos, métodos de pago).
-- [ ] **Fase 2 — Usuarios y roles:** pantallas de usuarios y roles, decorador `permiso_requerido`, variable `permisos` en las plantillas.
+- [x] **Fase 0 — Preparación:** elegir la plantilla Bootstrap e integrarla siguiendo la sección 9.12 (queda lista en `frontend/templates/base.html`); crear `backend/.env`; iniciar git; crear `core/exceptions.py`, `core/validators.py` y `core/permissions.py`.
+- [x] **Fase 1 — Base de datos:** `models.py` de todas las apps, migraciones, `admin.py`, comando `cargar_datos_iniciales` (roles, permisos, métodos de pago).
+- [x] **Fase 2 — Usuarios y roles:** pantallas de usuarios y roles, decorador `permiso_requerido`, variable `permisos` en las plantillas.
 - [ ] **Fase 3 — Catálogo:** categorías (árbol), productos, presentaciones, atributos y proveedores.
 - [ ] **Fase 4 — Compras y lotes:** registrar compra, generar lotes y movimientos de entrada.
 - [ ] **Fase 5 — Caja:** abrir, movimientos y cerrar con diferencia.

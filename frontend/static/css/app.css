@@ -1,22 +1,61 @@
 /* Estilos propios. Al integrar la plantilla (Bootstrap), conserva aquí solo lo tuyo. */
-body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:0;color:#222;background:#f6f7f9}
-.menu{display:flex;gap:14px;align-items:center;padding:10px 16px;background:#fff;border-bottom:1px solid #ddd}
-.menu a{text-decoration:none;color:#0b5ed7}
-.menu .pendiente{color:#999}
-.menu .derecha{margin-left:auto}
-.contenido{padding:16px;max-width:1100px;margin:0 auto}
-.mensaje{padding:8px 12px;border-radius:6px;margin-bottom:10px;background:#e8f1ff}
-.mensaje.success{background:#e6f6ea}.mensaje.error{background:#fde8e8}
-.login{max-width:340px;margin:60px auto;background:#fff;padding:20px;border-radius:8px;border:1px solid #ddd}
 
-/* Ajustes de accesibilidad y disposición propios, también útiles sin vendor. */
-body { font-family: system-ui, "Segoe UI", Arial, sans-serif; }
-.menu { flex-wrap: wrap; }
-.menu .active { font-weight: 700; text-decoration: underline; }
-.menu form { display: inline; }
-.login input:not([type="hidden"]) { display: block; width: 100%; box-sizing: border-box; padding: .6rem; border: 1px solid #89939e; border-radius: .375rem; }
-.login label { display: block; margin-top: 1rem; margin-bottom: .4rem; }
+/* ── Evitar desbordamiento horizontal del documento ── */
+html, body { overflow-x: hidden; }
+body { font-family: system-ui, "Segoe UI", Arial, sans-serif; margin: 0; color: #222; background: #f6f7f9; }
+
+/* ── Navbar ── */
+.menu { border-bottom: 1px solid #dee2e6; }
+
+/* En desktop: misma altura fija que AdminLTE usa para layout-top-nav */
+@media (min-width: 768px) {
+  .menu { min-height: 57px; }
+}
+
+/* Estado activo en menú */
+.navbar-nav .nav-link.active { font-weight: 700; }
+
+/* Ítems pendientes (módulos no implementados aún) */
+.pendiente { cursor: default; user-select: none; }
+
+/* Bloque de usuario y logout en móvil: fondo sutil para separar del listado de links */
+@media (max-width: 767.98px) {
+  #menu-usuario {
+    border-top: 1px solid #dee2e6;
+    padding-top: .5rem;
+    margin-top: .25rem;
+    width: 100%;
+  }
+}
+
+/* ── Contenido principal ── */
+.contenido { padding: 16px; max-width: 1100px; margin: 0 auto; }
+
+/* ── Mensajes flash ── */
+.mensaje { padding: 8px 12px; border-radius: 6px; margin-bottom: 10px; background: #e8f1ff; }
+.mensaje.success { background: #e6f6ea; }
+.mensaje.error   { background: #fde8e8; }
+
+/* ── Login ── */
+.login {
+  max-width: 340px; margin: 60px auto; background: #fff;
+  padding: 20px; border-radius: 8px; border: 1px solid #ddd;
+}
+.login input:not([type="hidden"]) {
+  display: block; width: 100%; box-sizing: border-box;
+  padding: .6rem; border: 1px solid #89939e; border-radius: .375rem;
+}
+.login label  { display: block; margin-top: 1rem; margin-bottom: .4rem; }
 .login button { margin-top: 1rem; padding: .6rem 1rem; cursor: pointer; }
-.errorlist { color: #a51d2d; }
+
+/* ── Accesibilidad ── */
 :focus-visible { outline: 3px solid #0b5ed7; outline-offset: 3px; }
-@media (max-width: 575px) { .menu .derecha { margin-left: 0; } .login { margin: 1rem auto; } }
+.errorlist { color: #a51d2d; }
+
+/* ── Tablas responsivas: scroll solo dentro de la tabla, nunca en el documento ── */
+.table-responsive { -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 575.98px) {
+  .login { margin: 1rem auto; }
+}
+

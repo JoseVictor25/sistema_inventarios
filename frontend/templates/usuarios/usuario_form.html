@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block titulo %}{% if creando %}Crear usuario{% else %}Editar usuario{% endif %} · {{ NOMBRE_NEGOCIO }}{% endblock %}
+{% block contenido %}
+<section class="card shadow-sm" aria-labelledby="titulo-usuario">
+  <div class="card-body">
+    <h1 id="titulo-usuario" class="h4 mb-3">{% if creando %}Crear usuario{% else %}Editar usuario{% endif %}</h1>
+    {% if not creando %}<p>La contraseña y los privilegios técnicos se conservan.</p>{% endif %}
+    <p>Un usuario sin rol no tiene permisos de negocio. Un usuario inactivo no puede ingresar.</p>
+    <form method="post">
+      {% csrf_token %}
+      {% if form.errors %}<div class="alert alert-danger" role="alert">Revisa los campos indicados antes de guardar. {{ form.non_field_errors }}</div>{% endif %}
+      {% for field in form %}
+      <div class="mb-3">
+        {{ field.label_tag }} {{ field }}
+        {% if field.help_text %}<div class="form-text" id="{{ field.auto_id }}_helptext">{{ field.help_text|safe }}</div>{% endif %}
+        {% if field.errors %}<div class="text-danger">{{ field.errors }}</div>{% endif %}
+      </div>
+      {% endfor %}
+      <div class="d-flex gap-2 flex-wrap mt-3">
+        <button type="submit" class="btn btn-primary" id="btn-guardar-usuario">{% if creando %}Crear usuario{% else %}Guardar cambios{% endif %}</button>
+        <a class="btn btn-outline-secondary" href="{% url 'usuarios:lista' %}" id="btn-cancelar-usuario">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

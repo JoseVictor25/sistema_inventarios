@@ -1,17 +1,76 @@
-<nav class="app-header navbar navbar-expand bg-body menu" aria-label="Navegación principal">
-  <a class="navbar-brand" href="{% url 'core:inicio' %}">{{ NOMBRE_NEGOCIO }}</a>
-  <a class="nav-link {% if request.resolver_match.app_name == 'core' %}active{% endif %}"
-     {% if request.resolver_match.app_name == 'core' %}aria-current="page"{% endif %}
-     href="{% url 'core:inicio' %}">Inicio</a>
-  <span class="pendiente nav-link disabled" aria-disabled="true">Venta</span>
-  <span class="pendiente nav-link disabled" aria-disabled="true">Caja</span>
-  <span class="pendiente nav-link disabled" aria-disabled="true">Compras</span>
-  <span class="pendiente nav-link disabled" aria-disabled="true">Inventario</span>
-  <span class="pendiente nav-link disabled" aria-disabled="true">Reportes</span>
-  <span class="pendiente nav-link disabled" aria-disabled="true">Catálogo</span>
-  <span class="derecha">{{ user.get_username }}
-    <form method="post" action="{% url 'usuarios:logout' %}" class="d-inline">
-      {% csrf_token %}<button class="btn btn-outline-secondary btn-sm" type="submit">Salir</button>
-    </form>
-  </span>
+<nav class="app-header navbar navbar-expand-md bg-body border-bottom px-3 menu" aria-label="Navegación principal">
+
+  {# Marca / nombre del negocio #}
+  <a class="navbar-brand fw-semibold me-3 text-truncate" href="{% url 'core:inicio' %}" style="max-width:50vw">
+    {{ NOMBRE_NEGOCIO }}
+  </a>
+
+  {# Botón hamburguesa — visible solo en móvil #}
+  <button class="navbar-toggler ms-auto me-2" type="button"
+          id="menu-toggler"
+          data-bs-toggle="collapse"
+          data-bs-target="#nav-collapsible"
+          aria-controls="nav-collapsible"
+          aria-expanded="false"
+          aria-label="Abrir menú de navegación">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  {# Área colapsable #}
+  <div class="collapse navbar-collapse" id="nav-collapsible">
+    <ul class="navbar-nav me-auto flex-wrap align-items-md-center gap-md-1" role="list">
+
+      <li class="nav-item" role="listitem">
+        <a class="nav-link{% if request.resolver_match.app_name == 'core' %} active fw-bold{% endif %}"
+           {% if request.resolver_match.app_name == 'core' %}aria-current="page"{% endif %}
+           href="{% url 'core:inicio' %}">Inicio</a>
+      </li>
+
+      {# Módulos pendientes agrupados en un ítem con tooltip #}
+      <li class="nav-item" role="listitem">
+        <span class="nav-link text-muted pendiente" aria-disabled="true" title="Módulos disponibles en fases próximas">
+          Venta
+        </span>
+      </li>
+      <li class="nav-item" role="listitem">
+        <span class="nav-link text-muted pendiente" aria-disabled="true">Caja</span>
+      </li>
+      <li class="nav-item" role="listitem">
+        <span class="nav-link text-muted pendiente" aria-disabled="true">Compras</span>
+      </li>
+      <li class="nav-item" role="listitem">
+        <span class="nav-link text-muted pendiente" aria-disabled="true">Inventario</span>
+      </li>
+      <li class="nav-item" role="listitem">
+        <span class="nav-link text-muted pendiente" aria-disabled="true">Reportes</span>
+      </li>
+      <li class="nav-item" role="listitem">
+        <span class="nav-link text-muted pendiente" aria-disabled="true">Catálogo</span>
+      </li>
+
+      {% if "gestionar_usuarios" in permisos %}
+      <li class="nav-item" role="listitem">
+        <a class="nav-link{% if request.resolver_match.app_name == 'usuarios' and request.resolver_match.url_name != 'rol_lista' %} active fw-bold{% endif %}"
+           {% if request.resolver_match.app_name == 'usuarios' and request.resolver_match.url_name != 'rol_lista' %}aria-current="page"{% endif %}
+           href="{% url 'usuarios:lista' %}">Usuarios</a>
+      </li>
+      <li class="nav-item" role="listitem">
+        <a class="nav-link{% if request.resolver_match.url_name == 'rol_lista' %} active fw-bold{% endif %}"
+           {% if request.resolver_match.url_name == 'rol_lista' %}aria-current="page"{% endif %}
+           href="{% url 'usuarios:rol_lista' %}">Roles</a>
+      </li>
+      {% endif %}
+
+    </ul>
+
+    {# Usuario y botón de cierre de sesión — siempre al extremo derecho #}
+    <div class="d-flex align-items-center gap-2 ms-md-auto mt-2 mt-md-0 flex-wrap" id="menu-usuario">
+      <span class="text-muted small fw-semibold" aria-label="Usuario activo">{{ user.get_username }}</span>
+      <form method="post" action="{% url 'usuarios:logout' %}">
+        {% csrf_token %}
+        <button class="btn btn-outline-secondary btn-sm" type="submit" id="btn-salir">Salir</button>
+      </form>
+    </div>
+  </div>
+
 </nav>

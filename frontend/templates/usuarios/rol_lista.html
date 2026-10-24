@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block titulo %}Roles y permisos · {{ NOMBRE_NEGOCIO }}{% endblock %}
+{% block contenido %}
+<section class="card shadow-sm" aria-labelledby="titulo-roles">
+  <div class="card-body">
+    <h1 id="titulo-roles" class="h4">Roles y permisos</h1>
+    <p>Consulta los permisos de los roles existentes. Esta pantalla no permite modificarlos.</p>
+    <div class="table-responsive">
+      <table class="table table-bordered align-middle">
+        <caption>Matriz de permisos de negocio</caption>
+        <thead><tr><th scope="col">Permiso</th>{% for rol in roles %}<th scope="col">{{ rol.nombre }}</th>{% endfor %}</tr></thead>
+        <tbody>
+          {% for fila in filas %}<tr>
+            <th scope="row">{{ fila.permiso.codigo }}<div class="fw-normal">{{ fila.permiso.descripcion }}</div></th>
+            {% for permitido in fila.asignaciones %}<td>{% if permitido %}Sí{% else %}No{% endif %}</td>{% endfor %}
+          </tr>{% empty %}<tr><td>No hay permisos registrados.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="mt-3">
+      <a class="btn btn-outline-secondary" href="{% url 'usuarios:lista' %}" id="btn-volver-usuarios">Volver a usuarios</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

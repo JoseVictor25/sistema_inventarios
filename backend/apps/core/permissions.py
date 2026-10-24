@@ -1,4 +1,4 @@
-"""Base de autorización. No crea roles ni tablas de la fase 1."""
+"""Autorización mediante los permisos de negocio del rol (§10)."""
 from functools import wraps
 
 from django.contrib.auth.decorators import login_required
@@ -6,8 +6,26 @@ from django.core.exceptions import PermissionDenied
 
 
 def tiene_permiso(usuario, codigo):
-    """Deniega por defecto; la integración de roles corresponde a la fase 2."""
-    return bool(usuario.is_authenticated and usuario.is_active and usuario.is_superuser)
+    """Deniega por defecto; conserva la excepción del superusuario activo."""
+    if not usuario.is_authenticated or not usuario.is_active:
+        return False
+    if usuario.is_superuser:
+        return True
+    if not getattr(usuario, "rol_id", None):
+        return False
+    return usuario.rol.permisos.filter(codigo=codigo).exists()
+
+
+def codigos_permitidos(usuario):
+    """Lista códigos efectivos sin guardarlos en la sesión ni modificar datos."""
+    if not usuario.is_authenticated or not usuario.is_active:
+        return []
+    if usuario.is_superuser:
+        from apps.usuarios.models import Permiso
+        return list(Permiso.objects.values_list("codigo", flat=True))
+    if not getattr(usuario, "rol_id", None):
+        return []
+    return list(usuario.rol.permisos.values_list("codigo", flat=True))
 
 
 def permiso_requerido(codigo):

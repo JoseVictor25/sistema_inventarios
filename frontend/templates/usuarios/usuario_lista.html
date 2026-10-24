@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block titulo %}Usuarios · {{ NOMBRE_NEGOCIO }}{% endblock %}
+{% block contenido %}
+<section class="card shadow-sm" aria-labelledby="titulo-usuarios">
+  <div class="card-header d-flex flex-column flex-sm-row flex-wrap gap-2 align-items-start align-items-sm-center">
+    <h1 id="titulo-usuarios" class="h4 mb-0 me-auto">Usuarios</h1>
+    <div class="d-flex gap-2 flex-wrap">
+      <a class="btn btn-primary btn-sm" href="{% url 'usuarios:usuario_crear' %}" id="btn-crear-usuario">
+        <span aria-hidden="true">+</span> Crear usuario
+      </a>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'usuarios:rol_lista' %}" id="btn-ver-roles">
+        Roles y permisos
+      </a>
+    </div>
+  </div>
+  <div class="card-body p-0 p-md-3">
+    <div class="table-responsive">
+      <table class="table table-striped table-hover align-middle mb-0">
+        <caption class="px-3">Usuarios del sistema y sus roles asignados</caption>
+        <thead class="table-light">
+          <tr>
+            <th scope="col">Usuario</th>
+            <th scope="col" class="d-none d-sm-table-cell">Nombre completo</th>
+            <th scope="col">Rol</th>
+            <th scope="col" class="d-none d-md-table-cell">Estado</th>
+            <th scope="col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for usuario in usuarios %}
+          <tr>
+            <td>
+              <span class="fw-semibold">{{ usuario.username }}</span>
+              {# En móvil, estado aparece bajo el nombre #}
+              <div class="d-md-none text-muted small">
+                {% if usuario.is_active %}
+                  <span class="badge bg-success-subtle text-success border border-success-subtle">Activo</span>
+                {% else %}
+                  <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Inactivo</span>
+                {% endif %}
+              </div>
+            </td>
+            <td class="d-none d-sm-table-cell">{{ usuario.get_full_name|default:"—" }}</td>
+            <td>{{ usuario.rol|default:"Sin rol" }}</td>
+            <td class="d-none d-md-table-cell">
+              {% if usuario.is_active %}
+                <span class="badge bg-success-subtle text-success border border-success-subtle">Activo</span>
+              {% else %}
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Inactivo</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if usuario.is_superuser %}
+                <span class="text-muted small">Cuenta protegida</span>
+              {% elif usuario.pk == user.pk %}
+                <span class="text-muted small">Tu cuenta</span>
+              {% else %}
+                <a class="btn btn-outline-primary btn-sm"
+                   href="{% url 'usuarios:usuario_editar' usuario.pk %}"
+                   aria-label="Editar usuario {{ usuario.username }}">Editar</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center text-muted py-4">No hay usuarios registrados.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
