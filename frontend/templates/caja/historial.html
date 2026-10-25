@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block titulo %}Historial de caja{% endblock %}
+{% block contenido %}
+<h1 class="h3">Historial de cajas cerradas</h1>
+{% if 'gestionar_caja' in permisos %}<a class="btn btn-outline-primary mb-3" href="{% url 'caja:estado' %}">Mi caja</a>{% endif %}
+{% for caja in page_obj %}
+<article class="mb-4">
+  <h2 class="h5">Turno #{{ caja.pk }} · {{ caja.usuario }} · {{ caja.turno|default:'Sin nombre' }}</h2>
+  <p class="small">Apertura: {{ caja.fecha_apertura|date:'d/m/Y H:i' }} · Cierre: {{ caja.fecha_cierre|date:'d/m/Y H:i' }} · Cerrada por: {{ caja.cerrada_por|default:'No registrado' }}</p>
+  {% include 'caja/partials/_resumen.html' with resumen=caja.resumen historico=True %}
+</article>
+{% empty %}<p>No hay cajas cerradas.</p>{% endfor %}
+{% include 'components/_paginacion.html' %}
+{% endblock %}

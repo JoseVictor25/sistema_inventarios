@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block titulo %}Caja{% endblock %}
+{% block contenido %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <h1 class="h3 mb-0">Caja{% if caja %} · Turno #{{ caja.pk }}{% endif %}</h1>
+  {% if 'ver_historial_caja' in permisos %}<a href="{% url 'caja:historial' %}" class="btn btn-outline-secondary">Historial de cierres</a>{% endif %}
+</div>
+{% if cajas_abiertas %}
+<form method="get" action="{% url 'caja:estado' %}" class="d-flex flex-wrap gap-2 mb-3">
+  <label for="turno-consulta" class="align-self-center">Consultar turno abierto</label>
+  <select name="caja_id" id="turno-consulta" class="form-select w-auto" style="max-width:100%">
+    {% for abierta in cajas_abiertas %}<option value="{{ abierta.pk }}" {% if abierta.pk == caja.pk %}selected{% endif %}>#{{ abierta.pk }} · {{ abierta.usuario }} · {{ abierta.turno|default:'Sin nombre' }}</option>{% endfor %}
+  </select><button class="btn btn-outline-primary">Consultar</button>
+</form>
+{% endif %}
+{% if error_operacion %}<div class="alert alert-danger" role="alert">No se registró la operación. {{ error_operacion }}</div>{% endif %}
+{% if not caja %}
+<div class="card"><div class="card-header"><h2 class="h5 mb-0">Abrir caja</h2></div><div class="card-body">
+  <p>Registra el efectivo inicial de tu turno. Solo puedes tener una caja abierta.</p>
+  <form method="post" action="{% url 'caja:abrir' %}">{% csrf_token %}{{ form_abrir.as_p }}<button class="btn btn-primary">Abrir caja</button></form>
+</div></div>
+{% else %}
+<p>Propietario: <strong>{{ caja.usuario }}</strong> · {{ caja.turno|default:'Sin nombre de turno' }} · Apertura: {{ caja.fecha_apertura|date:'d/m/Y H:i' }}</p>
+{% include 'caja/partials/_resumen.html' %}
+{% if caja.estado == 'ABIERTA' %}
+<div class="row g-3">
+  <div class="col-12 col-lg-8">{% include 'caja/partials/_movimientos.html' %}</div>
+  <div class="col-12 col-lg-4"><div class="card border-warning"><div class="card-header"><h2 class="h5 mb-0">Cerrar turno #{{ caja.pk }}</h2></div><div class="card-body">
+    {% if not propia %}<div class="alert alert-warning">Cierre excepcional de la caja de {{ caja.usuario }}. Tu identidad quedará registrada.</div>{% endif %}
+    <p>Cuenta el efectivo físico. El cierre es definitivo.</p>
+    <form method="post" action="{% url 'caja:cerrar' %}">{% csrf_token %}{{ form_cerrar.as_p }}<button class="btn btn-warning">Cerrar caja definitivamente</button></form>
+  </div></div></div>
+</div>
+{% else %}
+<div class="alert alert-success">Caja cerrada: <strong>{{ resumen.resultado }}</strong>. Cierre: {{ caja.fecha_cierre|date:'d/m/Y H:i' }} por {{ caja.cerrada_por }}.</div>
+<a class="btn btn-primary mb-3" href="{% url 'caja:estado' %}">Volver a mi caja / abrir nuevo turno</a>
+{% include 'caja/partials/_movimientos.html' %}
+{% endif %}
+{% endif %}
+{% endblock %}

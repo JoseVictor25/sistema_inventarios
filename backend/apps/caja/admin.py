@@ -1,30 +1,24 @@
 """Admin de caja: Caja y MovimientoCaja."""
 from django.contrib import admin
+from apps.core.admin import SoloLecturaAdminMixin
 
 from .forms import MovimientoCajaAdminForm
-from .models import Caja, MovimientoCaja
+from .models import Caja, MovimientoCaja, OperacionCaja
 
 
-class MovimientoCajaInline(admin.TabularInline):
+@admin.register(OperacionCaja)
+class OperacionCajaAdmin(SoloLecturaAdminMixin, admin.ModelAdmin):
+    list_display = ["clave", "usuario", "accion", "caja", "movimiento", "creado_en"]
+
+
+class MovimientoCajaInline(SoloLecturaAdminMixin, admin.TabularInline):
     model = MovimientoCaja
     form = MovimientoCajaAdminForm
     extra = 0
     fields = ["tipo", "monto", "concepto", "fecha", "usuario"]
 
-    def has_add_permission(self, request, obj=None):
-        return bool(obj and obj.estado == Caja.EstadoCaja.ABIERTA
-                    and super().has_add_permission(request, obj))
-
-    def has_change_permission(self, request, obj=None):
-        return bool(obj and obj.estado == Caja.EstadoCaja.ABIERTA
-                    and super().has_change_permission(request, obj))
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-
 @admin.register(Caja)
-class CajaAdmin(admin.ModelAdmin):
+class CajaAdmin(SoloLecturaAdminMixin, admin.ModelAdmin):
     list_display = [
         "id",
         "usuario",
@@ -40,17 +34,20 @@ class CajaAdmin(admin.ModelAdmin):
     search_fields = ["usuario__username", "observacion"]
     inlines = [MovimientoCajaInline]
 
-    def has_change_permission(self, request, obj=None):
-        if obj and obj.estado == Caja.EstadoCaja.CERRADA:
-            return False
-        return super().has_change_permission(request, obj)
-
     @admin.display(description="Monto Esperado")
     def monto_esperado_display(self, obj):
+        from .services import _leer_resumen_guardado
+        resumen = _leer_resumen_guardado(obj) if obj.estado == "CERRADA" else None
+        if resumen:
+            return resumen["esperado"]
         return obj.monto_esperado()
 
     @admin.display(description="Diferencia")
     def diferencia_display(self, obj):
+        from .services import _leer_resumen_guardado
+        resumen = _leer_resumen_guardado(obj) if obj.estado == "CERRADA" else None
+        if resumen:
+            return resumen["diferencia"]
         dif = obj.diferencia()
         return dif if dif is not None else "—"
 
@@ -60,16 +57,11 @@ class CajaAdmin(admin.ModelAdmin):
 
 
 @admin.register(MovimientoCaja)
-class MovimientoCajaAdmin(admin.ModelAdmin):
+class MovimientoCajaAdmin(SoloLecturaAdminMixin, admin.ModelAdmin):
     form = MovimientoCajaAdminForm
     list_display = ["id", "caja", "tipo", "monto", "concepto", "fecha", "usuario"]
     list_filter = ["tipo", "fecha"]
     search_fields = ["concepto", "caja__id"]
-
-    def has_change_permission(self, request, obj=None):
-        if obj and obj.caja.estado == Caja.EstadoCaja.CERRADA:
-            return False
-        return super().has_change_permission(request, obj)
 
     def has_delete_permission(self, request, obj=None):
         return False

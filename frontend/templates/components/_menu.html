@@ -32,9 +32,12 @@
           Venta
         </span>
       </li>
-      <li class="nav-item" role="listitem">
-        <span class="nav-link text-muted pendiente" aria-disabled="true">Caja</span>
-      </li>
+      {% if "gestionar_caja" in permisos %}
+      <li class="nav-item"><a class="nav-link" href="{% url 'caja:estado' %}">Caja</a></li>
+      {% endif %}
+      {% if "ver_historial_caja" in permisos %}
+      <li class="nav-item"><a class="nav-link" href="{% url 'caja:historial' %}">Historial de caja</a></li>
+      {% endif %}
       <li class="nav-item" role="listitem">
         <span class="nav-link text-muted pendiente" aria-disabled="true">Inventario</span>
       </li>

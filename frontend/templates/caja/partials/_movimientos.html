@@ -1,0 +1,16 @@
+<section id="movimientos-caja" class="card" aria-label="Movimientos de caja">
+  <div class="card-header"><h2 class="h5 mb-0">Movimientos del turno #{{ caja.pk }}</h2></div>
+  <div class="card-body">
+    {% if error_operacion %}<div class="alert alert-danger" role="alert">{{ error_operacion }}</div>{% endif %}
+    {% if propia and caja.estado == 'ABIERTA' %}
+    <form method="post" action="{% url 'caja:movimiento_crear' %}" hx-post="{% url 'caja:movimiento_crear' %}" hx-target="#movimientos-caja" hx-swap="outerHTML" hx-disabled-elt="find button">
+      {% csrf_token %}{{ form_movimiento.as_p }}<button class="btn btn-primary mb-3">Registrar movimiento</button>
+    </form>
+    {% endif %}
+    <div class="table-responsive"><table class="table table-striped align-middle">
+      <thead><tr><th>Fecha</th><th>Concepto</th><th>Tipo</th><th class="text-end">Importe</th></tr></thead><tbody>
+      {% for mov in movimientos %}<tr><td class="text-nowrap">{{ mov.fecha|date:'d/m H:i' }}</td><td style="overflow-wrap:anywhere">{{ mov.concepto }}</td><td>{{ mov.get_tipo_display }}</td><td class="text-end text-nowrap {% if mov.tipo == 'INGRESO' %}text-success{% else %}text-danger{% endif %}">{% if mov.tipo == 'INGRESO' %}+{% else %}−{% endif %} Bs {{ mov.monto|floatformat:2 }}</td></tr>
+      {% empty %}<tr><td colspan="4">Sin movimientos.</td></tr>{% endfor %}
+      </tbody></table></div>
+  </div>
+</section>

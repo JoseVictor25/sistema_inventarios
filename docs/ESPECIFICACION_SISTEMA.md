@@ -1088,6 +1088,30 @@ El **vuelto** se calcula en pantalla con JavaScript (`monto recibido − total`)
 
 ### 9.7 Caja (`caja`)
 
+**Decisiones autorizadas al iniciar fase 5 (2026-10-25):**
+
+- Cierre excepcional ajeno solo por rol Dueño o superusuario activo, comprobando
+  gestión de caja. `ver_historial_caja` por sí solo no autoriza ese cierre.
+- Caja y MovimientoCaja pasan a consulta en Admin, incluidos turnos abiertos e
+  inlines. Sustituye la autorización técnica provisional de edición de turnos
+  abiertos conservada en fase 1; no modifica registros existentes.
+- Movimiento y cierre identifican explícitamente el turno mostrado. Nunca se
+  sustituye un turno cerrado por el siguiente abierto al recibir un formulario viejo.
+- El resumen completo se guardará con el cierre en LogAuditoria: caja, propietario,
+  actor, inicial, pagos por método, ingresos, egresos, esperado, contado, diferencia
+  y fechas. Los cierres anteriores sin resumen se identificarán como recalculados.
+- Se conserva la firma del cálculo con actor obligatorio por nombre:
+  `calcular_resumen_caja(caja, *, usuario)`; verifica propiedad/permisos y prefiere
+  el resumen almacenado. `obtener_caja` y `listar_cierres` son consultas autorizadas.
+- Idempotencia persistente autorizada posteriormente: `OperacionCaja`, con UUID
+  único, usuario, acción, huella SHA-256 normalizada, caja/movimiento resultantes
+  y fecha. Reserva y escritura comparten transacción. Solo se autoriza migrar
+  bases temporales; la base real requiere autorización independiente.
+- Las escrituras exigen `clave` UUID; movimiento y cierre reciben `caja_id`
+  explícito. `registrar_movimiento_caja(usuario, caja_id, tipo, monto, concepto,
+  *, clave)` mantiene el nombre del servicio de §8.4. Apertura y cierre también
+  exigen la clave. El cierre devuelve el resumen almacenado del turno indicado.
+
 | Pantalla / acción | URL | `name` | Plantilla / parcial | Datos |
 |---|---|---|---|---|
 | Estado de caja (abre o muestra el turno) | `/caja/` | `caja:estado` | `caja/estado.html` | `caja` (o `None`), `resumen`, `movimientos`, `form_abrir` (campos `monto_inicial` y `turno` opcional), `form_movimiento` |
@@ -1462,7 +1486,7 @@ Orden recomendado. La **caja va antes de la venta** porque no se puede vender si
 - [x] **Fase 0 — Preparación:** elegir la plantilla Bootstrap e integrarla siguiendo la sección 9.12 (queda lista en `frontend/templates/base.html`); crear `backend/.env`; iniciar git; crear `core/exceptions.py`, `core/validators.py` y `core/permissions.py`.
 - [x] **Fase 1 — Base de datos:** `models.py` de todas las apps, migraciones, `admin.py`, comando `cargar_datos_iniciales` (roles, permisos, métodos de pago).
 - [x] **Fase 2 — Usuarios y roles:** pantallas de usuarios y roles, decorador `permiso_requerido`, variable `permisos` en las plantillas.
-- [ ] **Fase 3 — Catálogo:** categorías (árbol), productos, presentaciones, atributos y proveedores.
+- [x] **Fase 3 — Catálogo:** categorías (árbol), productos, presentaciones, atributos y proveedores.
 - [x] **Fase 4 — Compras y lotes:** registrar compra, generar lotes y movimientos de entrada.
 - [ ] **Fase 5 — Caja:** abrir, movimientos y cerrar con diferencia.
 - [ ] **Fase 6 — Venta (POS):** carrito, búsqueda, presentaciones, pagos, descuento por lotes (FEFO) y confirmar.

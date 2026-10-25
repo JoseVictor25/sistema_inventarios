@@ -140,8 +140,6 @@ class ProteccionAdminTests(TestCase):
 
     def test_altas_aisladas_de_historial_denegadas(self):
         for obj in self.protegidos():
-            if isinstance(obj, (Caja, MovimientoCaja)):
-                continue
             with self.subTest(modelo=obj._meta.label):
                 self.assertEqual(self.client.post(self.url(obj, "add", False), {}).status_code, 403)
 
@@ -171,8 +169,8 @@ class ProteccionAdminTests(TestCase):
             "tipo": "INGRESO", "monto": "1.00", "concepto": "No permitido",
             "fecha_0": "2026-10-24", "fecha_1": "10:00:00",
         })
-        self.assertEqual(respuesta.status_code, 200)
-        self.assertIn("caja", respuesta.context["adminform"].form.errors)
+        # Fase 5 autorizada: toda alta administrativa se deniega antes del formulario.
+        self.assertEqual(respuesta.status_code, 403)
         self.assertEqual(MovimientoCaja.objects.count(), cantidad)
 
     def test_movimientos_abiertos_validos_sin_traslado_a_cerrada(self):
@@ -182,8 +180,9 @@ class ProteccionAdminTests(TestCase):
         form = MovimientoCajaAdminForm(data=datos)
         self.assertTrue(form.is_valid(), form.errors)
         mov = form.save()
-        self.assertTrue(admin.site._registry[Caja].has_change_permission(self.request, abierta))
-        self.assertTrue(admin.site._registry[MovimientoCaja].has_change_permission(self.request, mov))
+        # Se conserva la validación heredada, pero Admin ya no permite escrituras.
+        self.assertFalse(admin.site._registry[Caja].has_change_permission(self.request, abierta))
+        self.assertFalse(admin.site._registry[MovimientoCaja].has_change_permission(self.request, mov))
         datos["caja"] = self.datos["caja"].pk
         self.assertFalse(MovimientoCajaAdminForm(data=datos, instance=mov).is_valid())
         datos["caja"] = abierta.pk
@@ -240,7 +239,10 @@ class PreservacionMigracionesTests(TransactionTestCase):
             call_command("cargar_datos_iniciales", stdout=StringIO())
             antes = registros()
             MigrationExecutor(connection).migrate(finales)
-            self.assertEqual(registros(), antes)
+            despues = registros()
+            self.assertEqual({tabla: despues[tabla] for tabla in antes}, antes)
+            self.assertEqual(set(despues) - set(antes), {"caja_operacioncaja"})
+            self.assertEqual(despues["caja_operacioncaja"], [])
             self.assertEqual(Usuario.objects.filter(is_superuser=True).count(), 1)
             self.assertEqual(Pago.objects.count(), 1)
             self.assertEqual(Permiso.objects.count(), 12)

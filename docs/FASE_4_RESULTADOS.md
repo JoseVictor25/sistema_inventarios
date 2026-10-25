@@ -436,4 +436,4 @@ Se verificaron los hashes criptográficos SHA-256 de los archivos críticos:
 
 
 
-La **FASE 4: COMPRAS Y LOTES** se encuentra completamente implementada, verificada y aprobada con 168 pruebas automatizadas y comprobaciones HTTP aisladas. Todos los criterios de aceptación fueron cubiertos satisfactoriamente.
+La **FASE 4: COMPRAS Y LOTES** se encuentra completamente implementada, verificada y aprobada con 170 pruebas automatizadas y comprobaciones HTTP aisladas. Todos los criterios de aceptación fueron cubiertos satisfactoriamente. Se corrige la cifra de esta conclusión para coincidir con la ejecución documentada en la sección 6; no representa una nueva ejecución.

@@ -27,6 +27,7 @@ Reglas que implementan los servicios (§8.4):
 from decimal import Decimal
 
 from django.conf import settings
+from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import Q, Sum
 from django.utils import timezone
@@ -187,3 +188,28 @@ class MovimientoCaja(models.Model):
 
     def __str__(self):
         return f"{self.tipo} {self.monto} — {self.concepto}"
+
+
+class OperacionCaja(models.Model):
+    """Resultado persistente de una solicitud, reservado dentro de su transacción."""
+
+    class Accion(models.TextChoices):
+        ABRIR = "ABRIR", "Abrir"
+        MOVIMIENTO = "MOVIMIENTO", "Movimiento"
+        CERRAR = "CERRAR", "Cerrar"
+
+    clave = models.UUIDField(unique=True, editable=False)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    accion = models.CharField(max_length=10, choices=Accion)
+    huella = models.CharField(max_length=64, validators=[RegexValidator(r"^[0-9a-f]{64}$")])
+    caja = models.ForeignKey(Caja, on_delete=models.PROTECT, null=True, blank=True)
+    movimiento = models.ForeignKey(MovimientoCaja, on_delete=models.PROTECT, null=True, blank=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-creado_en", "-pk"]
+        indexes = [models.Index(fields=["usuario", "-creado_en"], name="operacion_caja_usuario_fecha")]
+        constraints = [
+            models.CheckConstraint(condition=Q(accion__in=["ABRIR", "MOVIMIENTO", "CERRAR"]), name="operacion_caja_accion_valida"),
+            models.CheckConstraint(condition=Q(accion="MOVIMIENTO") | Q(movimiento__isnull=True), name="operacion_caja_movimiento_tipo"),
+        ]

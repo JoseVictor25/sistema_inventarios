@@ -1,0 +1,18 @@
+<section {% if historico %}id="resumen-caja-{{ caja.pk }}"{% else %}id="resumen-caja"{% endif %} {% if oob %}hx-swap-oob="outerHTML"{% endif %} aria-label="Resumen de caja" class="card mb-3">
+  <div class="card-header"><h2 class="h5 mb-0">Resumen · {{ caja.get_estado_display }}</h2></div>
+  <div class="card-body">
+    {% if resumen.recalculado %}<div class="alert alert-warning">Cierre antiguo sin resumen almacenado. Los importes se han recalculado.</div>{% endif %}
+    <dl class="row mb-0">
+      <dt class="col-7 col-md-4">Monto inicial</dt><dd class="col-5 col-md-2 text-end">Bs {{ resumen.monto_inicial|floatformat:2 }}</dd>
+      <dt class="col-7 col-md-4">Pagos en efectivo</dt><dd class="col-5 col-md-2 text-end">Bs {{ resumen.ventas_efectivo|floatformat:2 }}</dd>
+      <dt class="col-7 col-md-4">Ingresos</dt><dd class="col-5 col-md-2 text-end">Bs {{ resumen.ingresos|floatformat:2 }}</dd>
+      <dt class="col-7 col-md-4">Egresos</dt><dd class="col-5 col-md-2 text-end">Bs {{ resumen.egresos|floatformat:2 }}</dd>
+      {% for metodo in resumen.otros_metodos %}<dt class="col-7 col-md-4">{{ metodo.nombre }} (no efectivo)</dt><dd class="col-5 col-md-2 text-end">Bs {{ metodo.monto|floatformat:2 }}</dd>{% endfor %}
+      <dt class="col-7 col-md-4">Efectivo esperado</dt><dd class="col-5 col-md-2 text-end fw-bold">Bs {{ resumen.esperado|floatformat:2 }}</dd>
+      {% if caja.estado == 'CERRADA' %}
+      <dt class="col-7 col-md-4">Efectivo contado</dt><dd class="col-5 col-md-2 text-end">Bs {{ resumen.contado|floatformat:2 }}</dd>
+      <dt class="col-7 col-md-4">Diferencia · {{ resumen.resultado }}</dt><dd class="col-5 col-md-2 text-end fw-bold">Bs {{ resumen.diferencia|floatformat:2 }}</dd>
+      {% endif %}
+    </dl><small class="text-muted">Esperado = inicial + pagos en efectivo + ingresos − egresos. QR y transferencias no aumentan el efectivo.</small>
+  </div>
+</section>
