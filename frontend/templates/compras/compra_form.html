@@ -1,0 +1,347 @@
+{% extends 'base.html' %}
+
+{% block contenido %}
+
+<div class="d-flex flex-column flex-sm-row flex-wrap justify-content-between align-items-start align-items-sm-center gap-2 mb-3">
+
+  <div>
+
+    <h1 class="h3 mb-0">Nueva compra</h1>
+
+    <p class="text-muted small mb-0">Registrar ingreso de mercadería y generación de lotes</p>
+
+  </div>
+
+  <a class="btn btn-outline-secondary btn-sm" href="{% url 'compras:compra_lista' %}" id="btn-cancelar-arriba">
+
+    Volver al listado
+
+  </a>
+
+</div>
+
+
+
+{% if form.non_field_errors %}
+
+<div class="alert alert-danger shadow-sm mb-3" role="alert" id="errores-formulario">
+
+  {% for error in form.non_field_errors %}
+
+    <div>{{ error }}</div>
+
+  {% endfor %}
+
+</div>
+
+{% endif %}
+
+
+
+<form method="post" action="{% url 'compras:compra_crear' %}" id="form-nueva-compra" novalidate>
+
+  {% csrf_token %}
+
+  {# Token de idempotencia contra doble envío de formulario #}
+
+  <input type="hidden" name="token_idempotencia" value="{{ compra_token }}" id="token-idempotencia">
+
+
+
+  {# Cabecera de compra #}
+
+  <div class="card shadow-sm mb-3">
+
+    <div class="card-header bg-light py-2">
+
+      <span class="fw-semibold small text-uppercase text-muted">Datos de la compra</span>
+
+    </div>
+
+    <div class="card-body">
+
+      <div class="row g-3">
+
+        <div class="col-12 col-md-5">
+
+          <label for="id_proveedor" class="form-label fw-semibold">Proveedor <span class="text-danger">*</span></label>
+
+          {{ form.proveedor }}
+
+          {% if form.proveedor.errors %}
+
+            <div class="text-danger small mt-1">{{ form.proveedor.errors.0 }}</div>
+
+          {% endif %}
+
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-3">
+
+          <label for="id_fecha" class="form-label fw-semibold">Fecha de compra <span class="text-danger">*</span></label>
+
+          {{ form.fecha }}
+
+          {% if form.fecha.errors %}
+
+            <div class="text-danger small mt-1">{{ form.fecha.errors.0 }}</div>
+
+          {% endif %}
+
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-4">
+
+          <label for="id_observacion" class="form-label fw-semibold">Observación</label>
+
+          {{ form.observacion }}
+
+          {% if form.observacion.errors %}
+
+            <div class="text-danger small mt-1">{{ form.observacion.errors.0 }}</div>
+
+          {% endif %}
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  {# Detalle de productos / líneas #}
+
+  <div class="card shadow-sm mb-3">
+
+    <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+
+      <span class="fw-semibold small text-uppercase text-muted">Líneas de compra y lotes</span>
+
+      <button type="button"
+
+              class="btn btn-primary btn-sm"
+
+              id="btn-agregar-linea"
+
+              hx-get="{% url 'compras:compra_linea' %}"
+
+              hx-target="#lineas-compra"
+
+              hx-swap="beforeend"
+
+              hx-vals="js:{indice: document.querySelectorAll('.linea-compra-fila').length}">
+
+        <span aria-hidden="true">+</span> Agregar producto
+
+      </button>
+
+    </div>
+
+    <div class="card-body p-0">
+
+      <div class="table-responsive">
+
+        <table class="table table-hover align-middle mb-0" id="tabla-lineas-compra">
+
+          <thead class="table-light">
+
+            <tr>
+
+              <th scope="col" style="min-width: 220px;">Producto <span class="text-danger">*</span></th>
+
+              <th scope="col" style="min-width: 100px; width: 120px;" class="text-end">Cantidad <span class="text-danger">*</span></th>
+
+              <th scope="col" style="min-width: 120px; width: 140px;" class="text-end">Costo Unit. <span class="text-danger">*</span></th>
+
+              <th scope="col" style="min-width: 130px; width: 150px;">Vencimiento</th>
+
+              <th scope="col" style="min-width: 110px; width: 130px;" class="text-end">Subtotal</th>
+
+              <th scope="col" style="width: 50px;" class="text-center"></th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="lineas-compra">
+
+            {# Primera línea pre-cargada #}
+
+            {% include "compras/partials/_linea_compra.html" with indice=0 productos=productos %}
+
+          </tbody>
+
+          <tfoot class="table-light">
+
+            <tr>
+
+              <th colspan="4" class="text-end py-3 fs-6">TOTAL COMPRA:</th>
+
+              <th class="text-end py-3 fs-6 text-nowrap" id="contenedor-total-compra">
+
+                {{ MONEDA_SIMBOLO }} <span id="total-compra">0.00</span>
+
+              </th>
+
+              <th></th>
+
+            </tr>
+
+          </tfoot>
+
+        </table>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  {# Botones de acción #}
+
+  <div class="d-flex justify-content-end gap-2 mb-4">
+
+    <a href="{% url 'compras:compra_lista' %}" class="btn btn-outline-secondary" id="btn-cancelar">
+
+      Cancelar
+
+    </a>
+
+    <button type="submit" class="btn btn-success px-4 fw-semibold" id="btn-guardar-compra">
+
+      Guardar compra
+
+    </button>
+
+  </div>
+
+</form>
+
+
+
+<script>
+
+  function recalcularTotales() {
+
+    let total = 0;
+
+    const filas = document.querySelectorAll('.linea-compra-fila');
+
+    filas.forEach(fila => {
+
+      const cantInput = fila.querySelector('.input-cantidad');
+
+      const costoInput = fila.querySelector('.input-costo');
+
+      const subtotalSpan = fila.querySelector('.subtotal-linea');
+
+
+
+      const cant = parseFloat(cantInput ? cantInput.value : 0) || 0;
+
+      const costo = parseFloat(costoInput ? costoInput.value : 0) || 0;
+
+      const subtotal = Math.max(0, cant * costo);
+
+
+
+      if (subtotalSpan) {
+
+        subtotalSpan.textContent = subtotal.toFixed(2);
+
+      }
+
+      total += subtotal;
+
+    });
+
+
+
+    const totalSpan = document.getElementById('total-compra');
+
+    if (totalSpan) {
+
+      totalSpan.textContent = total.toFixed(2);
+
+    }
+
+  }
+
+
+
+  document.addEventListener('input', function(e) {
+
+    if (e.target.matches('.input-cantidad, .input-costo')) {
+
+      recalcularTotales();
+
+    }
+
+  });
+
+
+
+  document.addEventListener('htmx:afterSwap', function(e) {
+
+    if (e.detail.target && e.detail.target.id === 'lineas-compra') {
+
+      recalcularTotales();
+
+    }
+
+  });
+
+
+
+  // Prevención de doble envío en cliente
+
+  const formCompra = document.getElementById('form-nueva-compra');
+
+  if (formCompra) {
+
+    formCompra.addEventListener('submit', function(e) {
+
+      const btn = document.getElementById('btn-guardar-compra');
+
+      if (btn && !btn.disabled) {
+
+        // Validación mínima en cliente: al menos una fila con producto
+
+        const filas = document.querySelectorAll('.linea-compra-fila');
+
+        if (filas.length === 0) {
+
+          e.preventDefault();
+
+          alert('Debes agregar al menos un producto a la compra.');
+
+          return;
+
+        }
+
+        btn.disabled = true;
+
+        btn.textContent = 'Guardando...';
+
+      }
+
+    });
+
+  }
+
+
+
+  // Cálculo inicial
+
+  document.addEventListener('DOMContentLoaded', recalcularTotales);
+
+  recalcularTotales();
+
+</script>
+
+{% endblock %}

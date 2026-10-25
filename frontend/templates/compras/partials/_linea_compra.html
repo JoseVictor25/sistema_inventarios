@@ -1,0 +1,31 @@
+<tr class="linea-compra-fila" id="linea-{{ indice }}">
+  <td>
+    <select name="linea_producto" class="form-select form-select-sm select-producto" required aria-label="Seleccionar producto">
+      <option value="">-- Seleccionar producto --</option>
+      {% for prod in productos %}
+        <option value="{{ prod.id }}">{{ prod.codigo }} — {{ prod.nombre }}</option>
+      {% endfor %}
+    </select>
+  </td>
+  <td style="min-width: 100px; width: 120px;">
+    <input type="number" name="linea_cantidad" class="form-control form-control-sm text-end input-cantidad" min="1" value="1" required aria-label="Cantidad">
+  </td>
+  <td style="min-width: 120px; width: 140px;">
+    <input type="number" name="linea_costo" class="form-control form-control-sm text-end input-costo" step="0.01" min="0" placeholder="0.00" required aria-label="Costo unitario">
+  </td>
+  <td style="min-width: 130px; width: 150px;">
+    <input type="date" name="linea_vencimiento" class="form-control form-control-sm input-vencimiento" aria-label="Fecha de vencimiento opcional">
+  </td>
+  <td style="min-width: 110px; width: 130px;" class="text-end align-middle fw-semibold text-nowrap">
+    {{ MONEDA_SIMBOLO }} <span class="subtotal-linea">0.00</span>
+  </td>
+  <td style="width: 50px;" class="text-center align-middle">
+    <button type="button"
+            class="btn btn-outline-danger btn-sm py-0 px-2 btn-quitar-linea"
+            title="Quitar producto"
+            onclick="this.closest('tr').remove(); if(typeof recalcularTotales === 'function') recalcularTotales();"
+            aria-label="Quitar fila">
+      &times;
+    </button>
+  </td>
+</tr>

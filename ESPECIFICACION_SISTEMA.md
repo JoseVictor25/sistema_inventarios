@@ -1463,7 +1463,7 @@ Orden recomendado. La **caja va antes de la venta** porque no se puede vender si
 - [x] **Fase 1 — Base de datos:** `models.py` de todas las apps, migraciones, `admin.py`, comando `cargar_datos_iniciales` (roles, permisos, métodos de pago).
 - [x] **Fase 2 — Usuarios y roles:** pantallas de usuarios y roles, decorador `permiso_requerido`, variable `permisos` en las plantillas.
 - [ ] **Fase 3 — Catálogo:** categorías (árbol), productos, presentaciones, atributos y proveedores.
-- [ ] **Fase 4 — Compras y lotes:** registrar compra, generar lotes y movimientos de entrada.
+- [x] **Fase 4 — Compras y lotes:** registrar compra, generar lotes y movimientos de entrada.
 - [ ] **Fase 5 — Caja:** abrir, movimientos y cerrar con diferencia.
 - [ ] **Fase 6 — Venta (POS):** carrito, búsqueda, presentaciones, pagos, descuento por lotes (FEFO) y confirmar.
 - [ ] **Fase 7 — Inventario y alertas:** stock, lotes, ajustes, mermas, stock bajo y por vencer.
