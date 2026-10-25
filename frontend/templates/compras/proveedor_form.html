@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block contenido %}<h1 class="h3">{% if editando %}Editar{% else %}Crear{% endif %} proveedor</h1>
+<div class="card"><div class="card-body"><form method="post">{% csrf_token %}{{ form.as_p }}
+<button class="btn btn-primary" type="submit">Guardar proveedor</button>
+<a class="btn btn-outline-secondary" href="{% url 'compras:proveedor_lista' %}">Cancelar</a>
+</form></div></div>{% endblock %}

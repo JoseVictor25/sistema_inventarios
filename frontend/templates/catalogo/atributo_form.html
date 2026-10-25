@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block contenido %}<h1 class="h3">Editar atributo de {{ producto.nombre }}</h1>
+<div class="card"><div class="card-body"><form method="post">{% csrf_token %}{{ form.as_p }}
+<button class="btn btn-primary" type="submit">Guardar atributo</button>
+<a class="btn btn-outline-secondary" href="{% url 'catalogo:producto_detalle' producto.pk %}">Cancelar</a>
+</form></div></div>{% endblock %}

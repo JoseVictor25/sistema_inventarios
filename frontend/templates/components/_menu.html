@@ -44,9 +44,12 @@
       <li class="nav-item" role="listitem">
         <span class="nav-link text-muted pendiente" aria-disabled="true">Reportes</span>
       </li>
-      <li class="nav-item" role="listitem">
-        <span class="nav-link text-muted pendiente" aria-disabled="true">Catálogo</span>
-      </li>
+      {% if "gestionar_catalogo" in permisos %}
+      <li class="nav-item"><a class="nav-link{% if request.resolver_match.app_name == 'catalogo' %} active fw-bold{% endif %}" href="{% url 'catalogo:producto_lista' %}">Catálogo</a></li>
+      {% endif %}
+      {% if "gestionar_compras" in permisos %}
+      <li class="nav-item"><a class="nav-link{% if request.resolver_match.app_name == 'compras' %} active fw-bold{% endif %}" href="{% url 'compras:proveedor_lista' %}">Proveedores</a></li>
+      {% endif %}
 
       {% if "gestionar_usuarios" in permisos %}
       <li class="nav-item" role="listitem">

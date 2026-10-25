@@ -1,0 +1,15 @@
+<section id="presentaciones" class="card mb-3" aria-live="polite">
+<h2 class="h4 card-header">Presentaciones</h2><div class="card-body">
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+<div class="table-responsive"><table class="table align-middle"><thead><tr><th>Nombre</th><th>Unidades</th><th>Precio</th><th>Estado</th><th>Cambiar precio</th></tr></thead>
+<tbody>{% for presentacion in presentaciones %}<tr><td>{{ presentacion.nombre }}</td><td>{{ presentacion.unidades_equivalentes }}</td>
+<td class="text-nowrap">{{ MONEDA_SIMBOLO }} {{ presentacion.precio_venta|floatformat:2 }}</td><td>{% if presentacion.activa %}Activa{% else %}Inactiva{% endif %}</td>
+<td><form method="post" action="{% url 'catalogo:presentacion_precio' presentacion.pk %}" hx-post="{% url 'catalogo:presentacion_precio' presentacion.pk %}" hx-target="#presentaciones" hx-swap="outerHTML" class="d-flex gap-2">
+{% csrf_token %}<label class="visually-hidden" for="precio-{{ presentacion.pk }}">Nuevo precio de {{ presentacion.nombre }}</label>
+<input class="form-control" style="min-width:8rem" id="precio-{{ presentacion.pk }}" name="precio_venta" type="number" min="0" step="0.01" required>
+<button class="btn btn-outline-primary" type="submit">Guardar precio</button></form></td></tr>
+{% empty %}<tr><td colspan="5">Sin presentaciones. Completa el producto desde Editar.</td></tr>{% endfor %}</tbody></table></div>
+<details{% if form.errors %} open{% endif %}><summary class="mb-3">Agregar presentación</summary>
+<form method="post" action="{% url 'catalogo:presentacion_crear' producto.pk %}" hx-post="{% url 'catalogo:presentacion_crear' producto.pk %}" hx-target="#presentaciones" hx-swap="outerHTML">
+{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary" type="submit">Agregar presentación</button></form></details>
+</div></section>

@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block contenido %}
+<h1 class="h3">{% if editando %}Editar{% else %}Crear{% endif %} categoría</h1>
+<p class="text-muted">Cambia la categoría padre para moverla. Deja el campo vacío para ubicarla en la raíz. El estado no se propaga a otras categorías ni productos.</p>
+<div class="card"><div class="card-body"><form method="post">{% csrf_token %}
+{{ form.as_p }}<button class="btn btn-primary" type="submit">Guardar categoría</button>
+<a class="btn btn-outline-secondary" href="{% url 'catalogo:categoria_lista' %}">Cancelar</a>
+</form></div></div>
+{% endblock %}

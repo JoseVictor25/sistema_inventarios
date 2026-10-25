@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block titulo %}Categorías · {{ NOMBRE_NEGOCIO }}{% endblock %}
+{% block contenido %}
+<div class="d-flex flex-wrap gap-2 justify-content-between mb-3"><h1 class="h3">Categorías</h1>
+<div><a class="btn btn-outline-secondary" href="{% url 'catalogo:producto_lista' %}">Ver productos</a>
+<a class="btn btn-primary" href="{% url 'catalogo:categoria_crear' %}">Crear categoría</a></div></div>
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+<div class="card"><div class="card-body">
+{% include 'catalogo/partials/_arbol.html' with nodos=categorias %}
+</div></div>
+{% endblock %}

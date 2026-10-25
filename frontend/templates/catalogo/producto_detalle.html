@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block contenido %}
+<div class="d-flex flex-wrap justify-content-between gap-2 mb-3"><h1 class="h3 text-break">{{ producto.nombre }}</h1>
+<a class="btn btn-outline-secondary" href="{% url 'catalogo:producto_lista' %}">Volver a productos</a></div>
+<div class="card mb-3"><div class="card-body">
+<dl class="row"><dt class="col-sm-3">Código</dt><dd class="col-sm-9">{{ producto.codigo }}</dd>
+<dt class="col-sm-3">Categoría</dt><dd class="col-sm-9">{{ producto.categoria }}</dd>
+<dt class="col-sm-3">Descripción</dt><dd class="col-sm-9 text-break">{{ producto.descripcion|default:'—' }}</dd>
+<dt class="col-sm-3">Stock actual</dt><dd class="col-sm-9">{{ stock_actual }} unidades</dd>
+<dt class="col-sm-3">Stock mínimo</dt><dd class="col-sm-9">{{ producto.stock_minimo }} unidades</dd>
+<dt class="col-sm-3">Estado</dt><dd class="col-sm-9">{% if producto.activo %}Activo{% else %}Inactivo{% endif %}</dd></dl>
+<div class="d-flex flex-wrap gap-2"><a class="btn btn-primary" href="{% url 'catalogo:producto_editar' producto.pk %}">Editar producto</a>
+{% if producto.activo %}<form method="post" action="{% url 'catalogo:producto_desactivar' producto.pk %}">{% csrf_token %}
+<button class="btn btn-outline-danger" type="submit">Desactivar producto</button></form>{% endif %}</div>
+</div></div>
+{% include 'catalogo/partials/_presentaciones.html' with form=form_presentacion %}
+{% include 'catalogo/partials/_atributos.html' with form=form_atributo %}
+<section class="card mb-3"><h2 class="h4 card-header">Lotes existentes</h2><div class="table-responsive">
+<table class="table mb-0"><thead><tr><th>Lote</th><th>Vencimiento</th><th>Unidades</th>{% if 'ver_costos' in permisos %}<th>Costo unitario</th>{% endif %}</tr></thead>
+<tbody>{% for lote in lotes %}<tr><td>{{ lote.codigo_lote }}</td><td>{{ lote.fecha_vencimiento|default:'Sin vencimiento' }}</td><td>{{ lote.cantidad_actual }}</td>
+{% if 'ver_costos' in permisos %}<td>{{ MONEDA_SIMBOLO }} {{ lote.costo_unitario|floatformat:2 }}</td>{% endif %}</tr>
+{% empty %}<tr><td colspan="4">No hay lotes registrados.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

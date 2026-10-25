@@ -2,6 +2,10 @@
 
 Fecha de verificación: 2026-10-24.
 
+Nota de continuidad: el usuario confirmó la fase 2 completada al iniciar y
+autorizar la fase 3. Se conserva a continuación la evidencia histórica de esta
+verificación, incluida su limitación visual; no se atribuyen inspecciones nuevas.
+
 **Resultado funcional: implementado y aprobado en pruebas automatizadas. Cierre
 visual final pendiente.** Las funcionalidades obligatorias están implementadas y
 las 106 pruebas automatizadas pasaron. No hay migraciones nuevas ni pendientes.

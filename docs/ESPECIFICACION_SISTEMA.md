@@ -991,6 +991,53 @@ Las entradas de módulos aún vacíos se conservan deshabilitadas, sin inventar 
 | Agregar presentación (HTMX) | `POST /catalogo/productos/<int:pk>/presentaciones/nueva/` | `catalogo:presentacion_crear` | `catalogo/partials/_presentaciones.html` → `#presentaciones` | `presentaciones`, `form` |
 | Cambiar precio (HTMX) | `POST /catalogo/presentaciones/<int:pk>/precio/` | `catalogo:presentacion_precio` | `catalogo/partials/_presentaciones.html` → `#presentaciones` | `presentaciones`, `error` |
 | Agregar atributo (HTMX) | `POST /catalogo/productos/<int:pk>/atributos/nuevo/` | `catalogo:atributo_crear` | `catalogo/partials/_atributos.html` → `#atributos` | `atributos`, `form` |
+| Editar atributo | `/catalogo/productos/<int:pk>/atributos/<int:atributo_pk>/editar/` (GET/POST) | `catalogo:atributo_editar` | `catalogo/atributo_form.html` | `form`, `producto` |
+
+### Precisiones de implementación de fase 3
+
+- Las pantallas administrativas de catálogo exigen `gestionar_catalogo`, también
+  sus consultas; proveedores exige `gestionar_compras`. No se conceden permisos
+  nuevos al Vendedor. Las escrituras y los servicios de consulta verifican permisos.
+- `mover_categoria(categoria, nuevo_padre, *, usuario)` exige actor para autorizar
+  la llamada directa. Crear/editar categoría usa `guardar_categoria`; su validación
+  recorre ancestros persistidos con nodos visitados, incluso ante ciclos previos.
+- `categorias` en el árbol contiene nodos `{categoria, hijos}` preparados por el
+  servicio, sin consultas recursivas desde HTML. Los cambios de estado no se propagan.
+- El filtro de productos admite `q` (código/nombre), `categoria` exacta y la pareja
+  opcional `atributo`/`valor` exactos, sobre el mismo atributo. No se incluyen
+  descendientes implícitamente. Paginación de 20 elementos con filtros conservados;
+  contexto adicional `form_filtros`, `filtros_query`. No se cambia la unicidad por
+  mayúsculas o acentos respecto de los modelos existentes.
+- `crear_producto` guarda producto y presentaciones atómicamente; `editar_producto`
+  exige conservar todas las presentaciones existentes y rechaza IDs ajenos,
+  duplicados, omisiones o traslados. El formset permite altas y edición, sin borrado.
+  Ningún nombre de presentación ni presentación activa adicional es obligatorio.
+- Se exige categoría activa al crear o cambiar de categoría; se permite conservar
+  la categoría inactiva ya asignada al editar. No se altera stock desde estos formularios.
+- Todo cambio de precio pasa por `cambiar_precio`, incluido el formset. Se relee el
+  anterior persistido y se actualiza condicionalmente, con `LogAuditoria` en la misma
+  transacción. JSON anterior/nuevo usa `precio_venta` como texto decimal de dos
+  posiciones. Reenviar el mismo precio no crea un cambio ficticio. Los conflictos
+  de bloqueo SQLite devuelven un mensaje para recargar e intentar nuevamente.
+- `guardar_atributo` crea/edita exclusivamente nombre y valor, comprobando producto.
+  `guardar_proveedor` crea/edita los campos comerciales existentes y asigna auditoría.
+  No se ofrecen eliminaciones ni compras. El detalle del producto muestra lotes
+  existentes; los costos se proyectan al contexto solo con `ver_costos`.
+- Los parciales reciben además `producto`; errores de validación HTMX responden
+  422. El detalle añade `form_presentacion` y `form_atributo`. Los IDs
+  `#presentaciones` y `#atributos` se conservan mediante reemplazo `outerHTML`.
+- Admin técnico: catálogo y proveedores quedan de consulta, incluidos inlines y
+  POST directos. Las escrituras se centralizan en las pantallas ordinarias y sus
+  servicios para no omitir RN-03 ni la bitácora. Se reutiliza `SoloLecturaAdminMixin`.
+- No se crean tablas ni migraciones. Solo se endurece `Categoria.clean()` sin
+  cambios de esquema. Archivos compartidos nuevos: `core/operaciones.py` para
+  autorización y transacciones; `auditoria/services.py` implementa el registro mínimo
+  ya previsto en §15. No se implementa la pantalla de bitácora de fase 9.
+- Nuevos archivos: formularios de catálogo/proveedores; plantillas de §9.3/9.4,
+  `catalogo/partials/_arbol.html`, `components/_paginacion.html`,
+  `frontend/static/js/catalogo.js`, `catalogo/tests/test_fase3.py` y
+  `scripts/verificar_catalogo_fase3.py`. Resultados reales y límites en
+  `docs/FASE_3_RESULTADOS.md`.
 
 ### 9.4 Compras (`compras`)
 

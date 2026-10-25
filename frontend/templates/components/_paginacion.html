@@ -1,0 +1,6 @@
+{% if page_obj and page_obj.has_other_pages %}
+<nav aria-label="Paginación" class="d-flex flex-wrap gap-3 mt-3">
+{% if page_obj.has_previous %}<a href="?{{ filtros_query }}&amp;page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}
+<span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+{% if page_obj.has_next %}<a href="?{{ filtros_query }}&amp;page={{ page_obj.next_page_number }}">Siguiente</a>{% endif %}
+</nav>{% endif %}

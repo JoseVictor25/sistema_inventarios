@@ -53,15 +53,16 @@ class Categoria(models.Model):
         """RN-18: detecta ciclos en la jerarquía de categorías."""
         from django.core.exceptions import ValidationError
 
-        if self.pk is None:
-            return
-        ancestro = self.padre
-        while ancestro is not None:
-            if ancestro.pk == self.pk:
+        visitados = {self.pk} if self.pk is not None else set()
+        ancestro_id = self.padre_id
+        while ancestro_id is not None:
+            if ancestro_id in visitados:
                 raise ValidationError(
                     "Una categoría no puede ser su propia ancestra (RN-18)."
                 )
-            ancestro = ancestro.padre
+            visitados.add(ancestro_id)
+            # Consultar el estado persistido, no relaciones cacheadas de instancias.
+            ancestro_id = Categoria.objects.filter(pk=ancestro_id).values_list("padre_id", flat=True).first()
 
 
 class Producto(EntidadAuditable):

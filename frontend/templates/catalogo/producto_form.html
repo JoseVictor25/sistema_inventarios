@@ -1,0 +1,23 @@
+{% extends 'base.html' %}{% load static %}
+{% block contenido %}
+<h1 class="h3">{% if editando %}Editar{% else %}Crear{% endif %} producto</h1>
+<form method="post">{% csrf_token %}
+<div class="card mb-3"><div class="card-body">{{ form.as_p }}</div></div>
+<h2 class="h4">Presentaciones</h2><p>Agrega al menos una presentación. Cada equivalencia indica unidades de este producto. Los cambios de precio quedan registrados.</p>
+{{ formset_presentaciones.management_form }}
+<div class="text-danger" role="alert">{{ formset_presentaciones.non_form_errors }}</div>
+<div id="formularios-presentaciones">
+{% for formulario in formset_presentaciones %}
+<fieldset class="card mb-3"><legend class="h6 card-header">Presentación {{ forloop.counter }}</legend>
+<div class="card-body">{{ formulario.as_p }}</div></fieldset>
+{% endfor %}
+</div>
+<template id="presentacion-vacia"><fieldset class="card mb-3"><legend class="h6 card-header">Nueva presentación</legend>
+<div class="card-body">{{ formset_presentaciones.empty_form.as_p }}</div></fieldset></template>
+<div class="d-flex flex-wrap gap-2">
+<button class="btn btn-outline-primary" id="agregar-formulario-presentacion" type="button">Agregar otra presentación</button>
+<button class="btn btn-primary" type="submit">Guardar producto</button>
+<a class="btn btn-outline-secondary" href="{% url 'catalogo:producto_lista' %}">Cancelar</a></div>
+</form>
+{% endblock %}
+{% block js %}<script src="{% static 'js/catalogo.js' %}"></script>{% endblock %}

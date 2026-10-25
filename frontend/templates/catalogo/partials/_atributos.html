@@ -1,0 +1,10 @@
+<section id="atributos" class="card mb-3" aria-live="polite"><h2 class="h4 card-header">Atributos</h2><div class="card-body">
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+<div class="table-responsive"><table class="table"><thead><tr><th>Nombre</th><th>Valor</th><th>Acciones</th></tr></thead>
+<tbody>{% for atributo in atributos %}<tr><td>{{ atributo.nombre }}</td><td class="text-break">{{ atributo.valor }}</td>
+<td><a href="{% url 'catalogo:atributo_editar' producto.pk atributo.pk %}">Editar atributo</a></td></tr>
+{% empty %}<tr><td colspan="3">Sin atributos registrados.</td></tr>{% endfor %}</tbody></table></div>
+<details{% if form.errors %} open{% endif %}><summary class="mb-3">Agregar atributo</summary>
+<form method="post" action="{% url 'catalogo:atributo_crear' producto.pk %}" hx-post="{% url 'catalogo:atributo_crear' producto.pk %}" hx-target="#atributos" hx-swap="outerHTML">
+{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary" type="submit">Agregar atributo</button></form></details>
+</div></section>

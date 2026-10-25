@@ -16,7 +16,7 @@ class DetalleCompraInline(SoloLecturaAdminMixin, admin.TabularInline):
 
 
 @admin.register(Proveedor)
-class ProveedorAdmin(admin.ModelAdmin):
+class ProveedorAdmin(SoloLecturaAdminMixin, admin.ModelAdmin):
     list_display = ["nombre", "tipo", "telefono", "origen", "activo"]
     list_filter = ["tipo", "activo"]
     search_fields = ["nombre", "contacto", "telefono"]
