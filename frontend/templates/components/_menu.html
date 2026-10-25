@@ -26,12 +26,24 @@
            href="{% url 'core:inicio' %}">Inicio</a>
       </li>
 
-      {# Módulos pendientes agrupados en un ítem con tooltip #}
+      {% if "vender" in permisos %}
       <li class="nav-item" role="listitem">
-        <span class="nav-link text-muted pendiente" aria-disabled="true" title="Módulos disponibles en fases próximas">
+        <a class="nav-link{% if request.resolver_match.app_name == 'ventas' and request.resolver_match.url_name == 'pos' %} active fw-bold{% endif %}"
+           {% if request.resolver_match.app_name == 'ventas' and request.resolver_match.url_name == 'pos' %}aria-current="page"{% endif %}
+           href="{% url 'ventas:pos' %}">Venta</a>
+      </li>
+      <li class="nav-item" role="listitem">
+        <a class="nav-link{% if request.resolver_match.app_name == 'ventas' and request.resolver_match.url_name != 'pos' %} active fw-bold{% endif %}"
+           {% if request.resolver_match.app_name == 'ventas' and request.resolver_match.url_name != 'pos' %}aria-current="page"{% endif %}
+           href="{% url 'ventas:lista' %}">Historial de ventas</a>
+      </li>
+      {% else %}
+      <li class="nav-item" role="listitem">
+        <span class="nav-link text-muted pendiente" aria-disabled="true" title="Módulo requiere permiso para vender">
           Venta
         </span>
       </li>
+      {% endif %}
       {% if "gestionar_caja" in permisos %}
       <li class="nav-item"><a class="nav-link" href="{% url 'caja:estado' %}">Caja</a></li>
       {% endif %}

@@ -1,0 +1,48 @@
+<div id="carrito" class="card shadow-sm border" aria-label="Venta confirmada">
+  <div class="card-header bg-success text-white py-2 text-center">
+    <h3 class="h6 mb-0 fw-bold">✓ Venta registrada con éxito</h3>
+  </div>
+
+  <div class="card-body p-4 text-center">
+    <div class="mb-3">
+      <div class="fs-1 text-success mb-2">✓</div>
+      <h4 class="fw-bold text-dark mb-1">Venta #{{ venta.pk }}</h4>
+      <p class="text-muted small mb-0">
+        {{ venta.fecha|date:"d/m/Y H:i" }} · Turno #{{ venta.caja.pk }}
+      </p>
+    </div>
+
+    <div class="card bg-light border-0 p-3 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="text-secondary">Total cobrado:</span>
+        <span class="fs-4 fw-bold text-success">
+          {{ MONEDA_SIMBOLO }} {{ venta.total|floatformat:2 }}
+        </span>
+      </div>
+      <div class="text-muted small text-start">
+        {% for p in venta.pagos.all %}
+          <div>
+            {{ p.metodo.nombre }}: {{ MONEDA_SIMBOLO }} {{ p.monto|floatformat:2 }}
+            {% if p.referencia %}
+              <span class="text-secondary">({{ p.referencia }})</span>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="d-flex flex-column gap-2">
+      <button type="button"
+              class="btn btn-primary"
+              id="btn-nueva-venta"
+              hx-post="{% url 'ventas:carrito_vaciar' %}"
+              hx-target="#carrito"
+              hx-swap="outerHTML">
+        + Nueva venta
+      </button>
+      <a href="{% url 'ventas:detalle' venta.pk %}" class="btn btn-outline-secondary btn-sm" id="btn-ver-detalle-venta">
+        Ver comprobante / detalle
+      </a>
+    </div>
+  </div>
+</div>

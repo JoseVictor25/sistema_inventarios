@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block titulo %}Venta #{{ venta.pk }} — {{ NOMBRE_NEGOCIO }}{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+      <h1 class="h4 mb-0 fw-bold">Venta #{{ venta.pk }}</h1>
+      <span class="text-muted small">Detalle inmutable de la transacción</span>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'ventas:lista' %}" class="btn btn-outline-secondary btn-sm">
+        ← Volver al listado
+      </a>
+      <a href="{% url 'ventas:pos' %}" class="btn btn-primary btn-sm">
+        + Nueva venta
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    {# Información de cabecera #}
+    <div class="col-12 col-md-4">
+      <div class="card shadow-sm border mb-3">
+        <div class="card-header bg-body-tertiary py-2">
+          <h2 class="h6 mb-0 fw-bold">Datos de la venta</h2>
+        </div>
+        <div class="card-body p-3">
+          <dl class="row mb-0 small">
+            <dt class="col-5 text-muted">Fecha y hora:</dt>
+            <dd class="col-7 text-end fw-semibold">{{ venta.fecha|date:"d/m/Y H:i:s" }}</dd>
+
+            <dt class="col-5 text-muted">Vendedor:</dt>
+            <dd class="col-7 text-end">{{ venta.usuario.get_username }}</dd>
+
+            <dt class="col-5 text-muted">Turno de caja:</dt>
+            <dd class="col-7 text-end">Turno #{{ venta.caja.id }}</dd>
+
+            <dt class="col-5 text-muted border-top pt-2">Total:</dt>
+            <dd class="col-7 text-end border-top pt-2 fs-5 fw-bold text-primary">
+              {{ MONEDA_SIMBOLO }} {{ venta.total|floatformat:2 }}
+            </dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border">
+        <div class="card-header bg-body-tertiary py-2">
+          <h2 class="h6 mb-0 fw-bold">Pagos aplicados</h2>
+        </div>
+        <div class="card-body p-0">
+          <ul class="list-group list-group-flush small">
+            {% for pago in pagos %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="fw-semibold">{{ pago.metodo.nombre }}</span>
+                  {% if pago.referencia %}
+                    <br><span class="text-muted small">Ref: {{ pago.referencia }}</span>
+                  {% endif %}
+                </div>
+                <span class="fw-bold text-nowrap">
+                  {{ MONEDA_SIMBOLO }} {{ pago.monto|floatformat:2 }}
+                </span>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    {# Productos vendidos y lotes asignados #}
+    <div class="col-12 col-md-8">
+      <div class="card shadow-sm border">
+        <div class="card-header bg-body-tertiary py-2">
+          <h2 class="h6 mb-0 fw-bold">Líneas de venta y trazabilidad FEFO</h2>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="tabla-detalles-venta">
+              <thead class="table-light">
+                <tr>
+                  <th scope="col">Producto y presentación</th>
+                  <th scope="col" class="text-center">Cant.</th>
+                  <th scope="col" class="text-center">Unidades</th>
+                  <th scope="col" class="text-end">Precio aplicado</th>
+                  <th scope="col" class="text-end">Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for d in detalles %}
+                  <tr>
+                    <td>
+                      <div class="fw-semibold">{{ d.presentacion.producto.nombre }}</div>
+                      <div class="text-muted small">{{ d.presentacion.nombre }} ({{ d.presentacion.unidades_equivalentes }} u./pres.)</div>
+                    </td>
+                    <td class="text-center fw-medium">{{ d.cantidad_presentaciones }}</td>
+                    <td class="text-center text-muted">{{ d.unidades_totales }} u.</td>
+                    <td class="text-end">{{ MONEDA_SIMBOLO }} {{ d.precio_aplicado|floatformat:2 }}</td>
+                    <td class="text-end fw-bold">{{ MONEDA_SIMBOLO }} {{ d.subtotal|floatformat:2 }}</td>
+                  </tr>
+                  {# Subfila de lotes FEFO #}
+                  <tr class="bg-light">
+                    <td colspan="5" class="py-1 px-4 small border-bottom">
+                      <span class="text-secondary fw-semibold">Lotes descontados:</span>
+                      {% for salida in d.salidas_lote.all %}
+                        <span class="badge bg-secondary-subtle text-secondary-emphasis border ms-2">
+                          {{ salida.lote.codigo_lote }}: {{ salida.cantidad_unidades }} u.
+                          {% if "ver_costos" in permisos %}
+                            (costo: {{ MONEDA_SIMBOLO }} {{ salida.lote.costo_unitario|floatformat:2 }})
+                          {% endif %}
+                        </span>
+                      {% empty %}
+                        <span class="text-muted ms-2">Sin registro de lote</span>
+                      {% endfor %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

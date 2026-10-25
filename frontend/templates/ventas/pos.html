@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block titulo %}Venta (POS) — {{ NOMBRE_NEGOCIO }}{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid px-0">
+  {# Barra de estado del turno de caja #}
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+      <h1 class="h4 mb-0 fw-bold">Punto de venta (POS)</h1>
+      <span class="text-muted small">Atención al cliente y facturación de mostrador</span>
+    </div>
+
+    <div>
+      {% if caja %}
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fs-6" id="badge-caja-estado">
+          ● Turno abierto desde las {{ caja.fecha_apertura|date:"H:i" }}
+        </span>
+      {% else %}
+        <div class="alert alert-warning py-1 px-3 mb-0 d-flex align-items-center gap-2 small" role="alert" id="alerta-caja-cerrada">
+          <span>⚠ Sin turno de caja abierto.</span>
+          {% if "gestionar_caja" in permisos %}
+            <a href="{% url 'caja:estado' %}" class="btn btn-warning btn-sm py-0">Abrir turno</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Cuadrícula principal de 2 columnas #}
+  <div class="row g-3">
+    {# Columna izquierda: Búsqueda y lista de productos #}
+    <div class="col-12 col-md-6 col-lg-5">
+      <div class="card shadow-sm border h-100">
+        <div class="card-header bg-body-tertiary py-2">
+          <h2 class="h6 mb-0 fw-bold">Catálogo de productos</h2>
+        </div>
+        <div class="card-body p-3 d-flex flex-column">
+          <div class="mb-3">
+            <label for="q" class="visually-hidden">Buscar producto</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white">🔍</span>
+              <input type="text"
+                     id="q"
+                     name="q"
+                     class="form-control"
+                     placeholder="Buscar por código o nombre (lector o teclado)..."
+                     autocomplete="off"
+                     hx-get="{% url 'ventas:buscar' %}"
+                     hx-trigger="keyup changed delay:200ms, search"
+                     hx-target="#lista-productos"
+                     aria-label="Buscar producto">
+            </div>
+          </div>
+
+          <div class="flex-grow-1" style="max-height: 540px; overflow-y: auto;">
+            {% include "ventas/partials/_lista_productos.html" %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# Columna derecha: Carrito de ventas #}
+    <div class="col-12 col-md-6 col-lg-7">
+      {% include "ventas/partials/_carrito.html" %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/pos.js' %}"></script>
+{% endblock %}

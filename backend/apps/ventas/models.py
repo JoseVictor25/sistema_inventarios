@@ -30,6 +30,7 @@ Reglas que implementan los servicios (§8.1) — Fase 6:
     Estas reglas NO tienen CheckConstraint en BD; se documentan aquí para referencia.
 """
 from django.conf import settings
+from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
@@ -234,3 +235,37 @@ class Pago(models.Model):
 
     def __str__(self):
         return f"{self.metodo} {self.monto}"
+
+
+class OperacionVenta(models.Model):
+    """Resultado persistente de una solicitud de venta, reservado dentro de su transacción."""
+
+    clave = models.UUIDField(unique=True, editable=False)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="operaciones_venta",
+    )
+    huella = models.CharField(
+        max_length=64,
+        validators=[RegexValidator(r"^[0-9a-f]{64}$")],
+    )
+    venta = models.ForeignKey(
+        Venta,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="operaciones",
+    )
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-creado_en", "-pk"]
+        verbose_name = "operación de venta"
+        verbose_name_plural = "operaciones de venta"
+        indexes = [
+            models.Index(fields=["usuario", "-creado_en"], name="operacion_venta_usuario_fecha"),
+        ]
+
+    def __str__(self):
+        return f"Operación Venta {self.clave} — {self.usuario}"

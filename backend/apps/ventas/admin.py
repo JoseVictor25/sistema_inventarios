@@ -3,7 +3,7 @@ from django.contrib import admin
 
 from apps.core.admin import SoloLecturaAdminMixin
 
-from .models import DetalleVenta, DetalleVentaLote, MetodoPago, Pago, Venta
+from .models import DetalleVenta, DetalleVentaLote, MetodoPago, OperacionVenta, Pago, Venta
 
 
 class DetalleVentaInline(SoloLecturaAdminMixin, admin.TabularInline):
@@ -81,6 +81,16 @@ class PagoAdmin(SoloLecturaAdminMixin, admin.ModelAdmin):
     list_display = ["id", "venta", "metodo", "monto", "referencia"]
     list_filter = ["metodo"]
     search_fields = ["venta__id", "referencia"]
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(OperacionVenta)
+class OperacionVentaAdmin(SoloLecturaAdminMixin, admin.ModelAdmin):
+    list_display = ["id", "clave", "usuario", "venta", "creado_en"]
+    list_filter = ["creado_en"]
+    search_fields = ["clave", "usuario__username", "venta__id"]
 
     def has_delete_permission(self, request, obj=None):
         return False

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block titulo %}Ventas del día — {{ NOMBRE_NEGOCIO }}{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+      <h1 class="h4 mb-0 fw-bold">Ventas del día</h1>
+      <span class="text-muted small">Registro inmutable de transacciones completadas</span>
+    </div>
+
+    <div class="d-flex gap-2 align-items-center">
+      <span class="fs-6 text-secondary me-2">Total del día: <strong class="fs-5 text-success">{{ MONEDA_SIMBOLO }} {{ total_dia|floatformat:2 }}</strong></span>
+      <a href="{% url 'ventas:pos' %}" class="btn btn-primary btn-sm" id="btn-ir-pos">
+        + Nueva venta
+      </a>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="tabla-ventas">
+          <thead class="table-light">
+            <tr>
+              <th scope="col" style="width: 90px;">N° Venta</th>
+              <th scope="col">Hora</th>
+              <th scope="col">Vendedor</th>
+              <th scope="col">Turno</th>
+              <th scope="col">Métodos de pago</th>
+              <th scope="col" class="text-end">Total</th>
+              <th scope="col" class="text-center" style="width: 110px;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for venta in page_obj %}
+              <tr>
+                <td class="fw-bold">#{{ venta.id }}</td>
+                <td class="text-nowrap">{{ venta.fecha|date:"H:i:s" }}</td>
+                <td>{{ venta.usuario.get_username }}</td>
+                <td>Turno #{{ venta.caja.id }}</td>
+                <td>
+                  {% for p in venta.pagos.all %}
+                    <span class="badge bg-light text-dark border me-1">
+                      {{ p.metodo.nombre }}: {{ MONEDA_SIMBOLO }} {{ p.monto|floatformat:2 }}
+                    </span>
+                  {% endfor %}
+                </td>
+                <td class="text-end fw-bold text-nowrap">
+                  {{ MONEDA_SIMBOLO }} {{ venta.total|floatformat:2 }}
+                </td>
+                <td class="text-center">
+                  <a href="{% url 'ventas:detalle' venta.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-2">
+                    Ver detalle
+                  </a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" class="text-center text-muted py-4">
+                  No hay ventas registradas en el día de hoy.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+      <div class="card-footer bg-white border-top py-2 px-3">
+        {% include "components/_paginacion.html" %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+<div id="lista-productos" class="d-flex flex-column gap-2" role="region" aria-label="Lista de productos disponibles">
+  {% for p in productos %}
+    <div class="card p-2 shadow-sm border {% if p.sin_stock %}opacity-50 bg-light{% endif %}" id="prod-{{ p.id }}">
+      <div class="d-flex justify-content-between align-items-start gap-2">
+        <div class="flex-grow-1">
+          <div class="fw-semibold text-truncate" style="max-width: 280px;" title="{{ p.nombre }}">
+            {{ p.nombre }}
+          </div>
+          <div class="text-muted small">
+            {{ p.categoria.nombre }} · {{ p.codigo }}
+          </div>
+          <div class="text-secondary small mt-1">
+            <span class="fw-medium">{{ p.stock_total }} u.</span> en stock
+            {% if p.presentacion_defecto %}
+              · desde <strong>{{ MONEDA_SIMBOLO }} {{ p.presentacion_defecto.precio_venta|floatformat:2 }}</strong>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="d-flex flex-column align-items-end gap-1">
+          {% if p.sin_stock %}
+            <span class="badge bg-secondary">Sin stock</span>
+          {% else %}
+            {% if p.stock_bajo %}
+              <span class="badge bg-danger">Stock bajo</span>
+            {% endif %}
+            {% if p.vence_pronto %}
+              <span class="badge bg-warning text-dark">Vence pronto</span>
+            {% endif %}
+            {% if p.presentacion_defecto %}
+              <button type="button"
+                      class="btn btn-outline-primary btn-sm btn-agregar-producto mt-1"
+                      hx-post="{% url 'ventas:carrito_agregar' %}"
+                      hx-vals='{"presentacion_id": "{{ p.presentacion_defecto.id }}"}'
+                      hx-target="#carrito"
+                      hx-swap="outerHTML"
+                      aria-label="Agregar {{ p.nombre }}">
+                + Agregar
+              </button>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <div class="alert alert-secondary text-center py-4 mb-0" role="status">
+      No se encontraron productos con ese criterio.
+    </div>
+  {% endfor %}
+</div>
