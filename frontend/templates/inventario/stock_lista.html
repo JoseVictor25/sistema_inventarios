@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block titulo %}Inventario{% endblock %}
+{% block contenido %}
+<h1 class="h3">Inventario por producto</h1>
+{% include 'inventario/_navegacion.html' %}
+<p>Existencias en unidades base. El stock físico incluye lotes vencidos; el disponible incluye únicamente lotes vigentes o sin vencimiento. La venta también exige producto y presentación activos.</p>
+{% include 'inventario/_filtros.html' %}
+{% include 'inventario/_stock_tabla.html' with productos=page_obj %}
+{% include 'components/_paginacion.html' %}
+{% endblock %}

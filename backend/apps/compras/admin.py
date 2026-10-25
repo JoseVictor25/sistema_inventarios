@@ -1,12 +1,12 @@
 """Admin de compras: Proveedor, Compra y DetalleCompra."""
 from django.contrib import admin
 
-from apps.core.admin import SoloLecturaAdminMixin
+from apps.core.admin import SoloLecturaAdminMixin, ConsultaCostosAdminMixin
 
 from .models import Compra, DetalleCompra, Proveedor
 
 
-class DetalleCompraInline(SoloLecturaAdminMixin, admin.TabularInline):
+class DetalleCompraInline(ConsultaCostosAdminMixin, SoloLecturaAdminMixin, admin.TabularInline):
     model = DetalleCompra
     extra = 0
     fields = ["producto", "cantidad_unidades", "costo_unitario", "subtotal"]
@@ -23,7 +23,7 @@ class ProveedorAdmin(SoloLecturaAdminMixin, admin.ModelAdmin):
 
 
 @admin.register(Compra)
-class CompraAdmin(SoloLecturaAdminMixin, admin.ModelAdmin):
+class CompraAdmin(ConsultaCostosAdminMixin, SoloLecturaAdminMixin, admin.ModelAdmin):
     list_display = ["id", "proveedor", "fecha", "total", "usuario"]
     list_filter = ["fecha", "proveedor"]
     search_fields = ["proveedor__nombre", "observacion"]
@@ -35,7 +35,7 @@ class CompraAdmin(SoloLecturaAdminMixin, admin.ModelAdmin):
 
 
 @admin.register(DetalleCompra)
-class DetalleCompraAdmin(SoloLecturaAdminMixin, admin.ModelAdmin):
+class DetalleCompraAdmin(ConsultaCostosAdminMixin, SoloLecturaAdminMixin, admin.ModelAdmin):
     list_display = ["compra", "producto", "cantidad_unidades", "costo_unitario", "subtotal"]
     search_fields = ["compra__id", "producto__nombre"]
 

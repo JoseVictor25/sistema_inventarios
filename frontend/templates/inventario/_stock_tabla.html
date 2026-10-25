@@ -1,0 +1,9 @@
+<div class="table-responsive"><table class="table table-striped align-middle">
+<thead><tr><th>Producto</th><th>Físico</th><th>Disponible</th><th>Mínimo</th><th>Estado</th><th>Lotes</th></tr></thead><tbody>
+{% for producto in productos %}<tr>
+<td style="overflow-wrap:anywhere">{{ producto.nombre }} <small class="d-block text-muted">{{ producto.codigo }} · {{ producto.categoria__nombre }}</small>{% if not producto.activo %}<span class="badge text-bg-secondary">Inactivo</span>{% endif %}</td>
+<td>{{ producto.stock_actual }}</td><td>{{ producto.stock_disponible }}</td><td>{{ producto.stock_minimo }}</td>
+<td>{% if producto.stock_actual == 0 %}<span class="badge text-bg-danger">Sin stock</span>{% endif %}{% if producto.stock_actual <= producto.stock_minimo %}<span class="badge text-bg-warning">Stock bajo</span>{% else %}<span class="badge text-bg-success">Sobre el mínimo</span>{% endif %}</td>
+<td><a href="{% url 'inventario:lote_lista' %}?producto={{ producto.id }}">Ver lotes</a></td>
+</tr>{% empty %}<tr><td colspan="6">No hay productos para esta consulta.</td></tr>{% endfor %}
+</tbody></table></div>

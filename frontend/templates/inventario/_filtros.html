@@ -1,0 +1,8 @@
+<form method="get" class="card card-body mb-3">
+{{ form.non_field_errors }}
+<div class="row g-3 align-items-end">
+{% for campo in form %}{% if campo.is_hidden %}{% if campo.name != 'page' %}{{ campo }}{{ campo.errors }}{% endif %}{% else %}
+<div class="col-12 col-md-4"><label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}{{ campo.errors }}</div>
+{% endif %}{% endfor %}
+<div class="col-12"><button class="btn btn-primary">Filtrar</button></div>
+</div></form>

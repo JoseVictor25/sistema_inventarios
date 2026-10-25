@@ -21,6 +21,7 @@ Restricciones que requieren servicio transaccional (documentadas aquí, §6.1):
     - Consistencia entre movimiento.tipo y el signo de cantidad → services.py
 """
 from django.conf import settings
+from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models import F, Q
 
@@ -146,3 +147,60 @@ class MovimientoInventario(models.Model):
 
     def __str__(self):
         return f"{self.tipo} {self.cantidad:+d} — {self.lote}"
+
+
+class OperacionAjusteInventario(models.Model):
+    """Resultado persistente de un ajuste o merma, reservado dentro de su transacción."""
+
+    class TipoOperacion(models.TextChoices):
+        AJUSTE = "AJUSTE", "Ajuste"
+        MERMA = "MERMA", "Merma"
+
+    clave = models.UUIDField(unique=True, editable=False)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="operaciones_ajuste",
+    )
+    lote = models.ForeignKey(
+        Lote,
+        on_delete=models.PROTECT,
+        related_name="operaciones_ajuste",
+    )
+    tipo = models.CharField(max_length=10, choices=TipoOperacion.choices)
+    huella = models.CharField(
+        max_length=64,
+        validators=[RegexValidator(r"^[0-9a-f]{64}$")],
+    )
+    movimiento = models.ForeignKey(
+        MovimientoInventario,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="operaciones_ajuste",
+    )
+    auditoria = models.ForeignKey(
+        "auditoria.LogAuditoria",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="operaciones_ajuste",
+    )
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-creado_en", "-pk"]
+        verbose_name = "operación de ajuste de inventario"
+        verbose_name_plural = "operaciones de ajuste de inventario"
+        indexes = [
+            models.Index(fields=["usuario", "-creado_en"], name="operacion_ajuste_usuario_fecha"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(tipo__in=["AJUSTE", "MERMA"]),
+                name="operacion_ajuste_tipo_valido",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Operación Ajuste {self.clave} — {self.tipo} ({self.usuario})"

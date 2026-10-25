@@ -1,0 +1,10 @@
+<div class="table-responsive"><table class="table table-striped align-middle">
+<thead><tr><th>Lote / producto</th><th>Inicial</th><th>Actual</th><th>Vencimiento</th>{% if mostrar_costos %}<th>Costo unitario</th>{% endif %}<th>Acciones</th></tr></thead><tbody>
+{% for lote in lotes %}<tr>
+<td style="overflow-wrap:anywhere">{{ lote.codigo_lote }} <small class="d-block">{{ lote.producto__nombre }} · {{ lote.producto__codigo }}</small>{% if not lote.producto__activo %}<span class="badge text-bg-secondary">Producto inactivo</span>{% endif %}</td>
+<td>{{ lote.cantidad_inicial }}</td><td>{{ lote.cantidad_actual }}{% if lote.cantidad_actual == 0 %}<span class="badge text-bg-secondary d-block">Agotado</span>{% endif %}</td>
+<td class="text-nowrap">{{ lote.fecha_vencimiento|date:'d/m/Y'|default:'Sin vencimiento' }}</td>
+{% if mostrar_costos %}<td class="text-nowrap">{{ MONEDA_SIMBOLO }} {{ lote.costo_unitario|floatformat:2 }}</td>{% endif %}
+<td><a href="{% url 'inventario:movimiento_lista' %}?lote={{ lote.id }}">Movimientos</a>{% if 'ajustar_inventario' in permisos %}<a class="d-block" href="{% url 'inventario:ajuste_crear' %}?lote={{ lote.id }}">Ajustar</a>{% endif %}</td>
+</tr>{% empty %}<tr><td colspan="6">No hay lotes para esta consulta.</td></tr>{% endfor %}
+</tbody></table></div>

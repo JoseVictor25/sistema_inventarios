@@ -1060,8 +1060,43 @@ Las entradas de módulos aún vacíos se conservan deshabilitadas, sin inventar 
 | Ajuste / merma | `/inventario/ajuste/` | `inventario:ajuste_crear` | `inventario/ajuste_form.html` | `form`, `lotes` |
 | Movimientos | `/inventario/movimientos/` | `inventario:movimiento_lista` | `inventario/movimiento_lista.html` | `page_obj`, filtros |
 
-### 9.6 Ventas (`ventas`) — pantalla principal
 
+### Precisiones autorizadas de fase 7 (2026-10-25)
+
+- Stock físico: suma de todos los lotes; disponible: lotes sin vencimiento o con
+  vencimiento desde `timezone.localdate()`. Stock bajo incluye cero (físico <=
+  mínimo). Activos sin lotes aparecen con cero; inactivos con existencias aparecen
+  identificados. Lotes y movimientos históricos permanecen consultables.
+- Por vencer usa hoy y hoy + DIAS_ALERTA_VENCIMIENTO inclusivos. Vencidos usa fecha
+  anterior a hoy. Ambos requieren cantidad > 0; sin fecha y agotados no alertan.
+- Las cuatro consultas exigen `ver_stock`, incluido movimientos. Ajuste/merma
+  exige `ajustar_inventario` en GET/POST y servicio. No se alteran roles iniciales.
+- Costos se proyectan únicamente con `ver_costos`. Admin de Lote, Compra,
+  DetalleCompra y su inline exige además ese permiso, conservando los permisos
+  técnicos. Usuarios sin él consultan existencias por las pantallas ordinarias.
+- Filtros: stock (`q`, `solo_bajo=1`, `page`); lotes (`q`, `producto`,
+  `estado`, `page`); movimientos (`q`, `producto`, `lote`, `tipo`,
+  `desde`, `hasta`, `page`). Estados de lote: vigente, por_vencer, vencido,
+  sin_fecha y agotado. Páginas de 20; filtros inválidos o inesperados devuelven 422.
+- Alertas entrega los tres grupos paginados de 20: `stock_bajo`, `por_vencer`,
+  `vencidos`; parámetros independientes `page_bajo`, `page_por_vencer`,
+  `page_vencidos`. `obtener_alertas(*, usuario, filtros=None)` exige actor.
+- Las filas de contexto son proyecciones seguras, no modelos con costos diferidos.
+  Stock conserva la clave `stock_actual` y añade `stock_disponible`. Contexto de
+  listas añade `form`, `filtros_query` y `mostrar_costos`. Alertas añade `grupos`
+  para navegación. Ajuste recibe `form`, `lotes` y `lote_seleccionado`.
+- `ajustar_inventario(usuario, lote, tipo, cantidad, motivo)` acepta lote o ID
+  entero, AJUSTE firmado o MERMA negativa, entero no cero y motivo limpio 5–200.
+  Actualiza condicionalmente el lote y crea movimiento/LogAuditoria juntos;
+  nunca cambia inicial, costo o historial anterior. No crea lotes nuevos.
+- No hay esquema nuevo ni idempotencia persistente de ajustes: los reenvíos
+  idénticos pueden registrar operaciones adicionales. Propuesta pendiente de
+  autorización en `docs/FASE_7_RESULTADOS.md`.
+- Pantallas GET y formulario POST/Redirect/GET con CSRF, sin nuevos endpoints
+  HTMX/JSON. Se conserva el contrato de cinco rutas, Bootstrap/AdminLTE locales
+  y el comportamiento previo de POS/Compras.
+
+### 9.6 Ventas (`ventas`) — pantalla principal
 | Pantalla / acción | URL | `name` | Plantilla / parcial | Datos |
 |---|---|---|---|---|
 | Venta (POS) | `/ventas/nueva/` | `ventas:pos` | `ventas/pos.html` | `caja`, `carrito`, `metodos_pago` |

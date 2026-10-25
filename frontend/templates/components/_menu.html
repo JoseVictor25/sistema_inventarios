@@ -50,9 +50,11 @@
       {% if "ver_historial_caja" in permisos %}
       <li class="nav-item"><a class="nav-link" href="{% url 'caja:historial' %}">Historial de caja</a></li>
       {% endif %}
-      <li class="nav-item" role="listitem">
-        <span class="nav-link text-muted pendiente" aria-disabled="true">Inventario</span>
-      </li>
+      {% if 'ver_stock' in permisos %}
+      <li class="nav-item"><a class="nav-link{% if request.resolver_match.app_name == 'inventario' %} active fw-bold{% endif %}" href="{% url 'inventario:stock_lista' %}">Inventario</a></li>
+      {% elif 'ajustar_inventario' in permisos %}
+      <li class="nav-item"><a class="nav-link" href="{% url 'inventario:ajuste_crear' %}">Ajustes</a></li>
+      {% endif %}
       <li class="nav-item" role="listitem">
         <span class="nav-link text-muted pendiente" aria-disabled="true">Reportes</span>
       </li>

@@ -1,0 +1,9 @@
+<nav class="d-flex flex-wrap gap-2 mb-3" aria-label="Inventario">
+{% if 'ver_stock' in permisos %}
+<a class="btn btn-outline-primary" href="{% url 'inventario:stock_lista' %}">Existencias</a>
+<a class="btn btn-outline-primary" href="{% url 'inventario:lote_lista' %}">Lotes</a>
+<a class="btn btn-outline-primary" href="{% url 'inventario:alertas' %}">Alertas</a>
+<a class="btn btn-outline-primary" href="{% url 'inventario:movimiento_lista' %}">Movimientos</a>
+{% endif %}
+{% if 'ajustar_inventario' in permisos %}<a class="btn btn-outline-secondary" href="{% url 'inventario:ajuste_crear' %}">Registrar ajuste o merma</a>{% endif %}
+</nav>

@@ -1,13 +1,13 @@
 """Admin del inventario: Lote y MovimientoInventario."""
 from django.contrib import admin
 
-from apps.core.admin import SoloLecturaAdminMixin
+from apps.core.admin import SoloLecturaAdminMixin, ConsultaCostosAdminMixin
 
-from .models import Lote, MovimientoInventario
+from .models import Lote, MovimientoInventario, OperacionAjusteInventario
 
 
 @admin.register(Lote)
-class LoteAdmin(SoloLecturaAdminMixin, admin.ModelAdmin):
+class LoteAdmin(ConsultaCostosAdminMixin, SoloLecturaAdminMixin, admin.ModelAdmin):
     list_display = [
         "codigo_lote",
         "producto",
@@ -43,3 +43,11 @@ class MovimientoInventarioAdmin(SoloLecturaAdminMixin, admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         # RN-19: inmutable
         return False
+
+
+@admin.register(OperacionAjusteInventario)
+class OperacionAjusteInventarioAdmin(SoloLecturaAdminMixin, admin.ModelAdmin):
+    list_display = ["clave", "usuario", "lote", "tipo", "huella", "creado_en"]
+    list_filter = ["tipo", "creado_en"]
+    search_fields = ["clave", "usuario__username", "huella", "lote__codigo_lote"]
+    readonly_fields = ["clave", "usuario", "lote", "tipo", "huella", "movimiento", "auditoria", "creado_en"]

@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block titulo %}Movimientos de inventario{% endblock %}
+{% block contenido %}
+<h1 class="h3">Movimientos de inventario</h1>
+{% include 'inventario/_navegacion.html' %}
+<p>Historial de entradas, salidas, ajustes y mermas, en unidades base.</p>
+{% include 'inventario/_filtros.html' %}
+<div class="table-responsive"><table class="table table-striped align-middle">
+<thead><tr><th>Fecha</th><th>Producto / lote</th><th>Tipo</th><th>Unidades</th><th>Motivo</th><th>Usuario</th></tr></thead><tbody>
+{% for mov in page_obj %}<tr>
+<td class="text-nowrap">{{ mov.fecha|date:'d/m/Y H:i' }}</td><td>{{ mov.lote__producto__nombre }}<small class="d-block">{{ mov.lote__codigo_lote }}</small></td>
+<td>{{ mov.tipo }}</td><td class="{% if mov.cantidad > 0 %}text-success{% else %}text-danger{% endif %}">{% if mov.cantidad > 0 %}+{% endif %}{{ mov.cantidad }}</td>
+<td style="overflow-wrap:anywhere">{{ mov.motivo }}</td><td>{{ mov.usuario__username }}</td>
+</tr>{% empty %}<tr><td colspan="6">No hay movimientos para esta consulta.</td></tr>{% endfor %}
+</tbody></table></div>
+{% include 'components/_paginacion.html' %}
+{% endblock %}

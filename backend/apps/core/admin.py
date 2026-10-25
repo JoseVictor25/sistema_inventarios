@@ -19,3 +19,11 @@ class SoloLecturaAdminMixin:
 
     def get_readonly_fields(self, request, obj=None):
         return [campo.name for campo in self.model._meta.fields]
+
+
+class ConsultaCostosAdminMixin:
+    """Añade ver_costos al permiso técnico de consulta de registros financieros."""
+
+    def has_view_permission(self, request, obj=None):
+        from .permissions import tiene_permiso
+        return tiene_permiso(request.user, 'ver_costos') and super().has_view_permission(request, obj)
