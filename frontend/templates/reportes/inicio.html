@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% block titulo %}Reportes · {{ NOMBRE_NEGOCIO }}{% endblock %}
+{% block contenido %}
+<h1 class="h3">Reportes y exportación</h1>
+<p class="text-muted">Consulta los datos del negocio y descarga los mismos resultados en Excel o PDF.</p>
+<div class="row g-3">{% for reporte in reportes %}<div class="col-12 col-md-6 col-xl-4"><div class="card h-100"><div class="card-body"><h2 class="h5">{{ reporte.titulo }}</h2><a href="{{ reporte.url }}" class="btn btn-primary">Consultar reporte</a></div></div></div>{% endfor %}</div>
+{% endblock %}

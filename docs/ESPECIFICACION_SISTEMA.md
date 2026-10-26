@@ -902,6 +902,17 @@ Errores típicos: sin caja abierta · presentación inactiva · stock insuficien
 - **`compras_por_periodo(desde, hasta)`** y **`productos_mas_vendidos(desde, hasta)`**.
 - **`exportar_excel(nombre, columnas, filas)`** y **`exportar_pdf(titulo, columnas, filas)`**: reciben los mismos datos que muestra la pantalla y devuelven el archivo. Así lo exportado coincide siempre con lo que se ve.
 
+**Contrato implementado en fase 8:** `consultar_reporte(usuario, nombre, filtros)`
+autoriza y valida antes de consultar; devuelve `nombre`, `titulo`, `columnas`,
+`filas`, `totales`, `grafico`, `filtros` normalizados y `notas`. Cada columna es
+`(clave, etiqueta, tipo)`; los tipos son texto, fecha, entero y moneda.
+Los nombres de §8.6 se conservan como adaptadores con `usuario` obligatorio por
+nombre y filtros opcionales `categoria` o `proveedor` donde corresponden.
+Los exportadores viven en `reportes/exportadores.py` y reciben el resultado ya
+calculado: `exportar_excel(reporte, *, usuario)` y
+`exportar_pdf(reporte, *, usuario)`. Revalidan los permisos y devuelven bytes en
+memoria; no consultan datos ni recalculan importes.
+
 ### 8.7 `core/services.py` y `auditoria/services.py`
 
 - **`crear_respaldo()`**: copia la base con la API de respaldo de SQLite, la guarda en `BACKUP_DIR` con fecha y hora, y borra las más antiguas según `BACKUP_CONSERVAR`.
@@ -1089,9 +1100,12 @@ Las entradas de módulos aún vacíos se conservan deshabilitadas, sin inventar 
   entero, AJUSTE firmado o MERMA negativa, entero no cero y motivo limpio 5–200.
   Actualiza condicionalmente el lote y crea movimiento/LogAuditoria juntos;
   nunca cambia inicial, costo o historial anterior. No crea lotes nuevos.
-- No hay esquema nuevo ni idempotencia persistente de ajustes: los reenvíos
-  idénticos pueden registrar operaciones adicionales. Propuesta pendiente de
-  autorización en `docs/FASE_7_RESULTADOS.md`.
+- La autorización posterior de fase 7 incorporó `OperacionAjusteInventario` y
+  `inventario/0003_operacion_ajuste_inventario.py`: reserva UUID, usuario, lote,
+  tipo, huella, movimiento, auditoría y fecha en la misma transacción. El servicio
+  acepta `clave` por nombre y el formulario conserva la clave en reenvíos.
+  Sustituye la nota inicial de idempotencia pendiente. Su migración a la base
+  real requiere autorización independiente; la fase 8 solo migra bases temporales.
 - Pantallas GET y formulario POST/Redirect/GET con CSRF, sin nuevos endpoints
   HTMX/JSON. Se conserva el contrato de cinco rutas, Bootstrap/AdminLTE locales
   y el comportamiento previo de POS/Compras.
@@ -1163,6 +1177,64 @@ El **vuelto** se calcula en pantalla con JavaScript (`monto recibido − total`)
 | Ventas | `/reportes/ventas/?desde=&hasta=&agrupar=dia\|semana\|mes` | `reportes:ventas` | `reportes/ventas.html` | `filas`, `totales`, `grafico` (`etiquetas`, `valores`), `form_filtros` |
 | Exportar ventas | `/reportes/ventas/exportar/?formato=xlsx\|pdf&...` | `reportes:ventas_exportar` | descarga de archivo | — |
 | Compras, inventario valorizado, ganancias, vencimientos, productos más vendidos | `/reportes/<nombre>/` y `/reportes/<nombre>/exportar/` | `reportes:<nombre>`, `reportes:<nombre>_exportar` | `reportes/<nombre>.html` | `filas`, `totales`, `form_filtros` |
+
+#### Contrato completado y decisiones aprobadas de fase 8
+
+Todos los endpoints son GET. Los nombres concretos, usados tanto en URL como en
+plantilla y `name`, son `ventas`, `ventas_metodo_pago`,
+`productos_mas_vendidos`, `compras`, `inventario_valorizado`, `ganancias`,
+`vencimientos` y `cierres_caja`. Cada uno tiene `/reportes/<nombre>/exportar/`
+con `formato=xlsx|pdf` y `name=reportes:<nombre>_exportar`.
+El menú `/reportes/` tiene `reportes:inicio` y `reportes/inicio.html`.
+
+- Filtros de §11 estrictos: desde/hasta obligatorios en reportes por período;
+  `agrupar=dia|semana|mes` obligatorio en ventas; categoría/proveedor/usuario
+  opcionales; días entero no negativo, inicialmente DIAS_ALERTA_VENCIMIENTO.
+  Las fechas iniciales no se eligen automáticamente. El intervalo admite 366
+  fechas calendario incluidas. Opciones, IDs, fechas y parámetros desconocidos
+  o repetidos se rechazan con 422; no se ejecuta una exportación inválida.
+- Fechas interpretadas en America/La_Paz; DateTimeField usa inicio inclusivo y
+  siguiente día al final exclusivo. La semana empieza el lunes. Categoría exacta,
+  sin descendientes implícitos. Se admiten entidades inactivas para el historial.
+- Métodos: contar ventas distintas por método, sumar únicamente Pago.monto.
+  La suma de conteos por método no representa ventas únicas: se muestra también
+  su número global y la explicación de pagos mixtos.
+- Productos: unidades_totales y subtotal históricos, nunca equivalencias/precios
+  actuales. Ganancia bruta = subtotales históricos − sumatoria de unidades de
+  DetalleVentaLote por costo del lote. No representa utilidad neta ni deduce
+  gastos de caja. Ingresos y costos se consultan por separado para evitar joins
+  multiplicadores. Los rótulos y categorías corresponden al catálogo actual.
+- Inventario valorizado: stock físico de todos los lotes, incluidos vencidos;
+  valor = Σ cantidad_actual × costo_unitario. Costo unitario promedio = valor/stock,
+  mostrado a dos decimales con ROUND_HALF_UP. No se usa el promedio redondeado
+  para calcular valor; stock cero muestra costo «—» (celda vacía en Excel).
+  Incluye activos sin lotes e inactivos con existencias, identificados.
+- Vencimientos: stock positivo entre hoy y hoy+días inclusivos. No incluye
+  agotados, fechas nulas ni ya vencidos; estos últimos siguen en Inventario.
+- Cierres: usuario es propietario del turno y fecha es fecha_cierre. Se prefiere
+  el resumen CIERRE_CAJA almacenado; se identifica cada turno recalculado si
+  falta un resumen válido. No se modifica ninguna caja ni auditoría histórica.
+- Permisos exactamente según §11, también en servicios y exportadores. El menú
+  presenta solo reportes accesibles. Vendedor conserva acceso únicamente al
+  reporte/exportación de vencimientos mediante ver_stock, excepción específica
+  a la redacción general de RN-20. Sin permiso: 403; anónimos: login.
+- Pantallas y exportaciones muestran todas las filas del filtro, sin recortes ni
+  paginación. Comparten servicio y resultado; cambios confirmados entre peticiones
+  pueden modificar una consulta posterior. No se congelan resultados en sesión.
+- Las consultas se materializan en una transacción de lectura breve. Importes
+  acumulados con Decimal, sin SUM monetario dependiente de precisión flotante de
+  SQLite. Las lecturas proyectan columnas y evitan N+1. Los documentos se generan
+  después de finalizar la lectura, únicamente en memoria.
+- Excel: negrita, anchos, dos decimales, totales y hoja Información; textos
+  explícitos para evitar fórmulas inyectadas. PDF: negocio, filtros, tabla,
+  encabezados repetidos, totales, notas y página. Ninguna exportación es respaldo.
+- Contexto adicional: `tabla`, `pie`, `consultado`, `notas`, `url_exportar`,
+  `filtros_query`. `grafico` usa `json_script` con ID `datos-grafico`, canvas
+  `grafico-ventas` y `frontend/static/js/reportes.js`, sin recursos externos.
+- Archivos nuevos: `reportes/forms.py`, `exportadores.py`, pruebas en
+  `reportes/tests/`, nueve pantallas y `_reporte.html`, JS local,
+  `scripts/verificar_reportes_fase8.py` y `docs/FASE_8_RESULTADOS.md`.
+  No se crean modelos, migraciones ni permisos; no se modifican reglas anteriores.
 
 ### 9.9 Auditoría (`auditoria`)
 
@@ -1523,15 +1595,20 @@ Orden recomendado. La **caja va antes de la venta** porque no se puede vender si
 - [x] **Fase 2 — Usuarios y roles:** pantallas de usuarios y roles, decorador `permiso_requerido`, variable `permisos` en las plantillas.
 - [x] **Fase 3 — Catálogo:** categorías (árbol), productos, presentaciones, atributos y proveedores.
 - [x] **Fase 4 — Compras y lotes:** registrar compra, generar lotes y movimientos de entrada.
-- [ ] **Fase 5 — Caja:** abrir, movimientos y cerrar con diferencia.
-- [ ] **Fase 6 — Venta (POS):** carrito, búsqueda, presentaciones, pagos, descuento por lotes (FEFO) y confirmar.
-- [ ] **Fase 7 — Inventario y alertas:** stock, lotes, ajustes, mermas, stock bajo y por vencer.
+- [x] **Fase 5 — Caja:** abrir, movimientos y cerrar con diferencia.
+- [x] **Fase 6 — Venta (POS):** carrito, búsqueda, presentaciones, pagos, descuento por lotes (FEFO) y confirmar.
+- [x] **Fase 7 — Inventario y alertas:** stock, lotes, ajustes, mermas, stock bajo y por vencer.
 - [ ] **Fase 8 — Reportes y exportación:** reportes de la sección 11 con Excel y PDF.
 - [ ] **Fase 9 — Auditoría, respaldo y panel de inicio.**
 - [ ] **Fase 10 — Empaquetado:** `launcher.py`, PyInstaller e instalador; pruebas en máquinas limpias.
 - [ ] **Fase 11 — Entrega:** pruebas con datos reales del cliente, capacitación, contrato y respaldo verificado.
 
 ### Si el tiempo aprieta
+
+El cierre de fases 0–7 fue confirmado por el usuario al autorizar fase 8, con
+base Git `1326d79`. Los informes anteriores conservan evidencias históricas;
+sus pendientes iniciales no sustituyen esta confirmación posterior. La fase 8
+requiere verificación automatizada y revisión visual antes de marcar su cierre.
 
 El núcleo mínimo para empezar a usarlo es: fases 0 a 6 más los reportes de ventas (fase 8) y el respaldo. La auditoría detallada, los reportes secundarios y el instalador pulido pueden entregarse en una segunda versión. Plan B de entrega: instalar Python y el proyecto en la laptop del cliente con un acceso directo (`.bat`) que inicie el sistema, y hacer el instalador después.
 

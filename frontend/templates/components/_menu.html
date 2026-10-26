@@ -55,9 +55,9 @@
       {% elif 'ajustar_inventario' in permisos %}
       <li class="nav-item"><a class="nav-link" href="{% url 'inventario:ajuste_crear' %}">Ajustes</a></li>
       {% endif %}
-      <li class="nav-item" role="listitem">
-        <span class="nav-link text-muted pendiente" aria-disabled="true">Reportes</span>
-      </li>
+      {% if 'ver_reportes' in permisos or 'ver_stock' in permisos or 'ver_historial_caja' in permisos %}
+      <li class="nav-item"><a class="nav-link{% if request.resolver_match.app_name == 'reportes' %} active fw-bold{% endif %}" href="{% url 'reportes:inicio' %}">Reportes</a></li>
+      {% endif %}
 
       {% if "gestionar_compras" in permisos %}
       <li class="nav-item" role="listitem">
