@@ -93,6 +93,8 @@
       </li>
       {% endif %}
 
+      {% if 'ver_auditoria' in permisos %}<li class="nav-item"><a class="nav-link" href="{% url 'auditoria:lista' %}">Bitácora</a></li>{% endif %}
+      {% if 'respaldar' in permisos %}<li class="nav-item"><a class="nav-link" href="{% url 'core:respaldos' %}">Respaldos</a></li>{% endif %}
     </ul>
 
     {# Usuario y botón de cierre de sesión — siempre al extremo derecho #}

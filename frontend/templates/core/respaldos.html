@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block contenido %}
+<h1 class="h3">Respaldos del sistema</h1>
+<p>Copias verificadas de SQLite. Los reportes Excel/PDF no reemplazan un respaldo.</p>
+<form method="post" action="{% url 'core:respaldo_crear' %}" class="mb-3">{% csrf_token %}<button class="btn btn-primary">Respaldar ahora</button></form>
+<p class="text-muted">La creación puede tardar. Si hay otra copia en curso, espera a que termine. No se ofrece restauración desde esta pantalla.</p>
+<div class="table-responsive"><table class="table table-striped"><thead><tr><th>Archivo</th><th>Fecha (UTC)</th><th>Tamaño</th><th>Verificación</th><th>SHA-256</th></tr></thead><tbody>
+{% for respaldo in respaldos %}<tr><td class="text-break">{{ respaldo.nombre }}</td><td>{{ respaldo.fecha|default:'No registrada' }}</td><td>{{ respaldo.tamano|filesizeformat }}</td><td>{% if respaldo.verificado %}Manifiesto y hash correctos{% else %}Sin verificación vigente; se conserva{% endif %}</td><td class="text-break">{{ respaldo.sha256|default:'—' }}</td></tr>{% empty %}<tr><td colspan="5">No hay respaldos disponibles.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

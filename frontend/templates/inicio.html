@@ -1,5 +1,16 @@
 {% extends "base.html" %}
 {% block contenido %}
   <h1>Sistema de inventarios y ventas</h1>
-  <p>Esqueleto listo. Los módulos se irán habilitando en el menú.</p>
+  <div class="row g-3 my-2">
+  {% if 'ver_reportes' in permisos %}<div class="col-12 col-md-6"><div class="card card-body"><h2 class="h5">Ventas del día</h2><p class="fs-3">{{ MONEDA_SIMBOLO }} {{ ventas_hoy|floatformat:2 }}</p><p>{{ cantidad_ventas_hoy }} ventas</p><a href="{% url 'reportes:ventas' %}">Consultar reportes</a></div></div>{% endif %}
+  {% if 'gestionar_caja' in permisos %}<div class="col-12 col-md-6"><div class="card card-body"><h2 class="h5">Mi turno de caja</h2>{% if caja %}<p>Abierto: {{ caja.turno|default:'Sin nombre' }} · {{ caja.fecha_apertura|date:'d/m/Y H:i' }}</p>{% else %}<p>Sin turno abierto.</p>{% endif %}<a href="{% url 'caja:estado' %}">Consultar mi caja</a></div></div>{% endif %}
+  {% for alerta in alertas %}<div class="col-12 col-md-4"><div class="card card-body"><h2 class="h5">{{ alerta.nombre }}</h2><p class="fs-3">{{ alerta.cantidad }}</p><a href="{% url 'inventario:alertas' %}">Consultar alertas</a></div></div>{% endfor %}
+  </div>
+  <h2 class="h5 mt-4">Accesos rápidos</h2><div class="d-flex flex-wrap gap-2">
+  {% if 'vender' in permisos %}<a class="btn btn-primary" href="{% url 'ventas:pos' %}">Registrar venta</a>{% endif %}
+  {% if 'gestionar_compras' in permisos %}<a class="btn btn-outline-primary" href="{% url 'compras:compra_crear' %}">Registrar compra</a>{% endif %}
+  {% if 'ver_stock' in permisos %}<a class="btn btn-outline-primary" href="{% url 'inventario:stock_lista' %}">Consultar inventario</a>{% endif %}
+  {% if 'ver_auditoria' in permisos %}<a class="btn btn-outline-secondary" href="{% url 'auditoria:lista' %}">Consultar bitácora</a>{% endif %}
+  {% if 'respaldar' in permisos %}<a class="btn btn-outline-secondary" href="{% url 'core:respaldos' %}">Consultar respaldos</a>{% endif %}
+  </div>
 {% endblock %}

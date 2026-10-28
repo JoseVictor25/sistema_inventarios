@@ -6,6 +6,10 @@ from .models import LogAuditoria
 
 @admin.register(LogAuditoria)
 class LogAuditoriaAdmin(admin.ModelAdmin):
+    def has_view_permission(self, request, obj=None):
+        from apps.core.permissions import tiene_permiso
+        return tiene_permiso(request.user, 'ver_auditoria') and super().has_view_permission(request, obj)
+
     list_display = ["fecha", "usuario", "accion", "entidad", "entidad_id"]
     list_filter = ["accion", "entidad", "fecha"]
     search_fields = ["usuario__username", "entidad", "accion"]

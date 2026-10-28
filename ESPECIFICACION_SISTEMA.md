@@ -915,7 +915,7 @@ memoria; no consultan datos ni recalculan importes.
 
 ### 8.7 `core/services.py` y `auditoria/services.py`
 
-- **`crear_respaldo()`**: copia la base con la API de respaldo de SQLite, la guarda en `BACKUP_DIR` con fecha y hora, y borra las más antiguas según `BACKUP_CONSERVAR`.
+- **`crear_respaldo(usuario)`**: exige `respaldar` en el servicio y copia la base con la API de respaldo de SQLite, la guarda en `BACKUP_DIR` con fecha y hora, y borra las más antiguas según `BACKUP_CONSERVAR`.
 - **`registrar_cambio(usuario, accion, entidad, entidad_id, anterior, nuevo)`**: crea un `LogAuditoria`. Lo llaman los demás servicios; nadie lo edita.
 
 ---
@@ -947,6 +947,15 @@ Las entradas de módulos aún vacíos se conservan deshabilitadas, sin inventar 
 | Respaldos | `/sistema/respaldos/` | `core:respaldos` | `core/respaldos.html` | `respaldos` (lista con fecha y tamaño) |
 | Crear respaldo | `POST /sistema/respaldos/crear/` | `core:respaldo_crear` | redirige a respaldos | — |
 | Primer uso | `/configuracion-inicial/` | `core:primer_uso` | `core/primer_uso.html` | `form` (crear usuario dueño; solo si no existen usuarios) |
+
+**Contrato de fase 9 (decisiones autorizadas):** ventas globales del día e
+importes solo con `ver_reportes`; turno propio con `gestionar_caja`; alertas con
+`ver_stock`. Los tres indicadores de alertas cuentan productos distintos (un
+producto puede aparecer en más de un grupo), reutilizando las consultas de
+Inventario. Los lotes agotados no alertan. El panel no modifica el historial de
+ventas. Inicio no expone importes de otros turnos al Vendedor.
+Respaldos exige `respaldar` en GET, POST y servicio. El POST usa CSRF y no admite
+rutas ni parámetros del navegador. No existe restauración web.
 
 ### 9.2 Usuarios (`usuarios`)
 
@@ -1242,6 +1251,14 @@ El menú `/reportes/` tiene `reportes:inicio` y `reportes/inicio.html`.
 |---|---|---|---|---|
 | Bitácora | `/auditoria/?usuario=&entidad=&desde=&hasta=` | `auditoria:lista` | `auditoria/lista.html` | `page_obj`, filtros |
 
+**Consulta de fase 9:** permiso `ver_auditoria` en servicio y vista; Admin exige
+además los permisos técnicos Django. Paginación de 20, orden `-fecha, -pk`,
+filtros opcionales por usuario (incluidos inactivos), entidad exacta y fechas
+locales inclusivas. No aplica el máximo de 366 días de Reportes. Autores nulos
+se conservan y muestran explícitamente. JSON escapado y legible. Sin edición ni
+eliminación ordinarias, sin duplicar eventos de Catálogo, Caja o Inventario.
+Esta protección de aplicación no impide modificaciones por SQL u ORM privilegiado.
+
 ### 9.10 Convenciones HTMX para el frontend
 
 - **Token CSRF:** en `base.html`, `<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>`. Con eso todas las peticiones HTMX POST quedan protegidas.
@@ -1504,7 +1521,31 @@ schtasks /Create /SC DAILY /ST 21:00 /TN "Respaldo Sistema Inventarios" /TR "\"C
 
 Mientras se desarrolla, `scripts/respaldo.py` hace lo mismo desde la línea de comandos.
 
-**Cómo restaurar:** cerrar el programa, copiar el archivo de respaldo elegido sobre `db.sqlite3` en la carpeta de datos (`C:\ProgramData\SistemaInventarios\`) y abrir el programa.
+**Recuperación:** durante desarrollo solo se recupera una copia verificada en
+un archivo SQLite temporal nuevo. Antes de una eventual recuperación operativa
+se deberán cerrar todas las conexiones, preservar la base original, comprobar
+compatibilidad de esquema/código e integridad, y aprobar el procedimiento. Esta
+fase no implementa ni ejecuta sustitución de la base original.
+
+**Motor compartido de fase 9:** `core/respaldos.py`, invocado desde servicio web
+autorizado y `scripts/respaldo.py`. Fuente en modo lectura, API `Connection.backup`,
+nombre `respaldo_YYYYMMDD_HHMMSS_UUID.sqlite3` (UTC), provisional exclusivo,
+`integrity_check`, `foreign_key_check`, tablas esenciales y SHA-256. Manifiesto
+JSON con fecha, tamaño, hash y migraciones presentes. Publicación sin sobrescribir;
+si falla el manifiesto, la copia queda sin gestionar y se conserva para inspección.
+Bloqueo entre procesos abarca creación y retención. Solo se eliminan copias
+reconocidas con manifiesto, hash e integridad válidos; archivos desconocidos,
+corruptos o provisionales ajenos no se borran. La carpeta configurada debe ser
+distinta de la carpeta de la base. Registros técnicos en el log existente.
+La retención es por cantidad, no por días. No garantiza supervivencia frente a
+pérdida del disco: la segunda copia externa sigue siendo responsabilidad operativa.
+
+Comando diario preparado: `venv/Scripts/python.exe scripts/respaldo.py` desde la
+raíz del proyecto, con la configuración efectiva del operador. La instalación
+real de la tarea y la integración con el ejecutable `--respaldo` quedan para
+empaquetado. En fase 9 únicamente se ejecuta con configuración y SQLite temporales.
+Verificación reproducible: `venv/Scripts/python.exe scripts/verificar_fase9.py --pruebas --http --respaldos`;
+`--abrir` permite inspección con datos ficticios.
 
 ### Registros (logs)
 
@@ -1598,17 +1639,17 @@ Orden recomendado. La **caja va antes de la venta** porque no se puede vender si
 - [x] **Fase 5 — Caja:** abrir, movimientos y cerrar con diferencia.
 - [x] **Fase 6 — Venta (POS):** carrito, búsqueda, presentaciones, pagos, descuento por lotes (FEFO) y confirmar.
 - [x] **Fase 7 — Inventario y alertas:** stock, lotes, ajustes, mermas, stock bajo y por vencer.
-- [ ] **Fase 8 — Reportes y exportación:** reportes de la sección 11 con Excel y PDF.
+- [x] **Fase 8 — Reportes y exportación:** reportes de la sección 11 con Excel y PDF.
 - [ ] **Fase 9 — Auditoría, respaldo y panel de inicio.**
 - [ ] **Fase 10 — Empaquetado:** `launcher.py`, PyInstaller e instalador; pruebas en máquinas limpias.
 - [ ] **Fase 11 — Entrega:** pruebas con datos reales del cliente, capacitación, contrato y respaldo verificado.
 
 ### Si el tiempo aprieta
 
-El cierre de fases 0–7 fue confirmado por el usuario al autorizar fase 8, con
-base Git `1326d79`. Los informes anteriores conservan evidencias históricas;
-sus pendientes iniciales no sustituyen esta confirmación posterior. La fase 8
-requiere verificación automatizada y revisión visual antes de marcar su cierre.
+El cierre de fases 0–8 fue confirmado por el usuario al autorizar fase 9, con
+base Git `799a6ab` y 319 pruebas previas. Los informes anteriores conservan
+evidencias históricas. La fase 9 conserva pendiente su revisión visual y cierre
+por el usuario; no se instala aún ninguna tarea de Windows.
 
 El núcleo mínimo para empezar a usarlo es: fases 0 a 6 más los reportes de ventas (fase 8) y el respaldo. La auditoría detallada, los reportes secundarios y el instalador pulido pueden entregarse en una segunda versión. Plan B de entrega: instalar Python y el proyecto en la laptop del cliente con un acceso directo (`.bat`) que inicie el sistema, y hacer el instalador después.
 

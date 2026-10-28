@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block contenido %}
+<h1 class="h3">Bitácora de auditoría</h1>
+<p>Consulta de cambios sensibles. Los registros no se editan ni eliminan.</p>
+<form method="get" class="card card-body mb-3"><div class="row g-3">
+{{ form.non_field_errors }}{% for campo in form.visible_fields %}<div class="col-12 col-md-3"><label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}{{ campo.errors }}</div>{% endfor %}
+<div class="col-12"><button class="btn btn-primary">Filtrar</button></div></div></form>
+{% for evento in page_obj %}<article class="card mb-3"><div class="card-header"><strong>{{ evento.accion }}</strong> · {{ evento.entidad }} #{{ evento.entidad_id }}</div><div class="card-body">
+<p>{{ evento.fecha|date:'d/m/Y H:i:s' }} · Responsable: {% if evento.usuario %}{{ evento.usuario.username }}{% if not evento.usuario.is_active %} (inactivo){% endif %}{% else %}Sin usuario disponible{% endif %}</p>
+<div class="row"><div class="col-12 col-md-6"><h2 class="h6">Valor anterior</h2><pre class="text-wrap text-break">{{ evento.anterior_texto }}</pre></div><div class="col-12 col-md-6"><h2 class="h6">Valor nuevo</h2><pre class="text-wrap text-break">{{ evento.nuevo_texto }}</pre></div></div></div></article>
+{% empty %}<p>No hay eventos para los filtros seleccionados.</p>{% endfor %}
+{% include 'components/_paginacion.html' %}
+{% endblock %}

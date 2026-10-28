@@ -1,49 +1,42 @@
-"""Copia de seguridad de la base SQLite. Se puede programar con el
-Programador de tareas de Windows (una vez al día).
+"""Respaldo para el operador local; no instala tareas ni aplica migraciones.
 
-Lee las rutas del archivo .env (DB_PATH, DATA_DIR, BACKUP_DIR, BACKUP_CONSERVAR).
-
-Uso:  python scripts/respaldo.py [carpeta_destino] [cantidad_a_conservar]
+Uso: venv/Scripts/python.exe scripts/respaldo.py [carpeta_destino] [conservar]
+Sin argumentos utiliza la configuración Django. No ejecutarlo sobre datos reales
+durante desarrollo: el verificador de fase 9 suministra configuración temporal.
 """
+import argparse
+import json
 import os
-import sqlite3
-import sys
-from datetime import datetime
 from pathlib import Path
-
-from dotenv import load_dotenv
-
-RAIZ = Path(__file__).resolve().parent.parent
-load_dotenv(Path(os.environ.get("ENV_FILE", RAIZ / "backend" / ".env")))
-
-DATA_DIR = Path(os.environ.get("DATA_DIR", RAIZ / "backend" / "datos"))
-ORIGEN = Path(os.environ.get("DB_PATH", DATA_DIR / "db.sqlite3"))
-DESTINO = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(
-    os.environ.get("BACKUP_DIR", DATA_DIR / "respaldos")
-)
-CONSERVAR = int(sys.argv[2]) if len(sys.argv) > 2 else int(
-    os.environ.get("BACKUP_CONSERVAR", 30)
-)
+import sys
 
 
 def main():
-    if not ORIGEN.exists():
-        sys.exit(f"No se encontró la base de datos: {ORIGEN}")
-    DESTINO.mkdir(parents=True, exist_ok=True)
-    nombre = DESTINO / f"respaldo_{datetime.now():%Y%m%d_%H%M%S}.sqlite3"
-    # API de respaldo de SQLite: segura aunque el sistema esté en uso
-    origen = sqlite3.connect(ORIGEN)
-    copia = sqlite3.connect(nombre)
-    with copia:
-        origen.backup(copia)
-    origen.close()
-    copia.close()
-    print(f"Respaldo creado: {nombre}")
-    viejos = sorted(DESTINO.glob("respaldo_*.sqlite3"))[:-CONSERVAR]
-    for v in viejos:
-        v.unlink()
-        print(f"Eliminado respaldo antiguo: {v.name}")
+    raiz = Path(__file__).resolve().parent.parent
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('carpeta_destino', nargs='?')
+    parser.add_argument('conservar', nargs='?', type=int)
+    args = parser.parse_args()
+    if Path(sys.executable).resolve() != (raiz / 'venv/Scripts/python.exe').resolve():
+        parser.error('Utiliza venv/Scripts/python.exe.')
+    sys.path.insert(0, str(raiz / 'backend'))
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.produccion')
+    import django
+    django.setup()
+    from django.conf import settings
+    from apps.core.respaldos import crear_copia, ErrorRespaldo
+    try:
+        if settings.DATABASES['default']['ENGINE'] != 'django.db.backends.sqlite3':
+            raise ErrorRespaldo('El respaldo disponible requiere SQLite.')
+        resultado = crear_copia(settings.DATABASES['default']['NAME'],
+            args.carpeta_destino or settings.BACKUP_DIR,
+            args.conservar if args.conservar is not None else settings.BACKUP_CONSERVAR)
+    except ErrorRespaldo as error:
+        print(str(error), file=sys.stderr)
+        return 1
+    print(json.dumps(resultado, ensure_ascii=False, indent=2))
+    return 0
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    sys.exit(main())
