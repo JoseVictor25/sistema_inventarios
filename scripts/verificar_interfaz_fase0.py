@@ -42,7 +42,7 @@ addEventListener('securitypolicyviolation', e => bloqueosFase0.push({
 </script>"""
 SONDEO = """JSON.stringify({
   documento:window.documentoFase0, ruta:location.pathname, titulo:document.title, ancho:innerWidth,
-  usuario:document.querySelector(".menu .derecha")?.textContent || "",
+  usuario:document.querySelector("#menu-usuario")?.textContent || "",
   listo:document.readyState,
   desbordamiento:document.documentElement.scrollWidth > innerWidth,
   errores:window.erroresFase0, bloqueos:window.bloqueosFase0,
@@ -221,12 +221,17 @@ def main():
         import django
         django.setup()
         from django.conf import settings
+        from django.core.management import call_command
         from django.core.wsgi import get_wsgi_application
         from django.db import connections
         from apps.core.frontend import RECURSOS_FRONTEND
+        # Reproduce producción: STATIC_ROOT temporal y sin finders.
+        settings.STATIC_ROOT = Path(temporal.name) / "staticfiles"
+        settings.WHITENOISE_USE_FINDERS = False
+        call_command("collectstatic", interactive=False, verbosity=0)
         clave, reporte["base_temporal"] = preparar_base_temporal(temporal.name)
         aplicacion = get_wsgi_application()
-        recursos = (*RECURSOS_FRONTEND, "css/app.css", "js/app.js", "img/favicon.svg")
+        recursos = RECURSOS_FRONTEND
         requeridos = ["/static/" + r for r in recursos if r.endswith((".css", ".js"))]
 
         def sitio(environ, start_response):
@@ -286,7 +291,7 @@ def main():
         hilo_servidor.start()
         origen = f"http://127.0.0.1:{servidor.server_port}"
         reporte["autenticacion_http"] = comprobar_http(origen, clave, recursos, settings.FRONTEND_DIR / "static")
-        print("Base temporal migrada; login, inicio, logout y 10 recursos HTTP correctos.", flush=True)
+        print(f"Base temporal migrada; login, inicio, logout y {len(recursos)} recursos HTTP correctos.", flush=True)
         if not args.solo_http:
             import webview
             ventana = webview.create_window("Verificación fase 0 — no interactuar durante el recorrido",
@@ -308,7 +313,7 @@ def main():
                 try:
                     # GET de cada escenario; POST real de login entre las dos páginas.
                     for pagina, ruta in (("login", "/login/"), ("inicio", "/")):
-                        for ancho in (1280, 390):
+                        for ancho in (1920, 1600, 1366, 1280, 1024, 768, 390):
                             ventana.restore()
                             ventana.resize(ancho, 800)
                             ventana.load_url(origen + ruta + "?verificacion=" + uuid4().hex)
@@ -375,7 +380,7 @@ def main():
             http_ok = http_ok and all(r["estado"] < 400 for r in reporte["http_local"])
             reporte["automatizacion_aprobada"] = (
                 not args.solo_http and http_ok and reporte["autenticacion_navegador"]
-                and len(reporte["paginas"]) == 4 and not reporte["externas_detectadas"]
+                and len(reporte["paginas"]) == 14 and not reporte["externas_detectadas"]
                 and all(not p["fallos"] for p in reporte["paginas"])
                 and all(r["estado"] < 400 for r in reporte["respuestas"])
             )

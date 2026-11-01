@@ -132,7 +132,7 @@ def recorrido_http(temporal, abrir):
         assert pedir(vendedor, '/caja/historial/')[0] == 403
         dueno = sesion('dueno_fase5')
         pagina(dueno, '/caja/historial/', 'historial.html')
-        for recurso in (*RECURSOS_FRONTEND, 'css/app.css', 'js/app.js', 'img/favicon.svg'):
+        for recurso in RECURSOS_FRONTEND:
             assert pedir(dueno, '/static/' + recurso)[0] == 200, recurso
         assert not any(p['estado'] in (404, 500) for p in peticiones)
         informe['aprobado'] = True

@@ -1,37 +1,80 @@
 /* Estilos propios. Al integrar la plantilla (Bootstrap), conserva aquí solo lo tuyo. */
 
-/* ── Evitar desbordamiento horizontal del documento ── */
-html, body { overflow-x: hidden; }
 body { font-family: system-ui, "Segoe UI", Arial, sans-serif; margin: 0; color: #222; background: #f6f7f9; }
 
-/* ── Navbar ── */
-.menu { border-bottom: 1px solid #dee2e6; }
-
-/* En desktop: misma altura fija que AdminLTE usa para layout-top-nav */
-@media (min-width: 768px) {
-  .menu { min-height: 57px; }
+/* Referencia: Panel de inventario Mi Tienda. Recursos y datos locales. */
+.interfaz-tienda { color: #172446; background: #f2f7fe; }
+.interfaz-tienda .app-wrapper { display: block; min-height: 100vh; }
+.interfaz-tienda .app-main { display: block; min-width: 0; }
+.encabezado-app { display: flex; align-items: center; gap: 1rem; padding: .85rem 1.25rem; background: #fff; border-bottom: 1px solid #e9eff8; min-height: 68px; }
+.marca-encabezado { color: #172446; text-decoration: none; font-size: 1.15rem; font-weight: 700; overflow-wrap: anywhere; min-width: 0; flex: 1; }
+#menu-usuario { display: flex; align-items: center; gap: .65rem; min-width: 0; }
+#menu-usuario > span:not(.avatar-usuario) { overflow-wrap: anywhere; }
+.avatar-usuario { display: grid; place-items: center; width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; color: white; background: #456587; }
+.barra-lateral { --bs-offcanvas-width: min(290px, 90vw); background: #fff; border-right: 1px solid #e9eff8; }
+.marca-lateral { display: flex; align-items: center; gap: .8rem; padding: 1.25rem 1rem; }
+.marca-lateral > div { min-width: 0; flex: 1; }
+.marca-lateral a { color: #131e38; font-size: 1.2rem; font-weight: 750; text-decoration: none; overflow-wrap: anywhere; }
+.marca-lateral small { display: block; color: #627393; margin-top: .2rem; }
+.marca-icono { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 14px; background: linear-gradient(135deg,#42aeff,#4160ff); color: white; box-shadow: 0 4px 12px #4160ff24; }
+.barra-lateral .offcanvas-body { padding: .5rem .75rem 1.5rem; overflow-y: auto; }
+.barra-lateral nav { width: 100%; }
+.menu-enlaces { gap: .25rem; flex-direction: column; }
+.menu-enlaces .nav-link { display: flex; align-items: center; gap: .85rem; padding: .65rem .85rem; border-radius: 7px; color: #334569; overflow-wrap: anywhere; }
+.icono-ui { flex-shrink: 0; }
+.menu-enlaces .icono-ui { color: #386bff; }
+.menu-enlaces li:nth-child(3n) .icono-ui { color: #9d45eb; }
+.menu-enlaces li:nth-child(4n) .icono-ui { color: #ee8b16; }
+.menu-enlaces .nav-link:hover { background: #f1f6fe; }
+.menu-enlaces .nav-link.active { color: #008452; background: #eafaf5; box-shadow: inset 3px 0 #18bfa0; font-weight: 650; }
+.menu-enlaces .nav-link.active .icono-ui { color: #00a36e; }
+.interfaz-tienda .card { border: 1px solid #edf2fa; border-radius: 18px; box-shadow: 0 6px 24px #254d8510; }
+.interfaz-tienda .btn { border-radius: 9px; }
+.titulo-pagina { font-size: clamp(1.35rem, 2vw, 1.85rem); font-weight: 750; }
+.indicadores { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,210px),1fr)); gap: 1.1rem; }
+.tarjeta-indicador { height: 100%; padding: 1.25rem; background: linear-gradient(130deg,#2ec978,#20b7a5); color: #fff; }
+.tarjeta-indicador h2 { font-size: 1rem; margin: 1rem 0 .5rem; }
+.tarjeta-indicador p { margin-bottom: .5rem; }
+.tarjeta-indicador .fs-3 { font-weight: 750; }
+.tarjeta-indicador a { color: white; text-underline-offset: 3px; margin-top: auto; }
+.indicador-caja { background: linear-gradient(130deg,#ff8d30,#eab332); }
+.indicador-alerta { background: linear-gradient(130deg,#f5657c,#db3a90); }
+.indicador-alerta.alerta-2 { background: linear-gradient(130deg,#bd840c,#df9c13); }
+.indicador-alerta.alerta-3 { background: linear-gradient(130deg,#e84f66,#c93268); }
+.icono-indicador { display: grid; place-items: center; width: 46px; height: 46px; background: #ffffff30; border-radius: 13px; }
+.accesos-rapidos { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,210px),1fr)); gap: 1rem; margin-top: 1rem; }
+.accesos-rapidos .btn { text-align: left; padding: 1.25rem; border: 1px solid #e6eefb; background: #fff; color: #24436c; box-shadow: 0 3px 12px #254d8509; }
+.accesos-rapidos .btn:hover { background: #eafaf5; }
+.tabla-bitacora { margin: 0; font-size: .92rem; }
+.tabla-bitacora th { color: #607195; background: #f8faff; font-weight: 600; padding: 1rem; }
+.tabla-bitacora td { padding: 1rem; }
+.etiqueta-accion { display: inline-block; color: #237a69; background: #eafaf5; border-radius: 7px; padding: .3rem .55rem; }
+.detalle-auditoria { --bs-offcanvas-width: min(620px,100vw); }
+.detalle-auditoria .offcanvas-header { border-bottom: 1px solid #e9eff8; }
+.detalle-auditoria .offcanvas-body { overflow-wrap: anywhere; }
+.auditoria-detalle { table-layout: fixed; width: 100%; }
+.auditoria-detalle th, .auditoria-detalle td { overflow-wrap: anywhere; white-space: pre-wrap; }
+@media (min-width: 992px) {
+  .barra-lateral.offcanvas-lg { position: fixed; inset: 0 auto 0 0; width: 250px; display: flex; flex-direction: column; z-index: 1030; background: white !important; }
+  .barra-lateral.offcanvas-lg .offcanvas-body { display: block; flex: 1; overflow-y: auto; }
+  .con-navegacion .app-main, .encabezado-app { margin-left: 250px; }
+  .menu-toggler { display: none; }
+}
+@media (max-width: 575.98px) {
+  .encabezado-app { gap: .6rem; padding: .75rem; flex-wrap: wrap; }
+  .marca-encabezado { flex-basis: calc(100% - 65px); }
+  #menu-usuario { margin-left: auto; }
+  .avatar-usuario { width: 30px; height: 30px; }
 }
 
-/* Estado activo en menú */
-.navbar-nav .nav-link.active { font-weight: 700; }
+.contenido { padding: 16px; max-width: 1700px; margin: 0 auto; }
 
-/* Ítems pendientes (módulos no implementados aún) */
-.pendiente { cursor: default; user-select: none; }
-
-/* Bloque de usuario y logout en móvil: fondo sutil para separar del listado de links */
-@media (max-width: 767.98px) {
-  #menu-usuario {
-    border-top: 1px solid #dee2e6;
-    padding-top: .5rem;
-    margin-top: .25rem;
-    width: 100%;
-  }
-}
-
-/* ── Contenido principal ── */
-.contenido { padding: 16px; max-width: 1100px; margin: 0 auto; }
+/* Evita que un hijo flex con texto truncado empuje el contenedor. */
+.min-w-0 { min-width: 0; }
 
 /* ── Mensajes flash ── */
+/* Nombres de archivo, rutas o códigos largos no deben ensanchar la página. */
+.mensaje, .alert { overflow-wrap: anywhere; }
 .mensaje { padding: 8px 12px; border-radius: 6px; margin-bottom: 10px; background: #e8f1ff; }
 .mensaje.success { background: #e6f6ea; }
 .mensaje.error   { background: #fde8e8; }
@@ -55,7 +98,18 @@ body { font-family: system-ui, "Segoe UI", Arial, sans-serif; margin: 0; color: 
 /* ── Tablas responsivas: scroll solo dentro de la tabla, nunca en el documento ── */
 .table-responsive { -webkit-overflow-scrolling: touch; }
 
-@media (max-width: 575.98px) {
-  .login { margin: 1rem auto; }
+/* POS: altura natural de pagina y carrito; solo las listas se desplazan.
+   Total, pagos y botones permanecen fuera de la lista limitada. */
+@media (min-width: 768px) {
+  .pos-scroll-productos { max-height: 540px; overflow-y: auto; }
+  .pos-scroll-carrito { max-height: 380px; overflow-y: auto; }
 }
 
+
+/* ── Gráfico de reportes: más compacto en pantallas pequeñas ── */
+.grafico-reporte { height: 320px; }
+
+@media (max-width: 575.98px) {
+  .grafico-reporte { height: 220px; }
+  .login { margin: 1rem auto; }
+}

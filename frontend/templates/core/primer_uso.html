@@ -1,0 +1,5 @@
+{% extends 'base.html' %}
+{% block contenido %}
+<h1>Configuración inicial</h1><p>Registra al primer Dueño con el código mostrado por el iniciador local.</p>
+<form method="post" class="card card-body">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">Crear Dueño</button></form>
+{% endblock %}

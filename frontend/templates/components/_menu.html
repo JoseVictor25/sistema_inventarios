@@ -1,41 +1,30 @@
-<nav class="app-header navbar navbar-expand-md bg-body border-bottom px-3 menu" aria-label="Navegación principal">
-
-  {# Marca / nombre del negocio #}
-  <a class="navbar-brand fw-semibold me-3 text-truncate" href="{% url 'core:inicio' %}" style="max-width:50vw">
-    {{ NOMBRE_NEGOCIO }}
-  </a>
-
-  {# Botón hamburguesa — visible solo en móvil #}
-  <button class="navbar-toggler ms-auto me-2" type="button"
-          id="menu-toggler"
-          data-bs-toggle="collapse"
-          data-bs-target="#nav-collapsible"
-          aria-controls="nav-collapsible"
-          aria-expanded="false"
-          aria-label="Abrir menú de navegación">
-    <span class="navbar-toggler-icon"></span>
-  </button>
-
-  {# Área colapsable #}
-  <div class="collapse navbar-collapse" id="nav-collapsible">
-    <ul class="navbar-nav me-auto flex-wrap align-items-md-center gap-md-1" role="list">
+{% load static %}
+<header class="encabezado-app">
+<button class="btn btn-outline-primary menu-toggler" id="menu-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#nav-collapsible" aria-controls="nav-collapsible" aria-label="Abrir navegaci&#243;n">&#9776;</button>
+<a class="marca-encabezado" href="{% url 'core:inicio' %}">{{ NOMBRE_NEGOCIO }}</a>
+<div id="menu-usuario"><span class="avatar-usuario" aria-hidden="true">{{ user.get_username|first|upper }}</span><span>{{ user.get_username }}</span><form method="post" action="{% url 'usuarios:logout' %}">{% csrf_token %}<button class="btn btn-outline-secondary btn-sm" id="btn-salir">Salir</button></form></div>
+</header>
+<aside class="offcanvas-lg offcanvas-start barra-lateral" tabindex="-1" id="nav-collapsible" aria-labelledby="marca-lateral">
+<div class="marca-lateral"><span class="marca-icono" aria-hidden="true">{% include 'components/_icono.html' with icono='carrito' %}</span><div><a id="marca-lateral" href="{% url 'core:inicio' %}">{{ NOMBRE_NEGOCIO }}</a><small>Sistema de inventarios</small></div><button class="btn-close d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#nav-collapsible" aria-label="Cerrar navegaci&#243;n"></button></div>
+<div class="offcanvas-body"><nav aria-label="Navegaci&#243;n principal">
+    <ul class="navbar-nav menu-enlaces" role="list">
 
       <li class="nav-item" role="listitem">
-        <a class="nav-link{% if request.resolver_match.app_name == 'core' %} active fw-bold{% endif %}"
-           {% if request.resolver_match.app_name == 'core' %}aria-current="page"{% endif %}
-           href="{% url 'core:inicio' %}">Inicio</a>
+        <a class="nav-link{% if request.resolver_match.view_name == 'core:inicio' %} active fw-bold{% endif %}"
+           {% if request.resolver_match.view_name == 'core:inicio' %}aria-current="page"{% endif %}
+           href="{% url 'core:inicio' %}">{% include 'components/_icono.html' with icono='casa' %}<span>Inicio</span></a>
       </li>
 
       {% if "vender" in permisos %}
       <li class="nav-item" role="listitem">
         <a class="nav-link{% if request.resolver_match.app_name == 'ventas' and request.resolver_match.url_name == 'pos' %} active fw-bold{% endif %}"
            {% if request.resolver_match.app_name == 'ventas' and request.resolver_match.url_name == 'pos' %}aria-current="page"{% endif %}
-           href="{% url 'ventas:pos' %}">Venta</a>
+           href="{% url 'ventas:pos' %}">{% include 'components/_icono.html' with icono='carrito' %}<span>Venta</span></a>
       </li>
       <li class="nav-item" role="listitem">
         <a class="nav-link{% if request.resolver_match.app_name == 'ventas' and request.resolver_match.url_name != 'pos' %} active fw-bold{% endif %}"
            {% if request.resolver_match.app_name == 'ventas' and request.resolver_match.url_name != 'pos' %}aria-current="page"{% endif %}
-           href="{% url 'ventas:lista' %}">Historial de ventas</a>
+           href="{% url 'ventas:lista' %}">{% include 'components/_icono.html' with icono='reloj' %}<span>Historial de ventas</span></a>
       </li>
       {% else %}
       <li class="nav-item" role="listitem">
@@ -45,30 +34,30 @@
       </li>
       {% endif %}
       {% if "gestionar_caja" in permisos %}
-      <li class="nav-item"><a class="nav-link" href="{% url 'caja:estado' %}">Caja</a></li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'caja:estado' %}">{% include 'components/_icono.html' with icono='caja' %}<span>Caja</span></a></li>
       {% endif %}
       {% if "ver_historial_caja" in permisos %}
-      <li class="nav-item"><a class="nav-link" href="{% url 'caja:historial' %}">Historial de caja</a></li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'caja:historial' %}">{% include 'components/_icono.html' with icono='reloj' %}<span>Historial de caja</span></a></li>
       {% endif %}
       {% if 'ver_stock' in permisos %}
-      <li class="nav-item"><a class="nav-link{% if request.resolver_match.app_name == 'inventario' %} active fw-bold{% endif %}" href="{% url 'inventario:stock_lista' %}">Inventario</a></li>
+      <li class="nav-item"><a class="nav-link{% if request.resolver_match.app_name == 'inventario' %} active fw-bold{% endif %}" href="{% url 'inventario:stock_lista' %}">{% include 'components/_icono.html' with icono='cajas' %}<span>Inventario</span></a></li>
       {% elif 'ajustar_inventario' in permisos %}
-      <li class="nav-item"><a class="nav-link" href="{% url 'inventario:ajuste_crear' %}">Ajustes</a></li>
+      <li class="nav-item"><a class="nav-link" href="{% url 'inventario:ajuste_crear' %}">{% include 'components/_icono.html' with icono='ajuste' %}<span>Ajustes</span></a></li>
       {% endif %}
       {% if 'ver_reportes' in permisos or 'ver_stock' in permisos or 'ver_historial_caja' in permisos %}
-      <li class="nav-item"><a class="nav-link{% if request.resolver_match.app_name == 'reportes' %} active fw-bold{% endif %}" href="{% url 'reportes:inicio' %}">Reportes</a></li>
+      <li class="nav-item"><a class="nav-link{% if request.resolver_match.app_name == 'reportes' %} active fw-bold{% endif %}" href="{% url 'reportes:inicio' %}">{% include 'components/_icono.html' with icono='grafico' %}<span>Reportes</span></a></li>
       {% endif %}
 
       {% if "gestionar_compras" in permisos %}
       <li class="nav-item" role="listitem">
         <a class="nav-link{% if request.resolver_match.app_name == 'compras' and 'proveedor' not in request.resolver_match.url_name %} active fw-bold{% endif %}"
            {% if request.resolver_match.app_name == 'compras' and 'proveedor' not in request.resolver_match.url_name %}aria-current="page"{% endif %}
-           href="{% url 'compras:compra_lista' %}">Compras</a>
+           href="{% url 'compras:compra_lista' %}">{% include 'components/_icono.html' with icono='carrito' %}<span>Compras</span></a>
       </li>
       <li class="nav-item" role="listitem">
         <a class="nav-link{% if request.resolver_match.app_name == 'compras' and 'proveedor' in request.resolver_match.url_name %} active fw-bold{% endif %}"
            {% if request.resolver_match.app_name == 'compras' and 'proveedor' in request.resolver_match.url_name %}aria-current="page"{% endif %}
-           href="{% url 'compras:proveedor_lista' %}">Proveedores</a>
+           href="{% url 'compras:proveedor_lista' %}">{% include 'components/_icono.html' with icono='camion' %}<span>Proveedores</span></a>
       </li>
       {% endif %}
 
@@ -76,7 +65,7 @@
       <li class="nav-item" role="listitem">
         <a class="nav-link{% if request.resolver_match.app_name == 'catalogo' %} active fw-bold{% endif %}"
            {% if request.resolver_match.app_name == 'catalogo' %}aria-current="page"{% endif %}
-           href="{% url 'catalogo:producto_lista' %}">Catálogo</a>
+           href="{% url 'catalogo:producto_lista' %}">{% include 'components/_icono.html' with icono='cajas' %}<span>Catálogo</span></a>
       </li>
       {% endif %}
 
@@ -84,27 +73,16 @@
       <li class="nav-item" role="listitem">
         <a class="nav-link{% if request.resolver_match.app_name == 'usuarios' and request.resolver_match.url_name != 'rol_lista' %} active fw-bold{% endif %}"
            {% if request.resolver_match.app_name == 'usuarios' and request.resolver_match.url_name != 'rol_lista' %}aria-current="page"{% endif %}
-           href="{% url 'usuarios:lista' %}">Usuarios</a>
+           href="{% url 'usuarios:lista' %}">{% include 'components/_icono.html' with icono='usuarios' %}<span>Usuarios</span></a>
       </li>
       <li class="nav-item" role="listitem">
         <a class="nav-link{% if request.resolver_match.url_name == 'rol_lista' %} active fw-bold{% endif %}"
            {% if request.resolver_match.url_name == 'rol_lista' %}aria-current="page"{% endif %}
-           href="{% url 'usuarios:rol_lista' %}">Roles</a>
+           href="{% url 'usuarios:rol_lista' %}">{% include 'components/_icono.html' with icono='usuarios' %}<span>Roles</span></a>
       </li>
       {% endif %}
 
-      {% if 'ver_auditoria' in permisos %}<li class="nav-item"><a class="nav-link" href="{% url 'auditoria:lista' %}">Bitácora</a></li>{% endif %}
-      {% if 'respaldar' in permisos %}<li class="nav-item"><a class="nav-link" href="{% url 'core:respaldos' %}">Respaldos</a></li>{% endif %}
+      {% if 'ver_auditoria' in permisos %}<li class="nav-item"><a class="nav-link" href="{% url 'auditoria:lista' %}">{% include 'components/_icono.html' with icono='lista' %}<span>Bitácora</span></a></li>{% endif %}
+      {% if 'respaldar' in permisos %}<li class="nav-item"><a class="nav-link" href="{% url 'core:respaldos' %}">{% include 'components/_icono.html' with icono='escudo' %}<span>Respaldos</span></a></li>{% endif %}
     </ul>
-
-    {# Usuario y botón de cierre de sesión — siempre al extremo derecho #}
-    <div class="d-flex align-items-center gap-2 ms-md-auto mt-2 mt-md-0 flex-wrap" id="menu-usuario">
-      <span class="text-muted small fw-semibold" aria-label="Usuario activo">{{ user.get_username }}</span>
-      <form method="post" action="{% url 'usuarios:logout' %}">
-        {% csrf_token %}
-        <button class="btn btn-outline-secondary btn-sm" type="submit" id="btn-salir">Salir</button>
-      </form>
-    </div>
-  </div>
-
-</nav>
+</nav></div></aside>

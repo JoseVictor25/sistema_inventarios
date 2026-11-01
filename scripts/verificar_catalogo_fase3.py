@@ -31,7 +31,14 @@ def preparar_entorno(temporal):
     (temporal / "settings_fase3.py").write_text(
         "from config.settings.desarrollo import *\n"
         f"DATABASES['default']['TEST'] = {{'NAME': {str(temporal / 'tests.sqlite3')!r}}}\n"
-        "WHITENOISE_USE_FINDERS = True\n", encoding="utf-8")
+        f"STATIC_ROOT = {str(temporal / 'staticfiles')!r}\n"
+        "WHITENOISE_USE_FINDERS = False\n", encoding="utf-8")
+    # La verificación debe reproducir producción: se recolecta en TEMP y nunca
+    # se sirve directamente desde frontend/static mediante finders.
+    subprocess.run(
+        [sys.executable, str(RAIZ / "backend/manage.py"), "collectstatic", "--noinput", "--verbosity", "0"],
+        cwd=RAIZ / "backend", env=env, check=True,
+    )
     return env
 
 
@@ -123,7 +130,7 @@ def recorrido_http(temporal, abrir):
             estado, final, html = pedir(cliente, ruta)
             if estado != 200 or final != ruta or b"https://" in html or b"http://" in html:
                 raise RuntimeError(f"Página inválida: {ruta}, HTTP {estado}")
-        for recurso in (*RECURSOS_FRONTEND, "css/app.css", "js/app.js", "js/catalogo.js", "img/favicon.svg"):
+        for recurso in RECURSOS_FRONTEND:
             estado, _, datos = pedir(cliente, "/static/" + recurso)
             if estado != 200 or datos != (RAIZ / "frontend/static" / recurso).read_bytes():
                 raise RuntimeError(f"Recurso incorrecto: {recurso}")

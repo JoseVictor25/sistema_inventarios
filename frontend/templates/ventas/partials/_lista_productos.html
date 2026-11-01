@@ -2,8 +2,8 @@
   {% for p in productos %}
     <div class="card p-2 shadow-sm border {% if p.sin_stock %}opacity-50 bg-light{% endif %}" id="prod-{{ p.id }}">
       <div class="d-flex justify-content-between align-items-start gap-2">
-        <div class="flex-grow-1">
-          <div class="fw-semibold text-truncate" style="max-width: 280px;" title="{{ p.nombre }}">
+        <div class="flex-grow-1 min-w-0">
+          <div class="fw-semibold text-truncate" title="{{ p.nombre }}">
             {{ p.nombre }}
           </div>
           <div class="text-muted small">
@@ -17,7 +17,7 @@
           </div>
         </div>
 
-        <div class="d-flex flex-column align-items-end gap-1">
+        <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
           {% if p.sin_stock %}
             <span class="badge bg-secondary">Sin stock</span>
           {% else %}

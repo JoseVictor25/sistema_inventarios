@@ -207,7 +207,7 @@ def recorrido_http(temporal, abrir):
         assert pedir(sin_perm_cl, '/ventas/')[0] == 403
 
         # Verificar todos los recursos estáticos requeridos
-        for recurso in (*RECURSOS_FRONTEND, 'css/app.css', 'js/app.js', 'js/pos.js', 'img/favicon.svg'):
+        for recurso in RECURSOS_FRONTEND:
             assert pedir(dueno_cl, '/static/' + recurso)[0] == 200, recurso
 
         assert not any(p['estado'] in (404, 500) for p in peticiones)

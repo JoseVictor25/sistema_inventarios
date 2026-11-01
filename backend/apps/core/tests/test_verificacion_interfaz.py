@@ -102,7 +102,8 @@ class VerificacionInterfazTests(SimpleTestCase):
             self.assertFalse(datos["automatizacion_aprobada"])
             for accion in ("login", "inicio", "logout"):
                 self.assertTrue(datos["autenticacion_http"][accion])
-            self.assertEqual(len(datos["autenticacion_http"]["recursos_verificados"]), 10)
+            from apps.core.frontend import RECURSOS_FRONTEND
+            self.assertEqual(len(datos["autenticacion_http"]["recursos_verificados"]), len(RECURSOS_FRONTEND))
             self.assertTrue(all(r["estado"] < 400 for r in datos["http_local"]))
         for ruta, valor in antes.items():
             self.assertEqual(hashlib.sha256(ruta.read_bytes()).digest(), valor)

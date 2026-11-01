@@ -33,6 +33,8 @@ def listar_eventos(usuario, filtros=None):
     pagina = Paginator(consulta, 20).get_page(datos.get('page') or 1)
     # Paso 3: las plantillas escapan estos textos; nunca marcar JSON como safe.
     for evento in pagina:
+        from .presentacion import preparar
+        preparar(evento)
         evento.anterior_texto = json.dumps(evento.valor_anterior, ensure_ascii=False, indent=2)
         evento.nuevo_texto = json.dumps(evento.valor_nuevo, ensure_ascii=False, indent=2)
     return pagina

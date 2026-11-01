@@ -11,14 +11,14 @@
       </div>
     {% endif %}
 
-    <div class="lineas-carrito mb-3" style="max-height: 380px; overflow-y: auto;">
+    <div class="lineas-carrito mb-3 pos-scroll-carrito">
       {% for item in carrito.lineas %}
         <div class="card mb-2 p-2 border bg-light linea-item" id="linea-{{ item.indice }}">
-          <div class="d-flex justify-content-between align-items-start mb-1">
-            <span class="fw-semibold text-truncate me-2" style="max-width: 220px;" title="{{ item.producto.nombre }}">
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+            <span class="fw-semibold text-truncate min-w-0" title="{{ item.producto.nombre }}">
               {{ item.producto.nombre }}
             </span>
-            <span class="fw-bold text-nowrap">
+            <span class="fw-bold text-nowrap flex-shrink-0">
               {{ MONEDA_SIMBOLO }} {{ item.subtotal|floatformat:2 }}
             </span>
           </div>
@@ -31,9 +31,9 @@
             · descuenta <strong>{{ item.unidades }} u.</strong>
           </div>
 
-          <div class="d-flex gap-2 align-items-center">
+          <div class="d-flex flex-wrap gap-2 align-items-center">
             <select name="presentacion_id"
-                    class="form-select form-select-sm select-presentacion-linea flex-grow-1"
+                    class="form-select form-select-sm select-presentacion-linea flex-grow-1 min-w-0"
                     hx-post="{% url 'ventas:carrito_actualizar' %}"
                     hx-target="#carrito"
                     hx-swap="outerHTML"
@@ -108,7 +108,7 @@
 
         {# Sección Métodos de Pago #}
         <div class="mb-3">
-          <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
             <span class="small fw-bold text-secondary">Métodos de pago</span>
             <button type="button"
                     class="btn btn-outline-primary btn-sm py-0 px-2"
@@ -121,8 +121,8 @@
           <div id="lista-pagos">
             {# Fila de pago inicial #}
             <div class="card p-2 mb-2 bg-light border fila-pago" data-fila-pago>
-              <div class="row g-1 align-items-center">
-                <div class="col-5">
+              <div class="row g-2 align-items-center">
+                <div class="col-12 col-sm-5">
                   <select name="metodo_id" class="form-select form-select-sm select-metodo" aria-label="Método de pago">
                     {% for m in metodos_pago %}
                       <option value="{{ m.id }}" data-es-efectivo="{% if m.es_efectivo %}1{% else %}0{% endif %}">
@@ -131,7 +131,7 @@
                     {% endfor %}
                   </select>
                 </div>
-                <div class="col-5">
+                <div class="col-8 col-sm-5">
                   <div class="input-group input-group-sm">
                     <span class="input-group-text px-1">{{ MONEDA_SIMBOLO }}</span>
                     <input type="number"
@@ -144,7 +144,7 @@
                            aria-label="Monto a pagar">
                   </div>
                 </div>
-                <div class="col-2 text-end">
+                <div class="col-4 col-sm-2 text-end">
                   <button type="button" class="btn btn-outline-danger btn-sm px-2 btn-quitar-metodo" title="Quitar método" style="display: none;">
                     ✕
                   </button>
@@ -163,8 +163,8 @@
           {# Template oculto para clonar nuevas filas de pago #}
           <template id="template-fila-pago">
             <div class="card p-2 mb-2 bg-light border fila-pago" data-fila-pago>
-              <div class="row g-1 align-items-center">
-                <div class="col-5">
+              <div class="row g-2 align-items-center">
+                <div class="col-12 col-sm-5">
                   <select name="metodo_id" class="form-select form-select-sm select-metodo" aria-label="Método de pago">
                     {% for m in metodos_pago %}
                       <option value="{{ m.id }}" data-es-efectivo="{% if m.es_efectivo %}1{% else %}0{% endif %}">
@@ -173,7 +173,7 @@
                     {% endfor %}
                   </select>
                 </div>
-                <div class="col-5">
+                <div class="col-8 col-sm-5">
                   <div class="input-group input-group-sm">
                     <span class="input-group-text px-1">{{ MONEDA_SIMBOLO }}</span>
                     <input type="number"
@@ -186,7 +186,7 @@
                            aria-label="Monto a pagar">
                   </div>
                 </div>
-                <div class="col-2 text-end">
+                <div class="col-4 col-sm-2 text-end">
                   <button type="button" class="btn btn-outline-danger btn-sm px-2 btn-quitar-metodo" title="Quitar método">
                     ✕
                   </button>
@@ -256,7 +256,7 @@
         {% endif %}
 
         {# Botones de acción #}
-        <div class="d-flex gap-2">
+        <div class="d-flex flex-column flex-sm-row gap-2">
           <button type="submit"
                   class="btn btn-success flex-grow-1"
                   id="btn-confirmar-venta"

@@ -10,7 +10,7 @@
       <span class="text-muted small">Registro inmutable de transacciones completadas</span>
     </div>
 
-    <div class="d-flex gap-2 align-items-center">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
       <span class="fs-6 text-secondary me-2">Total del día: <strong class="fs-5 text-success">{{ MONEDA_SIMBOLO }} {{ total_dia|floatformat:2 }}</strong></span>
       <a href="{% url 'ventas:pos' %}" class="btn btn-primary btn-sm" id="btn-ir-pos">
         + Nueva venta
@@ -26,9 +26,9 @@
             <tr>
               <th scope="col" style="width: 90px;">N° Venta</th>
               <th scope="col">Hora</th>
-              <th scope="col">Vendedor</th>
-              <th scope="col">Turno</th>
-              <th scope="col">Métodos de pago</th>
+              <th scope="col" class="d-none d-md-table-cell">Vendedor</th>
+              <th scope="col" class="d-none d-md-table-cell">Turno</th>
+              <th scope="col" class="d-none d-md-table-cell">Métodos de pago</th>
               <th scope="col" class="text-end">Total</th>
               <th scope="col" class="text-center" style="width: 110px;">Acciones</th>
             </tr>
@@ -36,11 +36,24 @@
           <tbody>
             {% for venta in page_obj %}
               <tr>
-                <td class="fw-bold">#{{ venta.id }}</td>
+                <td class="fw-bold">
+                  #{{ venta.id }}
+                  {# Resumen móvil: conserva vendedor, turno y pagos sin ensanchar la tabla. #}
+                  <div class="d-md-none small fw-normal text-muted mt-1">
+                    <div>{{ venta.usuario.get_username }} · Turno #{{ venta.caja.id }}</div>
+                    <div class="d-flex flex-wrap gap-1 mt-1">
+                      {% for p in venta.pagos.all %}
+                        <span class="badge bg-light text-dark border">
+                          {{ p.metodo.nombre }}: {{ MONEDA_SIMBOLO }} {{ p.monto|floatformat:2 }}
+                        </span>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </td>
                 <td class="text-nowrap">{{ venta.fecha|date:"H:i:s" }}</td>
-                <td>{{ venta.usuario.get_username }}</td>
-                <td>Turno #{{ venta.caja.id }}</td>
-                <td>
+                <td class="d-none d-md-table-cell">{{ venta.usuario.get_username }}</td>
+                <td class="d-none d-md-table-cell">Turno #{{ venta.caja.id }}</td>
+                <td class="d-none d-md-table-cell">
                   {% for p in venta.pagos.all %}
                     <span class="badge bg-light text-dark border me-1">
                       {{ p.metodo.nombre }}: {{ MONEDA_SIMBOLO }} {{ p.monto|floatformat:2 }}

@@ -97,16 +97,55 @@ class PermisosTests(SimpleTestCase):
 @override_settings(ALLOWED_HOSTS=["testserver"])
 class InterfazTests(SimpleTestCase):
     def test_recursos_locales_servidos_por_django(self):
+        """Reproduce producción: WhiteNoise sirve un STATIC_ROOT recién recolectado."""
+        import tempfile
         from apps.core.frontend import RECURSOS_FRONTEND
         from django.conf import settings
-        for ruta in (*RECURSOS_FRONTEND, "css/app.css", "js/app.js"):
-            with self.subTest(ruta=ruta):
-                respuesta = self.client.get("/static/" + ruta)
-                self.assertEqual(respuesta.status_code, 200)
-                contenido = b"".join(respuesta.streaming_content) if respuesta.streaming else respuesta.content
-                self.assertEqual(contenido, (settings.FRONTEND_DIR / "static" / ruta).read_bytes())
-                tipo = respuesta["Content-Type"]
-                self.assertIn("css" if ruta.endswith(".css") else "javascript", tipo)
+        from django.core.management import call_command
+        from django.test import Client, override_settings
+
+        with tempfile.TemporaryDirectory() as carpeta:
+            with override_settings(STATIC_ROOT=carpeta, WHITENOISE_USE_FINDERS=False):
+                call_command("collectstatic", interactive=False, verbosity=0)
+                cliente = Client()
+                for ruta in RECURSOS_FRONTEND:
+                    with self.subTest(ruta=ruta):
+                        respuesta = cliente.get("/static/" + ruta)
+                        self.assertEqual(respuesta.status_code, 200)
+                        contenido = b"".join(respuesta.streaming_content) if respuesta.streaming else respuesta.content
+                        self.assertEqual(contenido, (settings.FRONTEND_DIR / "static" / ruta).read_bytes())
+                        tipo = respuesta["Content-Type"]
+                        if ruta.endswith(".css"):
+                            self.assertIn("css", tipo)
+                        elif ruta.endswith(".js"):
+                            self.assertIn("javascript", tipo)
+
+    def test_recursos_faltantes_detecta_ausentes(self):
+        import tempfile
+        from pathlib import Path
+        from apps.core.frontend import RECURSOS_FRONTEND, recursos_faltantes
+
+        with tempfile.TemporaryDirectory() as carpeta:
+            for ruta in RECURSOS_FRONTEND:
+                archivo = Path(carpeta) / ruta
+                archivo.parent.mkdir(parents=True, exist_ok=True)
+                archivo.write_bytes(b"recurso de prueba")
+            self.assertEqual(recursos_faltantes(carpeta), ())
+            (Path(carpeta) / "js/pos.js").unlink()
+            self.assertEqual(recursos_faltantes(carpeta), ("js/pos.js",))
+
+    def test_mensajes_largos_no_desbordan(self):
+        """Nombres de respaldo o rutas largas deben poder partirse en móvil."""
+        from django.contrib.messages import constants
+        from django.contrib.messages.storage.base import Message
+        from django.template.loader import render_to_string
+
+        html = render_to_string("components/_mensajes.html", {
+            "messages": [Message(constants.SUCCESS, "respaldo_" + "a" * 150 + ".sqlite3")],
+            "DEFAULT_MESSAGE_LEVELS": constants.DEFAULT_LEVELS,
+        })
+        self.assertIn("text-break", html)
+        self.assertIn("respaldo_", html)
 
     def test_login_sin_recursos_remotos(self):
         respuesta = self.client.get("/login/")

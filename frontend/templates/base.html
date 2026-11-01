@@ -9,10 +9,10 @@
   <link rel="stylesheet" href="{% static 'vendor/adminlte/css/adminlte.min.css' %}">
   <link rel="stylesheet" href="{% static 'vendor/tom-select/css/tom-select.bootstrap5.min.css' %}">
   {% endif %}
-  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v={{ version_css }}">
   {% block css %}{% endblock %}
 </head>
-<body class="layout-top-nav bg-body-tertiary" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+<body class="interfaz-tienda{% if user.is_authenticated %} con-navegacion{% endif %}" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   <div class="app-wrapper">
     {% if user.is_authenticated %}{% include "components/_menu.html" %}{% endif %}
     <main class="app-main" id="contenido-principal">
@@ -29,7 +29,7 @@
   <script src="{% static 'vendor/chartjs/chart.umd.min.js' %}"></script>
   <script src="{% static 'vendor/tom-select/js/tom-select.complete.min.js' %}"></script>
   {% endif %}
-  <script src="{% static 'js/app.js' %}"></script>
+  <script src="{% static 'js/app.js' %}?v={{ version_js }}"></script>
   {% block js %}{% endblock %}
 </body>
 </html>

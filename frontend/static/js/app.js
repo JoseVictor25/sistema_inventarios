@@ -12,24 +12,18 @@ document.body.addEventListener("htmx:beforeSwap", (evento) => {
    Bootstrap JS (bundle con Popper) ya maneja data-bs-toggle="collapse".
    Este bloque: cierra el menú colapsado al hacer clic en un enlace de navegación,
    para que en móvil el usuario no deba cerrarlo manualmente. */
-document.addEventListener("DOMContentLoaded", () => {
-  const toggler  = document.getElementById("menu-toggler");
-  const navPanel = document.getElementById("nav-collapsible");
-
-  if (!toggler || !navPanel) return;
-
-  // Cerrar menú al hacer clic en cualquier enlace del área colapsable (solo móvil)
-  navPanel.addEventListener("click", (e) => {
-    const esEnlace = e.target.closest("a[href]");
-    if (!esEnlace) return;
-    // Solo actuar si el panel está expandido (viewport móvil)
-    const estaExpandido = toggler.getAttribute("aria-expanded") === "true";
-    if (estaExpandido && window.innerWidth < 768) {
-      // Usar la API de Bootstrap Collapse si está disponible
-      if (typeof bootstrap !== "undefined" && bootstrap.Collapse) {
-        const instancia = bootstrap.Collapse.getOrCreateInstance(navPanel);
-        instancia.hide();
-      }
-    }
+document.addEventListener('DOMContentLoaded', () => {
+  const panel = document.getElementById('nav-collapsible');
+  if (!panel) return;
+  panel.querySelectorAll('a.nav-link[href]').forEach(enlace => {
+    if (new URL(enlace.href).pathname === location.pathname) enlace.classList.add('active');
+    if (enlace.classList.contains('active')) enlace.setAttribute('aria-current', 'page');
+  });
+  panel.addEventListener('click', evento => {
+    if (evento.target.closest('a[href]') && window.bootstrap) bootstrap.Offcanvas.getInstance(panel)?.hide();
+  });
+  const ancho = matchMedia('(min-width: 992px)');
+  ancho.addEventListener('change', () => {
+    if (ancho.matches && window.bootstrap) bootstrap.Offcanvas.getInstance(panel)?.hide();
   });
 });

@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %}{% load static %}
 
 {% block contenido %}
 
@@ -204,7 +204,7 @@
 
   {# Botones de acción #}
 
-  <div class="d-flex justify-content-end gap-2 mb-4">
+  <div class="d-flex flex-wrap justify-content-end gap-2 mb-4">
 
     <a href="{% url 'compras:compra_lista' %}" class="btn btn-outline-secondary" id="btn-cancelar">
 
@@ -221,127 +221,6 @@
   </div>
 
 </form>
-
-
-
-<script>
-
-  function recalcularTotales() {
-
-    let total = 0;
-
-    const filas = document.querySelectorAll('.linea-compra-fila');
-
-    filas.forEach(fila => {
-
-      const cantInput = fila.querySelector('.input-cantidad');
-
-      const costoInput = fila.querySelector('.input-costo');
-
-      const subtotalSpan = fila.querySelector('.subtotal-linea');
-
-
-
-      const cant = parseFloat(cantInput ? cantInput.value : 0) || 0;
-
-      const costo = parseFloat(costoInput ? costoInput.value : 0) || 0;
-
-      const subtotal = Math.max(0, cant * costo);
-
-
-
-      if (subtotalSpan) {
-
-        subtotalSpan.textContent = subtotal.toFixed(2);
-
-      }
-
-      total += subtotal;
-
-    });
-
-
-
-    const totalSpan = document.getElementById('total-compra');
-
-    if (totalSpan) {
-
-      totalSpan.textContent = total.toFixed(2);
-
-    }
-
-  }
-
-
-
-  document.addEventListener('input', function(e) {
-
-    if (e.target.matches('.input-cantidad, .input-costo')) {
-
-      recalcularTotales();
-
-    }
-
-  });
-
-
-
-  document.addEventListener('htmx:afterSwap', function(e) {
-
-    if (e.detail.target && e.detail.target.id === 'lineas-compra') {
-
-      recalcularTotales();
-
-    }
-
-  });
-
-
-
-  // Prevención de doble envío en cliente
-
-  const formCompra = document.getElementById('form-nueva-compra');
-
-  if (formCompra) {
-
-    formCompra.addEventListener('submit', function(e) {
-
-      const btn = document.getElementById('btn-guardar-compra');
-
-      if (btn && !btn.disabled) {
-
-        // Validación mínima en cliente: al menos una fila con producto
-
-        const filas = document.querySelectorAll('.linea-compra-fila');
-
-        if (filas.length === 0) {
-
-          e.preventDefault();
-
-          alert('Debes agregar al menos un producto a la compra.');
-
-          return;
-
-        }
-
-        btn.disabled = true;
-
-        btn.textContent = 'Guardando...';
-
-      }
-
-    });
-
-  }
-
-
-
-  // Cálculo inicial
-
-  document.addEventListener('DOMContentLoaded', recalcularTotales);
-
-  recalcularTotales();
-
-</script>
-
 {% endblock %}
+
+{% block js %}<script src="{% static 'js/compras.js' %}"></script>{% endblock %}

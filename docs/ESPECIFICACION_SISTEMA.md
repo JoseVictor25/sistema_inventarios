@@ -1573,12 +1573,43 @@ Se ejecutan con `python manage.py test`. Cada servicio tiene como mínimo una pr
 
 ## 13. Empaquetado y entrega
 
+### Contrato autorizado de fase 10, Bloque A
+
+- Implementación experimental únicamente sobre subdirectorios explícitos de TEMP.
+  `desktop/launcher.py --datos-temporales RUTA --inicializar` crea una instalación
+  nueva; nunca usa ProgramData ni la SQLite del desarrollo de manera implícita.
+- Recursos de solo lectura separados de SQLite, configuración, respaldos y logs.
+  La ubicación final prevista sigue siendo ProgramData, con una sola identidad
+  Windows autorizada. ACL definitivas y acceso multiusuario quedan fuera del Bloque A.
+- Configuración incompleta de una instalación existente detiene el arranque sin
+  regenerar secretos. SECRET_KEY aleatoria por instalación, conservada al reiniciar.
+- Solo instalaciones nuevas autorizadas reciben migraciones y datos iniciales.
+  Un esquema existente pendiente bloquea el inicio funcional; requiere procedimiento
+  independiente sobre copia y autorización posterior para originales. Esta decisión
+  sustituye la migración automática indiscriminada descrita originalmente abajo.
+- Primer Dueño en `/configuracion-inicial/`, con código aleatorio local de un solo
+  uso mostrado en consola, CSRF, validación de contraseñas y creación transaccional.
+  No obtiene is_staff ni is_superuser. Instancia única y exclusión entre peticiones;
+  tras crear un usuario la ruta queda bloqueada, incluso en siguientes ejecuciones.
+- Waitress recibe un socket reservado exclusivamente en 127.0.0.1. Si el puerto
+  está ocupado, el sistema operativo asigna otro sin liberar la reserva.
+- pywebview se inicia en el hilo principal mediante API pública. Alternativa de
+  navegador con cierre explícito por ENTER en consola; no hay apagado web.
+- `--respaldo` usa el motor de fase 9, sin ventana ni servidor. En Bloque A exige
+  la ruta temporal explícita; no instala tareas programadas.
+- Construcción con `scripts/compilar_fase10.py`: collectstatic aislado y onedir
+  en TEMP. `scripts/verificar_fase10.py` distingue regresión, HTTP, escritorio,
+  paquete y revisión manual. El éxito HTTP no acredita revisión visual de WebView2.
+- Inno Setup, instalación/desinstalación, tareas reales, icono y términos definitivos
+  corresponden al Bloque B, pendiente de autorización.
+
 ### Qué hace `desktop/launcher.py` al abrir el programa
 
 1. Define `ENV_FILE` (`C:\ProgramData\SistemaInventarios\.env`) y `DJANGO_SETTINGS_MODULE=config.settings.produccion`.
 2. Si no existe el `.env`, lo crea con una `SECRET_KEY` nueva y los valores por defecto.
 3. Crea las carpetas de datos, respaldos y logs.
-4. Aplica las migraciones pendientes (`migrate`).
+4. En una instalación nueva autorizada aplica el esquema. Si la base ya existe y
+   requiere migraciones, detiene el inicio funcional y solicita actualización controlada.
 5. Ejecuta `cargar_datos_iniciales` (roles, permisos, métodos de pago). Es idempotente.
 6. Si no hay usuarios, el sistema abre la pantalla de primer uso para crear al dueño.
 7. Inicia `waitress` en `HOST:PORT` en un hilo aparte.
@@ -1599,7 +1630,8 @@ Se ejecutan con `python manage.py test`. Cada servicio tiene como mínimo una pr
 - **Los datos no van en la carpeta del programa.** La base, los respaldos, los logs y el `.env` viven en `C:\ProgramData\SistemaInventarios\`, para que sobrevivan a las actualizaciones.
 - **El desinstalador no borra los datos** (salvo que el usuario lo pida expresamente).
 - Crea la tarea programada del respaldo diario.
-- Una actualización es instalar la versión nueva encima: los datos se conservan y las migraciones se aplican al abrir.
+- Una actualización conserva los datos. Las migraciones de bases existentes requieren
+  respaldo verificado, ensayo sobre copia y autorización explícita; no se aplican al abrir.
 
 ### Compatibilidad
 
@@ -1640,16 +1672,16 @@ Orden recomendado. La **caja va antes de la venta** porque no se puede vender si
 - [x] **Fase 6 — Venta (POS):** carrito, búsqueda, presentaciones, pagos, descuento por lotes (FEFO) y confirmar.
 - [x] **Fase 7 — Inventario y alertas:** stock, lotes, ajustes, mermas, stock bajo y por vencer.
 - [x] **Fase 8 — Reportes y exportación:** reportes de la sección 11 con Excel y PDF.
-- [ ] **Fase 9 — Auditoría, respaldo y panel de inicio.**
+- [x] **Fase 9 — Auditoría, respaldo y panel de inicio.** Cierre confirmado por el usuario al autorizar fase 10, commit `42cb939`.
 - [ ] **Fase 10 — Empaquetado:** `launcher.py`, PyInstaller e instalador; pruebas en máquinas limpias.
 - [ ] **Fase 11 — Entrega:** pruebas con datos reales del cliente, capacitación, contrato y respaldo verificado.
 
 ### Si el tiempo aprieta
 
-El cierre de fases 0–8 fue confirmado por el usuario al autorizar fase 9, con
-base Git `799a6ab` y 319 pruebas previas. Los informes anteriores conservan
-evidencias históricas. La fase 9 conserva pendiente su revisión visual y cierre
-por el usuario; no se instala aún ninguna tarea de Windows.
+El cierre de fases 0–9 fue confirmado por el usuario al autorizar fase 10, con
+base Git `42cb939` y 346 pruebas previas. Los informes anteriores conservan
+evidencias históricas. El Bloque A de fase 10 es experimental; no se instala aún
+ninguna tarea de Windows ni se distribuye al cliente.
 
 El núcleo mínimo para empezar a usarlo es: fases 0 a 6 más los reportes de ventas (fase 8) y el respaldo. La auditoría detallada, los reportes secundarios y el instalador pulido pueden entregarse en una segunda versión. Plan B de entrega: instalar Python y el proyecto en la laptop del cliente con un acceso directo (`.bat`) que inicie el sistema, y hacer el instalador después.
 

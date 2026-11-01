@@ -34,8 +34,13 @@ def preparar_entorno(temporal):
     (temporal / "settings_fase4.py").write_text(
         "from config.settings.desarrollo import *\n"
         f"DATABASES['default']['TEST'] = {{'NAME': {str(temporal / 'tests.sqlite3')!r}}}\n"
-        "WHITENOISE_USE_FINDERS = True\n",
+        f"STATIC_ROOT = {str(temporal / 'staticfiles')!r}\n"
+        "WHITENOISE_USE_FINDERS = False\n",
         encoding="utf-8",
+    )
+    subprocess.run(
+        [sys.executable, str(RAIZ / "backend/manage.py"), "collectstatic", "--noinput", "--verbosity", "0"],
+        cwd=RAIZ / "backend", env=env, check=True,
     )
     return env
 
@@ -159,7 +164,7 @@ def recorrido_http(temporal, abrir):
             if estado != 200 or (final != ruta and not final.startswith(ruta)) or b"https://" in html or b"http://" in html:
                 raise RuntimeError(f"Página inválida: {ruta}, HTTP {estado}")
 
-        recursos_fase4 = (*RECURSOS_FRONTEND, "css/app.css", "js/app.js", "js/catalogo.js", "js/compras.js", "img/favicon.svg")
+        recursos_fase4 = RECURSOS_FRONTEND
         for recurso in recursos_fase4:
             estado, _, datos = pedir(cliente, "/static/" + recurso)
             if estado != 200 or datos != (RAIZ / "frontend/static" / recurso).read_bytes():

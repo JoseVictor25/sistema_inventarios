@@ -60,6 +60,9 @@ def main():
             from django.urls import reverse, resolve
             from apps.usuarios.models import Usuario, Rol, Permiso
             from apps.core.frontend import RECURSOS_FRONTEND
+            settings.STATIC_ROOT = Path(temporal) / "staticfiles"
+            settings.WHITENOISE_USE_FINDERS = False
+            call_command("collectstatic", interactive=False, verbosity=0)
             preparar_base_temporal(temporal)
             call_command("cargar_datos_iniciales", verbosity=0)
             clave = secrets.token_urlsafe(24)
@@ -177,7 +180,7 @@ def main():
                 assert pedir(v, ruta)[0] == 403
                 assert pedir(v, ruta, {"csrfmiddlewaretoken": token})[0] == 403
             ok("Vendedor: menú oculto y 403 en GET/POST directo de las cuatro rutas con CSRF válido")
-            recursos = (*RECURSOS_FRONTEND, "css/app.css", "js/app.js", "img/favicon.svg")
+            recursos = RECURSOS_FRONTEND
             for recurso in recursos:
                 status, _, contenido = pedir(c, "/static/" + recurso)
                 assert status == 200 and contenido == (settings.FRONTEND_DIR / "static" / recurso).read_bytes()

@@ -10,7 +10,7 @@
       <span class="text-muted small">Detalle inmutable de la transacción</span>
     </div>
 
-    <div class="d-flex gap-2">
+    <div class="d-flex flex-wrap gap-2">
       <a href="{% url 'ventas:lista' %}" class="btn btn-outline-secondary btn-sm">
         ← Volver al listado
       </a>
@@ -82,9 +82,9 @@
               <thead class="table-light">
                 <tr>
                   <th scope="col">Producto y presentación</th>
-                  <th scope="col" class="text-center">Cant.</th>
+                  <th scope="col" class="text-center d-none d-sm-table-cell">Cant.</th>
                   <th scope="col" class="text-center">Unidades</th>
-                  <th scope="col" class="text-end">Precio aplicado</th>
+                  <th scope="col" class="text-end d-none d-sm-table-cell">Precio aplicado</th>
                   <th scope="col" class="text-end">Subtotal</th>
                 </tr>
               </thead>
@@ -94,26 +94,31 @@
                     <td>
                       <div class="fw-semibold">{{ d.presentacion.producto.nombre }}</div>
                       <div class="text-muted small">{{ d.presentacion.nombre }} ({{ d.presentacion.unidades_equivalentes }} u./pres.)</div>
+                      <div class="d-sm-none small text-muted mt-1">
+                        {{ d.cantidad_presentaciones }} pres. · {{ MONEDA_SIMBOLO }} {{ d.precio_aplicado|floatformat:2 }} c/u
+                      </div>
                     </td>
-                    <td class="text-center fw-medium">{{ d.cantidad_presentaciones }}</td>
+                    <td class="text-center fw-medium d-none d-sm-table-cell">{{ d.cantidad_presentaciones }}</td>
                     <td class="text-center text-muted">{{ d.unidades_totales }} u.</td>
-                    <td class="text-end">{{ MONEDA_SIMBOLO }} {{ d.precio_aplicado|floatformat:2 }}</td>
+                    <td class="text-end d-none d-sm-table-cell">{{ MONEDA_SIMBOLO }} {{ d.precio_aplicado|floatformat:2 }}</td>
                     <td class="text-end fw-bold">{{ MONEDA_SIMBOLO }} {{ d.subtotal|floatformat:2 }}</td>
                   </tr>
                   {# Subfila de lotes FEFO #}
                   <tr class="bg-light">
                     <td colspan="5" class="py-1 px-4 small border-bottom">
-                      <span class="text-secondary fw-semibold">Lotes descontados:</span>
-                      {% for salida in d.salidas_lote.all %}
-                        <span class="badge bg-secondary-subtle text-secondary-emphasis border ms-2">
-                          {{ salida.lote.codigo_lote }}: {{ salida.cantidad_unidades }} u.
-                          {% if "ver_costos" in permisos %}
-                            (costo: {{ MONEDA_SIMBOLO }} {{ salida.lote.costo_unitario|floatformat:2 }})
-                          {% endif %}
-                        </span>
-                      {% empty %}
-                        <span class="text-muted ms-2">Sin registro de lote</span>
-                      {% endfor %}
+                      <div class="d-flex flex-wrap align-items-center gap-1">
+                        <span class="text-secondary fw-semibold">Lotes descontados:</span>
+                        {% for salida in d.salidas_lote.all %}
+                          <span class="badge bg-secondary-subtle text-secondary-emphasis border">
+                            {{ salida.lote.codigo_lote }}: {{ salida.cantidad_unidades }} u.
+                            {% if "ver_costos" in permisos %}
+                              (costo: {{ MONEDA_SIMBOLO }} {{ salida.lote.costo_unitario|floatformat:2 }})
+                            {% endif %}
+                          </span>
+                        {% empty %}
+                          <span class="text-muted">Sin registro de lote</span>
+                        {% endfor %}
+                      </div>
                     </td>
                   </tr>
                 {% endfor %}
