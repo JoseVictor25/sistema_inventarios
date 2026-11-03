@@ -1,0 +1,13 @@
+{
+  "producto": "Microsoft Edge WebView2 Evergreen Standalone Installer x64",
+  "pagina_oficial": "https://developer.microsoft.com/microsoft-edge/webview2/",
+  "documentacion": "https://learn.microsoft.com/microsoft-edge/webview2/concepts/distribution",
+  "archivo_esperado": "MicrosoftEdgeWebView2RuntimeInstallerX64.exe",
+  "estado": "pendiente_de_adquisicion_y_verificacion",
+  "url_descarga_final": null,
+  "version_archivo": null,
+  "sha256": null,
+  "firma_authenticode": null,
+  "fecha_verificacion": null,
+  "incluido_en_B2": false
+}

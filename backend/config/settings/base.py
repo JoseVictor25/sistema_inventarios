@@ -140,6 +140,13 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": DB_PATH,
+        "OPTIONS": {
+            # Esperar hasta 5 segundos antes de lanzar OperationalError por lock
+            # de base de datos ocupada. Necesario para que operaciones concurrentes
+            # (ej. cambios de precio simultáneos) sean serializadas correctamente
+            # en lugar de fallar instantáneamente con busy_timeout=0 (valor por defecto).
+            "timeout": 5,
+        },
     }
 }
 

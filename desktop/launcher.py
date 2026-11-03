@@ -1,4 +1,4 @@
-"""Launcher experimental: siempre requiere un directorio temporal explícito."""
+"""Launcher del sistema: soporta modo temporal (Bloque A) y modo instalado persistente (Bloque B3)."""
 import argparse
 from pathlib import Path
 import sys
@@ -8,51 +8,83 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--datos-temporales', required=True)
-    parser.add_argument('--inicializar', action='store_true')
-    parser.add_argument('--respaldo', action='store_true')
-    parser.add_argument('--navegador', action='store_true')
-    parser.add_argument('--puerto', type=int, default=8000)
-    parser.add_argument('--diagnostico', action='store_true', help='Prueba HTTP y cierre sin abrir interfaz, solo en TEMP.')
+    parser.add_argument('--datos-temporales', help='Ruta absoluta dentro de TEMP para modo experimental/pruebas.')
+    parser.add_argument('--datos-instalados', help='Ruta absoluta en ProgramData para modo instalado persistente.')
+    parser.add_argument('--instalado', action='store_true', help='Ejecuta en modo instalado permanente (usa ProgramData).')
+    parser.add_argument('--inicializar', action='store_true', help='Autoriza crear una instalación nueva.')
+    parser.add_argument('--respaldo', action='store_true', help='Crea copia de seguridad y finaliza sin abrir interfaz.')
+    parser.add_argument('--navegador', action='store_true', help='Usa navegador predeterminado en lugar de WebView2.')
+    parser.add_argument('--puerto', type=int, default=8000, help='Puerto local HTTP preferido.')
+    parser.add_argument('--diagnostico', action='store_true', help='Prueba HTTP y cierre sin abrir interfaz.')
+    parser.add_argument('--operador-sid', help='SID específico del operador para validación de acceso.')
     args = parser.parse_args()
-    from desktop.rutas import validar_temporal, recursos
-    ruta = validar_temporal(args.datos_temporales)
+
+    from desktop.rutas import validar_temporal, validar_datos_instalados, recursos
+    from desktop.bloqueo_instancia import bloqueo_instancia
+    modo = None
+    ruta = None
+
+    if args.datos_temporales:
+        modo = 'temporal'
+        ruta = validar_temporal(args.datos_temporales)
+    elif args.datos_instalados or args.instalado or getattr(sys, 'frozen', False):
+        modo = 'instalado'
+        ruta = validar_datos_instalados(args.datos_instalados)
+    else:
+        parser.error('Se requiere indicar --datos-temporales (para pruebas) o --instalado (para uso persistente).')
+
     ruta.mkdir(parents=True, exist_ok=True)
     sys.path.insert(0, str(recursos() / 'backend'))
-    from apps.core.respaldos import _bloqueo, crear_copia
+
+    from apps.core.respaldos import crear_copia
     from desktop.inicializacion import configurar
     from django.db import connections
     servidor = None
-    # Modo respaldo no toma el bloqueo de interfaz: el motor controla sus copias.
     from contextlib import nullcontext
+
     try:
-        with (nullcontext() if args.respaldo else _bloqueo(ruta)):
-            configurar(ruta, args.inicializar and not args.respaldo, solo_respaldo=args.respaldo)
+        # El bloqueo de instancia cubre el servidor HTTP: mantenimiento y el
+        # instalador pueden detectar una instancia activa mediante este cerrojo.
+        with (nullcontext() if args.respaldo else bloqueo_instancia(ruta)):
+            configurar(
+                ruta,
+                autorizar_nueva=args.inicializar and not args.respaldo,
+                solo_respaldo=args.respaldo,
+                modo=modo,
+                sid_operador=args.operador_sid
+            )
             if args.respaldo:
+                from apps.core.respaldos import crear_copia
                 from django.conf import settings
                 resultado = crear_copia(settings.DB_PATH, settings.BACKUP_DIR, settings.BACKUP_CONSERVAR)
                 print('Respaldo verificado:', resultado['archivo'], resultado['sha256'])
                 return 0
+
             from apps.core.primer_uso import habilitar
             from apps.core.frontend import recursos_faltantes
             from django.conf import settings
+
             if not getattr(sys, 'frozen', False):
-                # En origen nunca se escribe backend/staticfiles: se recolecta
-                # en la carpeta temporal de esta instalación.
+                # En desarrollo nunca se escribe backend/staticfiles: se recolecta
+                # en la carpeta de esta instalación.
                 settings.STATIC_ROOT = ruta / 'staticfiles'
                 from django.core.management import call_command
                 call_command('collectstatic', interactive=False, verbosity=0)
+
             faltantes = recursos_faltantes(settings.STATIC_ROOT)
             if faltantes:
                 raise RuntimeError(
                     'Faltan recursos estáticos obligatorios en el paquete: '
                     + ', '.join(faltantes)
                 )
+
             token = habilitar()
             from django.core.wsgi import get_wsgi_application
             from desktop.servidor import Servidor
+
             servidor = Servidor(get_wsgi_application(), args.puerto)
             servidor.iniciar()
+
             if args.diagnostico:
                 from urllib.request import urlopen
                 from apps.core.frontend import RECURSOS_FRONTEND
@@ -64,9 +96,11 @@ def main():
                 servidor = None
                 print('Diagnóstico HTTP y cierre aprobados.')
                 return 0
+
             url = servidor.url + ('/configuracion-inicial/' if token else '/')
             if token:
                 print('Código local de un solo uso:', token, flush=True)
+
             if not args.navegador:
                 try:
                     import webview
@@ -78,6 +112,7 @@ def main():
                     return 0
                 except Exception:
                     print('No se pudo abrir WebView2. Se usará el navegador local.')
+
             import webbrowser
             webbrowser.open(url)
             input('Servidor local activo. Pulsa ENTER aquí para cerrarlo: ')

@@ -11,7 +11,7 @@ datos = [(str(raiz / 'frontend/templates'), 'frontend/templates'),
          (str(raiz / 'frontend/static'), 'frontend/static'),
          (str(estaticos), 'backend/staticfiles')]
 datos += collect_data_files('tzdata') + collect_data_files('reportlab') + collect_data_files('webview')
-ocultos = collect_submodules('apps') + collect_submodules('config')
+ocultos = collect_submodules('apps') + collect_submodules('config') + collect_submodules('desktop')
 ocultos = [m for m in ocultos if '.tests' not in m]
 ocultos += ['django.db.backends.sqlite3', 'django.contrib.sessions.backends.db', 'webview.platforms.winforms']
 ocultos += ['whitenoise.middleware', 'django.template.backends.django',

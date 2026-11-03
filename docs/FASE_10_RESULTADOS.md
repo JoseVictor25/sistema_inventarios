@@ -1,5 +1,9 @@
 # Fase 10 — Bloque A experimental
 
+Actualización posterior: Bloque A versionado en `7e848e8`. La infraestructura
+preliminar del Bloque B, etapa B2, se documenta en `FASE_10_B2_RESULTADOS.md`.
+B3 y B4 no están implementadas; el instalador B2 bloquea toda instalación.
+
 Actualización de referencia definitiva: ver `FASE_10_REFERENCIA_VISUAL.md`.
 La navegación ahora es lateral, permanente en escritorio y Offcanvas en móvil;
 el detalle de auditoría es un panel derecho. Esta actualización sustituye la
