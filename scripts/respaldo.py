@@ -30,7 +30,8 @@ def main():
             raise ErrorRespaldo('El respaldo disponible requiere SQLite.')
         resultado = crear_copia(settings.DATABASES['default']['NAME'],
             args.carpeta_destino or settings.BACKUP_DIR,
-            args.conservar if args.conservar is not None else settings.BACKUP_CONSERVAR)
+            args.conservar if args.conservar is not None else settings.BACKUP_CONSERVAR,
+            qr=settings.DATA_DIR / 'qr_bancario.png')
     except ErrorRespaldo as error:
         print(str(error), file=sys.stderr)
         return 1

@@ -1,4 +1,6 @@
 venv/
+qr_bancario.png
+.qr_*
 __pycache__/
 *.pyc
 backend/db.sqlite3

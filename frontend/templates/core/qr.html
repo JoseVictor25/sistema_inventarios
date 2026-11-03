@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block contenido %}
+<h1 class="h3">QR bancario</h1>
+<p>Configura la imagen para cobros. Verifica que corresponda a la cuenta del negocio.</p>
+{% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+<form method="post" enctype="multipart/form-data" class="card card-body">
+{% csrf_token %}<label for="imagen">PNG, JPG, JPEG o WEBP, hasta 5 MB. Entre 128 y 4096 píxeles por lado; máximo 8 megapíxeles.</label>
+<input class="form-control my-3" id="imagen" type="file" name="imagen" accept=".png,.jpg,.jpeg,.webp" required>
+<button class="btn btn-primary" name="accion" value="guardar">Guardar o reemplazar QR</button></form>
+<p class="mt-3"><a href="{% url 'core:qr_imagen' %}" target="_blank" rel="noopener">Consultar imagen actual</a></p>
+<form method="post">{% csrf_token %}<button class="btn btn-outline-danger" name="accion" value="eliminar">Eliminar QR</button></form>
+{% endblock %}

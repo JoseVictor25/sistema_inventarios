@@ -84,5 +84,6 @@
 
       {% if 'ver_auditoria' in permisos %}<li class="nav-item"><a class="nav-link" href="{% url 'auditoria:lista' %}">{% include 'components/_icono.html' with icono='lista' %}<span>Bitácora</span></a></li>{% endif %}
       {% if 'respaldar' in permisos %}<li class="nav-item"><a class="nav-link" href="{% url 'core:respaldos' %}">{% include 'components/_icono.html' with icono='escudo' %}<span>Respaldos</span></a></li>{% endif %}
+      {% if 'gestionar_usuarios' in permisos %}<li class="nav-item"><a class="nav-link" href="{% url 'core:qr_configurar' %}">QR bancario</a></li>{% endif %}
     </ul>
 </nav></div></aside>

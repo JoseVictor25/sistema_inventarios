@@ -15,19 +15,16 @@ from verificar_reportes_fase8 import huellas, RAIZ
 def recuperar_temporal(temporal, usuario):
     from django.conf import settings
     from apps.core.services import crear_respaldo
-    from apps.core.respaldos import verificar_copia, hash_archivo
+    from apps.core.respaldos import verificar_copia, hash_archivo, recuperar_temporal as recuperar_archivos
     fuente = Path(settings.DATABASES['default']['NAME'])
     antes = hash_archivo(fuente)
     resultado = crear_respaldo(usuario)
     copia = Path(settings.BACKUP_DIR) / resultado['archivo']
-    restaurada = temporal / 'recuperada.sqlite3'
-    with restaurada.open('xb'):
-        pass
-    origen = sqlite3.connect(copia.as_uri() + '?mode=ro', uri=True)
-    destino = sqlite3.connect(restaurada)
+    recuperacion = recuperar_archivos(copia, temporal / 'recuperacion')
+    restaurada = Path(recuperacion['base'])
+    destino = sqlite3.connect(restaurada.as_uri() + '?mode=ro', uri=True)
     real_temporal = sqlite3.connect(fuente.as_uri() + '?mode=ro', uri=True)
     try:
-        origen.backup(destino)
         tablas = [f[0] for f in real_temporal.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")]
         cantidades = {}
         for tabla in tablas:
@@ -37,7 +34,6 @@ def recuperar_temporal(temporal, usuario):
             cantidades[tabla] = len(filas)
         assert destino.execute('PRAGMA foreign_key_check').fetchall() == []
     finally:
-        origen.close()
         destino.close()
         real_temporal.close()
     assert verificar_copia(restaurada)['sha256'] == resultado['sha256']

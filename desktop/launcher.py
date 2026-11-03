@@ -56,7 +56,8 @@ def main():
             if args.respaldo:
                 from apps.core.respaldos import crear_copia
                 from django.conf import settings
-                resultado = crear_copia(settings.DB_PATH, settings.BACKUP_DIR, settings.BACKUP_CONSERVAR)
+                resultado = crear_copia(settings.DB_PATH, settings.BACKUP_DIR, settings.BACKUP_CONSERVAR,
+                                       qr=settings.DATA_DIR / 'qr_bancario.png')
                 print('Respaldo verificado:', resultado['archivo'], resultado['sha256'])
                 return 0
 

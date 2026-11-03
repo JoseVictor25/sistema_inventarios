@@ -67,8 +67,10 @@
     </div>
   </div>
 </div>
+{% include 'ventas/partials/_qr_modal.html' %}
 {% endblock %}
 
 {% block js %}
+<script src="{% static 'js/qr.js' %}"></script>
 <script src="{% static 'js/pos.js' %}"></script>
 {% endblock %}

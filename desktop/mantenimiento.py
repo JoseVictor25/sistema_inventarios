@@ -146,7 +146,7 @@ def crear_respaldo_seguridad(directorio_datos):
     sys.path.insert(0, str(recursos() / 'backend'))
     from apps.core.respaldos import crear_copia, verificar_copia
 
-    resultado = crear_copia(db, respaldos_dir, conservar=50)
+    resultado = crear_copia(db, respaldos_dir, conservar=50, qr=Path(directorio_datos) / 'qr_bancario.png')
     archivo_completo = respaldos_dir / resultado['archivo']
     verificar_copia(archivo_completo)
     resultado['archivo_completo'] = archivo_completo

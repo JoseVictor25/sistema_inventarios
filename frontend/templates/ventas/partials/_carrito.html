@@ -125,7 +125,7 @@
                 <div class="col-12 col-sm-5">
                   <select name="metodo_id" class="form-select form-select-sm select-metodo" aria-label="Método de pago">
                     {% for m in metodos_pago %}
-                      <option value="{{ m.id }}" data-es-efectivo="{% if m.es_efectivo %}1{% else %}0{% endif %}">
+                      <option value="{{ m.id }}" data-es-qr="{% if m.nombre|upper == 'QR' %}1{% else %}0{% endif %}" data-es-efectivo="{% if m.es_efectivo %}1{% else %}0{% endif %}">
                         {{ m.nombre }}
                       </option>
                     {% endfor %}
@@ -167,7 +167,7 @@
                 <div class="col-12 col-sm-5">
                   <select name="metodo_id" class="form-select form-select-sm select-metodo" aria-label="Método de pago">
                     {% for m in metodos_pago %}
-                      <option value="{{ m.id }}" data-es-efectivo="{% if m.es_efectivo %}1{% else %}0{% endif %}">
+                      <option value="{{ m.id }}" data-es-qr="{% if m.nombre|upper == 'QR' %}1{% else %}0{% endif %}" data-es-efectivo="{% if m.es_efectivo %}1{% else %}0{% endif %}">
                         {{ m.nombre }}
                       </option>
                     {% endfor %}
@@ -255,6 +255,7 @@
           </div>
         {% endif %}
 
+        <div class="form-check mb-3"><input class="form-check-input" type="checkbox" name="qr_confirmado" value="si" id="qr-confirmado"><label class="form-check-label" for="qr-confirmado">Si hay pago QR, confirmo haber verificado su recepci&#243;n en la cuenta bancaria.</label></div>
         {# Botones de acción #}
         <div class="d-flex flex-column flex-sm-row gap-2">
           <button type="submit"

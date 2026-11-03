@@ -224,6 +224,8 @@ def confirmar(request):
 
     try:
         pagos = leer_pagos(request.POST, total_venta=carrito_enriquecido["total"])
+        if MetodoPago.objects.filter(pk__in=[p['metodo_id'] for p in pagos], nombre__iexact='QR').exists() and request.POST.get('qr_confirmado') != 'si':
+            raise ErrorDeNegocio('Confirma manualmente que recibiste el pago QR antes de finalizar.')
         venta = registrar_venta(
             usuario=request.user,
             lineas=carrito_crudo.get("lineas", []),

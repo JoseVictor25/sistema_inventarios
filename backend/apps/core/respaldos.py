@@ -6,13 +6,17 @@ local. El bloqueo de archivo coordina procesos, incluso creación y retención.
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
+import base64
+from io import BytesIO
 import json
 import logging
 import os
 from pathlib import Path
 import re
+import shutil
 import sqlite3
 import time
+import tempfile
 from uuid import uuid4
 
 logger = logging.getLogger(__name__)
@@ -23,6 +27,34 @@ TABLAS = {'django_migrations', 'usuarios_usuario', 'usuarios_rol', 'usuarios_per
 
 class ErrorRespaldo(Exception):
     """Error operativo que puede mostrarse sin revelar datos ni credenciales."""
+
+
+def _validar_qr(datos):
+    from PIL import Image
+    try:
+        if len(datos) > 32 * 1024 * 1024:
+            raise ValueError()
+        with Image.open(BytesIO(datos)) as imagen:
+            if (imagen.format != 'PNG' or not all(128 <= n <= 4096 for n in imagen.size)
+                    or imagen.width * imagen.height > 8_000_000):
+                raise ValueError()
+            imagen.verify()
+    except Exception:
+        raise ErrorRespaldo('La imagen QR del respaldo no es válida.') from None
+    return datos
+
+
+def _qr_manifiesto(meta):
+    qr = meta.get('qr')
+    if qr is None:  # Compatibilidad con respaldos anteriores.
+        return None
+    try:
+        datos = base64.b64decode(qr['contenido'], validate=True)
+        if qr['tamano'] != len(datos) or qr['sha256'] != hashlib.sha256(datos).hexdigest():
+            raise ValueError()
+        return _validar_qr(datos)
+    except (KeyError, TypeError, ValueError):
+        raise ErrorRespaldo('La integridad del QR no coincide con el manifiesto.') from None
 
 
 def hash_archivo(ruta):
@@ -121,16 +153,19 @@ def _metadatos(ruta, origen=None):
     if not _regular(manifiesto):
         return None
     try:
+        if manifiesto.stat().st_size > 48 * 1024 * 1024:
+            return None
         datos = json.loads(manifiesto.read_text(encoding='utf-8'))
         if not isinstance(datos, dict) or datos.get('motor') != 'inventarios-backup-v1' or datos.get('archivo') != ruta.name:
             return None
         if datos.get('tamano') != ruta.stat().st_size or datos.get('sha256') != hash_archivo(ruta):
             return None
+        _qr_manifiesto(datos)
         fecha = datetime.fromisoformat(datos['fecha'])
         if fecha.tzinfo is None:
             return None
         return datos
-    except (OSError, ValueError, KeyError, TypeError):
+    except (OSError, ValueError, KeyError, TypeError, ErrorRespaldo):
         return None
 
 
@@ -176,7 +211,7 @@ def _retener(directorio, conservar, origen):
         logger.info('Retención: eliminado respaldo gestionado %s', ruta.name)
 
 
-def crear_copia(origen, directorio, conservar, *, limite_segundos=120):
+def crear_copia(origen, directorio, conservar, *, limite_segundos=120, qr=None):
     """Publica una copia consistente y luego aplica retención segura.
 
     Pasos: 1. Validar rutas/configuración. 2. Bloquear entre procesos.
@@ -223,6 +258,22 @@ def crear_copia(origen, directorio, conservar, *, limite_segundos=120):
             # Paso 4: solo la copia íntegra obtiene nombre final y manifiesto.
             datos = verificar_copia(provisional)
             datos.update(motor='inventarios-backup-v1', archivo=nombre, fecha=fecha.isoformat())
+            if qr is not None:
+                ruta_qr = Path(qr).absolute()
+                if any(p.is_symlink() or (hasattr(p, 'is_junction') and p.is_junction())
+                       for p in (ruta_qr, *ruta_qr.parents)):
+                    raise ErrorRespaldo('Ruta de QR insegura.')
+                try:
+                    with ruta_qr.open('rb') as imagen:
+                        if os.fstat(imagen.fileno()).st_nlink > 1:
+                            raise ErrorRespaldo('Archivo de QR inseguro.')
+                        contenido = _validar_qr(imagen.read(32 * 1024 * 1024 + 1))
+                except FileNotFoundError:
+                    contenido = None
+                if contenido is not None:
+                    datos['qr'] = dict(tamano=len(contenido),
+                        sha256=hashlib.sha256(contenido).hexdigest(),
+                        contenido=base64.b64encode(contenido).decode('ascii'))
             meta_provisional = directorio / (nombre + '.json.partial')
             with meta_provisional.open('x', encoding='utf-8') as archivo:
                 propios.append(meta_provisional)
@@ -239,7 +290,8 @@ def crear_copia(origen, directorio, conservar, *, limite_segundos=120):
                 logger.exception('Respaldo creado; retención incompleta')
                 advertencia = 'Respaldo creado y verificado; no se pudo completar la retención.'
             logger.info('Respaldo verificado: %s, bytes=%s, sha256=%s', nombre, datos['tamano'], datos['sha256'])
-            return dict(datos, advertencia=advertencia)
+            return dict({k: v for k, v in datos.items() if k != 'qr'},
+                        qr_incluido='qr' in datos, advertencia=advertencia)
     except ErrorRespaldo as error:
         logger.warning('Respaldo no completado: %s', error)
         raise
@@ -253,3 +305,38 @@ def crear_copia(origen, directorio, conservar, *, limite_segundos=120):
                     ruta.unlink()
                 except OSError:
                     logger.warning('No se pudo retirar un archivo provisional de respaldo')
+
+
+def recuperar_temporal(copia, destino):
+    """Recupera DB y QR únicamente en una carpeta TEMP nueva; jamás sobrescribe."""
+    copia, destino = Path(copia).absolute(), Path(destino).absolute()
+    raiz = Path(tempfile.gettempdir()).resolve()
+    if (not destino.resolve().is_relative_to(raiz) or destino.resolve() == raiz
+            or any(p.is_symlink() or (hasattr(p, 'is_junction') and p.is_junction())
+                   for p in (destino, *destino.parents))):
+        raise ErrorRespaldo('La recuperación requiere una carpeta temporal nueva.')
+    meta = _metadatos(copia)
+    if meta is None:
+        raise ErrorRespaldo('Respaldo o manifiesto no verificado.')
+    verificar_copia(copia)
+    qr = _qr_manifiesto(meta)
+    destino.mkdir()  # Exclusivo: nunca reutiliza una instalación.
+    creados = []
+    try:
+        db = destino / 'db.sqlite3'
+        with db.open('xb') as salida, copia.open('rb') as entrada:
+            creados.append(db)
+            shutil.copyfileobj(entrada, salida)
+        if verificar_copia(db)['sha256'] != meta['sha256']:
+            raise ErrorRespaldo('El respaldo cambió durante la recuperación.')
+        if qr is not None:
+            imagen = destino / 'qr_bancario.png'
+            with imagen.open('xb') as salida:
+                creados.append(imagen)
+                salida.write(qr)
+        return dict(base=str(db), qr_restaurado=qr is not None)
+    except Exception:
+        for archivo in creados:
+            archivo.unlink(missing_ok=True)
+        destino.rmdir()
+        raise

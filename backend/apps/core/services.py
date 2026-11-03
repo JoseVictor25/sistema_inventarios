@@ -55,7 +55,8 @@ def crear_respaldo(usuario):
     from .respaldos import ErrorRespaldo
     if settings.DATABASES['default']['ENGINE'] != 'django.db.backends.sqlite3':
         raise ErrorRespaldo('El respaldo disponible requiere SQLite.')
-    return crear_copia(settings.DATABASES['default']['NAME'], settings.BACKUP_DIR, settings.BACKUP_CONSERVAR)
+    return crear_copia(settings.DATABASES['default']['NAME'], settings.BACKUP_DIR, settings.BACKUP_CONSERVAR,
+                      qr=settings.DATA_DIR / 'qr_bancario.png')
 
 
 def consultar_respaldos(usuario):
