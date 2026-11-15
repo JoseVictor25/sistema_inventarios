@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import F, Q
 from django.shortcuts import render
 from django.utils import timezone
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
 from apps.caja.models import Caja
 from apps.catalogo.models import Producto
@@ -241,7 +241,14 @@ def confirmar(request):
         )
 
     vaciar_carrito(request.session)
-    return render(request, "ventas/partials/_venta_confirmada.html", {"venta": venta})
+    from .impresion import leer, DEFAULT
+    from django.core.exceptions import ValidationError
+    try:
+        ofrecer = leer()['ofrecer_al_finalizar']
+    except (ValidationError, OSError):
+        ofrecer = DEFAULT['ofrecer_al_finalizar']
+    return render(request, "ventas/partials/_venta_confirmada.html",
+                  {"venta": venta, "ofrecer_comprobante": ofrecer})
 
 
 @login_required
@@ -273,3 +280,127 @@ def detalle(request, pk):
             "pagos": venta.pagos.all(),
         },
     )
+
+
+@login_required
+@permiso_requerido("vender")
+@require_GET
+def comprobante(request, pk):
+    from .impresion import leer
+    from django.http import Http404
+    try:
+        venta = obtener_venta(request.user, pk)
+    except ErrorDeNegocio:
+        raise Http404('Venta no encontrada.') from None
+    from .ticket import desde_venta
+    configuracion = leer()
+    return render(request, "ventas/venta_comprobante.html", {
+        "venta": venta, "detalles": venta.detalles.all(), "pagos": venta.pagos.all(),
+        "impresion": configuracion,
+        "ticket": desde_venta(venta, configuracion['mensaje']),
+    })
+
+
+def _ticket_autorizado(request, pk):
+    from .impresion import leer
+    from .ticket import desde_venta
+    from django.http import Http404
+    try:
+        venta = obtener_venta(request.user, pk)
+    except ErrorDeNegocio:
+        raise Http404('Venta no encontrada.') from None
+    configuracion = leer()
+    return desde_venta(venta, configuracion['mensaje']), configuracion
+
+
+@login_required
+@permiso_requerido('vender')
+@require_GET
+def imagen_comprobante(request, pk):
+    from django.http import HttpResponse
+    from .ticket import png
+    ticket, configuracion = _ticket_autorizado(request, pk)
+    datos, _ = png(ticket, configuracion)
+    respuesta = HttpResponse(datos, content_type='image/png')
+    respuesta['Cache-Control'] = 'private, no-store'
+    respuesta['X-Content-Type-Options'] = 'nosniff'
+    return respuesta
+
+
+@login_required
+@permiso_requerido('vender')
+@require_GET
+def pdf_comprobante(request, pk):
+    from django.http import HttpResponse
+    from .ticket import pdf
+    ticket, configuracion = _ticket_autorizado(request, pk)
+    try:
+        datos, _ = pdf(ticket, configuracion)
+    except ValueError:
+        return HttpResponse('El ticket excede una página PDF.', status=422)
+    respuesta = HttpResponse(datos, content_type='application/pdf')
+    respuesta['Content-Disposition'] = f'inline; filename="comprobante_{pk}.pdf"'
+    respuesta['Cache-Control'] = 'private, no-store'
+    return respuesta
+
+
+@login_required
+@permiso_requerido('vender')
+@require_POST
+def imprimir_escpos(request, pk):
+    import logging
+    from django.http import HttpResponse
+    from .ticket import renderizar
+    from .escpos import bytes_raster, enviar_cola, listar_colas
+    ticket, configuracion = _ticket_autorizado(request, pk)
+    if configuracion['metodo'] != 'ESC/POS' or not configuracion['escpos_confirmado']:
+        return HttpResponse('ESC/POS no está habilitado.', status=403)
+    try:
+        if configuracion['impresora'] not in listar_colas():
+            return HttpResponse('La cola configurada no está disponible.', status=503)
+        imagen, _ = renderizar(ticket, configuracion)
+        datos = bytes_raster(imagen, alimentar=configuracion['alimentar_lineas'],
+                             cortar=configuracion['corte_automatico'])
+        trabajo = enviar_cola(configuracion['impresora'], datos)
+    except (OSError, ValueError, RuntimeError):
+        logging.getLogger(__name__).exception('No se pudo enviar el comprobante a la cola ESC/POS')
+        return HttpResponse('No se pudo enviar el trabajo a la cola.', status=503)
+    logging.getLogger(__name__).info('Comprobante de venta %s aceptado por spooler, trabajo %s', pk, trabajo)
+    return HttpResponse(f'Trabajo {trabajo} aceptado por la cola. Verifique la impresión física.')
+
+
+@login_required
+@permiso_requerido("gestionar_usuarios")
+@require_http_methods(["GET", "POST"])
+def configurar_impresion(request):
+    from .impresion import leer, guardar
+    from django.core.exceptions import ValidationError
+    from django.shortcuts import redirect
+    from .escpos import listar_colas
+    error = None
+    if request.method == 'POST':
+        try:
+            metodo = request.POST.get('metodo', 'Windows')
+            nombre = request.POST.get('impresora', '').strip()
+            if metodo == 'ESC/POS' and nombre not in listar_colas():
+                raise ValidationError('Selecciona una cola Windows instalada.')
+            guardar({'ancho': int(request.POST.get('ancho', 0)), 'metodo': metodo,
+                     'impresora': nombre,
+                     'escpos_confirmado': request.POST.get('escpos_confirmado') == 'on',
+                     'corte_automatico': request.POST.get('corte_automatico') == 'on',
+                     'alimentar_lineas': int(request.POST.get('alimentar_lineas', 2)),
+                     'margen_superior_mm': int(request.POST.get('margen_superior_mm', 2)),
+                     'margen_inferior_mm': int(request.POST.get('margen_inferior_mm', 5)),
+                     'vista_previa': request.POST.get('vista_previa') == 'on',
+                     'ofrecer_al_finalizar': request.POST.get('ofrecer_al_finalizar') == 'on',
+                     'impresion_manual': request.POST.get('impresion_manual') == 'on',
+                     'mensaje': request.POST.get('mensaje', '')})
+            return redirect('ventas:configurar_impresion')
+        except (ValidationError, ValueError, OSError) as exc:
+            error = str(exc)
+    try:
+        colas = listar_colas()
+    except OSError:
+        colas = []
+    return render(request, 'ventas/configurar_impresion.html',
+                  {'impresion': leer(), 'error': error, 'colas': colas}, status=422 if error else 200)

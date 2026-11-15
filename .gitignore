@@ -1,5 +1,7 @@
 venv/
 qr_bancario.png
+.impresion_*
+impresion.json
 .qr_*
 __pycache__/
 *.pyc

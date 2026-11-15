@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comprobante de venta #{{ venta.pk }}</title>
+<style>
+  body { font: 14px/1.4 Arial, sans-serif; margin: 0; padding: 16px; background: #eef1f5; color: #17212d; }
+  .acciones { max-width: 680px; margin: 0 auto 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .acciones a, .acciones button { font: inherit; padding: 8px 12px; border: 1px solid #63748a; border-radius: 5px; background: white; color: #17212d; cursor: pointer; text-decoration: none; }
+  .vista { width: {{ impresion.ancho }}mm; max-width: 100%; margin: auto; background: white; box-shadow: 0 3px 16px #0002; }
+  .vista img { display: block; width: 100%; height: auto; }
+  details { max-width: 680px; margin: 16px auto; }
+  @media print { @page { size: {{ impresion.ancho }}mm 210mm; margin: 0; }
+    html, body { margin: 0; padding: 0; width: {{ impresion.ancho }}mm; background: white; }
+    .acciones, details { display: none !important; }
+    .vista { width: {{ impresion.ancho }}mm; max-width: none; margin: 0; box-shadow: none; }
+  }
+</style></head><body>
+<nav class="acciones" aria-label="Acciones del comprobante">
+  {% if impresion.impresion_manual %}<button type="button" id="imprimir-comprobante">Imprimir comprobante (Windows)</button>{% endif %}
+  <a href="{% url 'ventas:comprobante_pdf' venta.pk %}" target="_blank" rel="noopener">Abrir PDF de una página</a>
+  <a href="{% url 'ventas:detalle' venta.pk %}">Volver al detalle</a>
+  {% if impresion.metodo == 'ESC/POS' and impresion.escpos_confirmado %}
+  <form method="post" action="{% url 'ventas:comprobante_escpos' venta.pk %}">{% csrf_token %}<button type="submit">Enviar a cola ESC/POS</button></form>
+  {% endif %}
+</nav>
+<main class="vista" aria-label="Vista previa continua del comprobante">
+  <img id="imagen-ticket" src="{% url 'ventas:comprobante_imagen' venta.pk %}" alt="Comprobante no fiscal de venta #{{ venta.pk }}" width="{% if impresion.ancho == 58 %}384{% else %}576{% endif %}">
+</main>
+<details><summary>Contenido accesible del comprobante</summary>
+<p>{{ ticket.negocio }} — Venta #{{ ticket.numero }} — {{ ticket.cajero }}</p>
+{% for d in ticket.lineas %}<p>{{ d.nombre }} — {{ d.presentacion }}: {{ d.cantidad }} × Bs {{ d.precio|floatformat:2 }} = Bs {{ d.subtotal|floatformat:2 }}</p>{% endfor %}
+<p>Total: Bs {{ ticket.total|floatformat:2 }}</p>
+{% for pago in ticket.pagos %}<p>{{ pago.metodo }}: Bs {{ pago.monto|floatformat:2 }}</p>{% endfor %}
+<p>DOCUMENTO NO FISCAL</p></details>
+<script>
+(() => {
+  const imagen = document.getElementById('imagen-ticket');
+  const boton = document.getElementById('imprimir-comprobante');
+  const pagina = document.createElement('style');
+  document.head.appendChild(pagina);
+  const ancho = {{ impresion.ancho }};
+  function ajustar() {
+    if (!imagen.complete || !imagen.naturalHeight) return false;
+    const alto = Math.ceil(ancho * imagen.naturalHeight / imagen.naturalWidth);
+    pagina.textContent = '@media print { @page { size: ' + ancho + 'mm ' + alto + 'mm; margin: 0; } }';
+    return true;
+  }
+  if (boton) boton.addEventListener('click', () => {
+    if (!ajustar()) { alert('Espera a que cargue el comprobante.'); return; }
+    window.print();
+  });
+  window.addEventListener('beforeprint', ajustar);
+})();
+</script></body></html>
