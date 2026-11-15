@@ -292,12 +292,16 @@ def comprobante(request, pk):
         venta = obtener_venta(request.user, pk)
     except ErrorDeNegocio:
         raise Http404('Venta no encontrada.') from None
-    from .ticket import desde_venta
+    from .ticket import desde_venta, renderizar, medidas_pagina
     configuracion = leer()
+    ticket = desde_venta(venta, configuracion['mensaje'])
+    _, meta = renderizar(ticket, configuracion)
     return render(request, "ventas/venta_comprobante.html", {
         "venta": venta, "detalles": venta.detalles.all(), "pagos": venta.pagos.all(),
         "impresion": configuracion,
-        "ticket": desde_venta(venta, configuracion['mensaje']),
+        "ticket": ticket,
+        "pagina": medidas_pagina(meta, configuracion),
+        "escpos_listo": configuracion['metodo'] == 'ESC/POS' and configuracion['escpos_confirmado'],
     })
 
 

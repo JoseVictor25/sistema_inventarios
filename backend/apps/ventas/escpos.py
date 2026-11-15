@@ -9,7 +9,9 @@ def bytes_raster(imagen, *, alimentar=2, cortar=False):
     """GS v 0 en bandas; los bytes solo proceden de nuestra imagen renderizada."""
     if imagen.mode != 'RGB' or imagen.width % 8 or not 0 <= alimentar <= 8:
         raise ValueError('Parámetros ESC/POS inválidos.')
-    monocroma = imagen.convert('L').point(lambda pixel: 0 if pixel < 180 else 255, '1')
+    # ESC/POS: bit 1 = punto impreso (negro). Pillow modo '1': bit 1 = blanco.
+    # Por eso el umbral marca el texto oscuro como 255 (1) y el fondo como 0.
+    monocroma = imagen.convert('L').point(lambda pixel: 255 if pixel < 180 else 0, '1')
     ancho_bytes = imagen.width // 8
     resultado = bytearray(b'\x1b@')
     for inicio in range(0, imagen.height, 256):

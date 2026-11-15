@@ -138,6 +138,17 @@ def renderizar(ticket, configuracion):
                     'margen_superior_px': arriba, 'margen_inferior_px': abajo}
 
 
+def medidas_pagina(meta, configuracion):
+    """Devuelve una hoja vertical para la ruta navegador/controlador.
+
+    El alto se deriva de la misma imagen del ticket. Si es menor que el ancho,
+    algunos navegadores interpretan la hoja como horizontal y giran el papel.
+    """
+    ancho = configuracion['ancho']
+    alto = math.ceil(ancho * meta['alto_px'] / meta['ancho_px'])
+    return {'ancho': ancho, 'alto': max(alto, ancho + 1)}
+
+
 def png(ticket, configuracion):
     imagen, meta = renderizar(ticket, configuracion)
     salida = BytesIO()
