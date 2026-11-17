@@ -1,4 +1,5 @@
 {% extends 'base.html' %}{% load static %}
+{% block titulo %}Nueva compra — {{ NOMBRE_NEGOCIO }}{% endblock %}
 
 {% block contenido %}
 
@@ -6,7 +7,7 @@
 
   <div>
 
-    <h1 class="h3 mb-0">Nueva compra</h1>
+    <h1 class="titulo-pagina h3 mb-0">Nueva compra</h1>
 
     <p class="text-muted small mb-0">Registrar ingreso de mercadería y generación de lotes</p>
 
@@ -144,23 +145,23 @@
 
       <div class="table-responsive">
 
-        <table class="table table-hover align-middle mb-0" id="tabla-lineas-compra">
+        <table class="table table-hover align-middle mb-0" id="tabla-lineas-compra"><caption class="visually-hidden">Productos de la compra</caption>
 
           <thead class="table-light">
 
             <tr>
 
-              <th scope="col" style="min-width: 220px;">Producto <span class="text-danger">*</span></th>
+              <th scope="col" class="col-min-220">Producto <span class="text-danger">*</span></th>
 
-              <th scope="col" style="min-width: 100px; width: 120px;" class="text-end">Cantidad <span class="text-danger">*</span></th>
+              <th scope="col" class="col-min-100-ancho-120 text-end">Cantidad <span class="text-danger">*</span></th>
 
-              <th scope="col" style="min-width: 120px; width: 140px;" class="text-end">Costo Unit. <span class="text-danger">*</span></th>
+              <th scope="col" class="col-min-120-ancho-140 text-end">Costo Unit. <span class="text-danger">*</span></th>
 
-              <th scope="col" style="min-width: 130px; width: 150px;">Vencimiento</th>
+              <th scope="col" class="col-min-130-ancho-150">Vencimiento</th>
 
-              <th scope="col" style="min-width: 110px; width: 130px;" class="text-end">Subtotal</th>
+              <th scope="col" class="col-min-110-ancho-130 text-end">Subtotal</th>
 
-              <th scope="col" style="width: 50px;" class="text-center"></th>
+              <th scope="col" class="col-ancho-50 text-center"></th>
 
             </tr>
 

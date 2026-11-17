@@ -7,19 +7,19 @@
       {% endfor %}
     </select>
   </td>
-  <td style="min-width: 100px; width: 120px;">
+  <td class="col-min-100-ancho-120">
     <input type="number" name="linea_cantidad" class="form-control form-control-sm text-end input-cantidad" min="1" value="1" required aria-label="Cantidad">
   </td>
-  <td style="min-width: 120px; width: 140px;">
+  <td class="col-min-120-ancho-140">
     <input type="number" name="linea_costo" class="form-control form-control-sm text-end input-costo" step="0.01" min="0" placeholder="0.00" required aria-label="Costo unitario">
   </td>
-  <td style="min-width: 130px; width: 150px;">
+  <td class="col-min-130-ancho-150">
     <input type="date" name="linea_vencimiento" class="form-control form-control-sm input-vencimiento" aria-label="Fecha de vencimiento opcional">
   </td>
-  <td style="min-width: 110px; width: 130px;" class="text-end align-middle fw-semibold text-nowrap">
+  <td class="col-min-110-ancho-130 text-end align-middle fw-semibold text-nowrap">
     {{ MONEDA_SIMBOLO }} <span class="subtotal-linea">0.00</span>
   </td>
-  <td style="width: 50px;" class="text-center align-middle">
+  <td class="col-ancho-50 text-center align-middle">
     <button type="button"
             class="btn btn-outline-danger btn-sm py-0 px-2 btn-quitar-linea"
             title="Quitar producto"
