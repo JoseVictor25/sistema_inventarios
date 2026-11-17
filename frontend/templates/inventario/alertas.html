@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block titulo %}Alertas de inventario{% endblock %}
 {% block contenido %}
-<h1 class="h3">Alertas de inventario</h1>
+<h1 class="titulo-pagina h3">Alertas de inventario</h1>
 {% include 'inventario/_navegacion.html' %}
 {{ form.errors }}
 <p>Stock bajo incluye cero. Aviso de vencimiento: desde hoy hasta {{ dias_alerta }} días, incluidos ambos límites. Los lotes agotados no generan alertas de vencimiento.</p>
@@ -9,10 +9,6 @@
 <div class="card-header"><h2 class="h5 mb-0">{{ grupo.titulo }} · {{ grupo.pagina.paginator.count }}</h2></div>
 <div class="card-body">
 {% if grupo.nombre == 'stock_bajo' %}{% include 'inventario/_stock_tabla.html' with productos=grupo.pagina %}{% else %}{% include 'inventario/_lotes_tabla.html' with lotes=grupo.pagina %}{% endif %}
-{% if grupo.pagina.has_other_pages %}<nav class="d-flex flex-wrap gap-3" aria-label="Paginación de {{ grupo.titulo }}">
-{% if grupo.previous %}<a href="{{ grupo.previous }}">Anterior</a>{% endif %}
-<span>Página {{ grupo.pagina.number }} de {{ grupo.pagina.paginator.num_pages }}</span>
-{% if grupo.next %}<a href="{{ grupo.next }}">Siguiente</a>{% endif %}
-</nav>{% endif %}
+{% include 'components/_paginacion.html' with page_obj=grupo.pagina url_anterior=grupo.previous url_siguiente=grupo.next aria_label=grupo.titulo %}
 </div></section>{% endfor %}
 {% endblock %}
