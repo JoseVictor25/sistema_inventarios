@@ -48,6 +48,6 @@ No se hizo impresión física, envío RAW real ni comprobación del corte o del 
 
 ## Git
 
-Commits de esta rama: `3cf4cc1` (ventas), `6f39e9f` (login), `9fa7df3` (navegación) y `7e4376c` (plantillas). Se conservan sin confirmar `backend/apps/ventas/tests/test_comprobante.py`, `frontend/templates/ventas/configurar_impresion.html`, `frontend/templates/ventas/venta_comprobante.html` y `docs/IMPRESION_TICKETS_RESULTADOS.md`, que ya estaban modificados al empezar. Las aportaciones de este trabajo a los tres primeros conviven con las correcciones previas; no se incluyeron en los commits para no atribuirlas a esta rama. Los informes privados y la evidencia previa de tickets tampoco se agregaron a Git.
+Commits de código: `3cf4cc1` (ventas), `6f39e9f` (login), `9fa7df3` (navegación) y `7e4376c` (plantillas). Las evidencias y este informe tienen commits separados. Se conservan sin confirmar `backend/apps/ventas/tests/test_comprobante.py`, `frontend/templates/ventas/configurar_impresion.html`, `frontend/templates/ventas/venta_comprobante.html` y `docs/IMPRESION_TICKETS_RESULTADOS.md`, que ya estaban modificados al empezar. Las aportaciones de este trabajo a los tres primeros conviven con las correcciones previas; no se incluyeron en los commits para no atribuirlas a esta rama. Los informes privados y la evidencia previa de tickets tampoco se agregaron a Git.
 
 La lista completa de archivos y `git diff --stat` se entrega en [archivos y diferencias](evidencias_frontend/archivos_y_diff.txt).
