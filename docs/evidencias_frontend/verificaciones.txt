@@ -1,0 +1,9 @@
+Entorno: SQLite y DATA_DIR temporales mediante scripts/verificar_fase10.py.
+manage.py check: System check identified no issues (0 silenced).
+manage.py makemigrations --check --dry-run: No changes detected.
+manage.py test --noinput: 394 pruebas, OK. Salida íntegra en pruebas_completas.txt.
+Recorrido Django: 38 pantallas como Dueño y 38 como Vendedor; respuestas 200 o 403, sin HTTP 500, etiquetas HTML balanceadas, title presente y un h1 en las pantallas de Dueño.
+Chrome headless: 39 pantallas a 1366x768 y 375x812, 78 capturas; viewport real medido, sin desbordamiento horizontal ni errores JavaScript observados. Pagos mixtos, referencia, efectivo y vuelto comprobados en el DOM del POS.
+Búsquedas: 0 style=" en plantillas; 0 símbolos o emojis prohibidos; 0 URLs http(s) externas en plantillas, CSS y JS propios; 1 confirm( en el fallback previsto de app.js.
+SHA-256 antes/después: idénticos para SQLite real, .env y los dos informes privados; el verificador devolvió protegidos_intactos=True.
+No se realizó impresión física ni se enviaron trabajos a una impresora real.
