@@ -330,16 +330,25 @@ def listar_ventas_del_dia(usuario, fecha=None, pagina=1):
         3. Calcular total del día.
         4. Paginar resultados (20 por página).
     """
-    autorizar(usuario, "vender")
     if fecha is None:
         fecha = timezone.localdate()
+    return listar_ventas(usuario, desde=fecha, hasta=fecha, pagina=pagina)
 
+
+def listar_ventas(usuario, desde=None, hasta=None, vendedor_id=None, pagina=1):
+    """Consulta ventas con permisos, filtros y paginación de 20 registros."""
+    autorizar(usuario, "vender")
+    hoy = timezone.localdate()
+    desde = desde or hoy
+    hasta = hasta or hoy
     ventas_qs = (
-        Venta.objects.filter(fecha__date=fecha)
+        Venta.objects.filter(fecha__date__range=(desde, hasta))
         .select_related("caja", "usuario")
         .prefetch_related("pagos__metodo", "detalles")
         .order_by("-fecha", "-pk")
     )
+    if vendedor_id:
+        ventas_qs = ventas_qs.filter(usuario_id=vendedor_id)
     total_dia = ventas_qs.aggregate(total=Sum("total"))["total"] or Decimal("0.00")
     paginador = Paginator(ventas_qs, 20)
     pagina_obj = paginador.get_page(pagina)

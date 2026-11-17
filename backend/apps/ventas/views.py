@@ -22,9 +22,9 @@ from .carrito import (
     quitar_linea,
     vaciar_carrito,
 )
-from .forms import leer_pagos
+from .forms import leer_pagos, FiltroVentasForm
 from .models import MetodoPago
-from .services import listar_ventas_del_dia, obtener_venta, registrar_venta
+from .services import listar_ventas_del_dia, listar_ventas, obtener_venta, registrar_venta
 
 
 def _preparar_productos(consulta):
@@ -244,24 +244,38 @@ def confirmar(request):
     from .impresion import leer, DEFAULT
     from django.core.exceptions import ValidationError
     try:
-        ofrecer = leer()['ofrecer_al_finalizar']
+        configuracion = leer()
+        ofrecer = configuracion['ofrecer_al_finalizar']
+        escpos_listo = configuracion['metodo'] == 'ESC/POS' and configuracion['escpos_confirmado']
     except (ValidationError, OSError):
         ofrecer = DEFAULT['ofrecer_al_finalizar']
+        escpos_listo = False
     return render(request, "ventas/partials/_venta_confirmada.html",
-                  {"venta": venta, "ofrecer_comprobante": ofrecer})
+                  {"venta": venta, "ofrecer_comprobante": ofrecer, "escpos_listo": escpos_listo})
 
 
 @login_required
 @permiso_requerido("vender")
 @require_GET
 def lista(request):
-    """Historial de ventas del día actual con totales y paginación (§9.6)."""
-    pagina = request.GET.get("page", 1)
-    page_obj, total_dia = listar_ventas_del_dia(request.user, pagina=pagina)
+    """Historial de ventas con filtros y paginación."""
+    from urllib.parse import urlencode
+    filtros = FiltroVentasForm(request.GET)
+    if not filtros.is_valid():
+        return render(request, 'ventas/venta_lista.html', {'filtros': filtros}, status=422)
+    datos = filtros.cleaned_data
+    desde = datos.get('desde') or timezone.localdate()
+    hasta = datos.get('hasta') or timezone.localdate()
+    vendedor = datos.get('vendedor')
+    page_obj, total_dia = listar_ventas(request.user, desde, hasta,
+                                        vendedor.pk if vendedor else None, request.GET.get('page', 1))
+    filtros_query = urlencode({k: v for k, v in request.GET.items() if k != 'page' and v})
     return render(
         request,
         "ventas/venta_lista.html",
-        {"page_obj": page_obj, "total_dia": total_dia},
+        {"page_obj": page_obj, "total_dia": total_dia, 'filtros': filtros,
+         'filtros_query': filtros_query, 'desde': desde, 'hasta': hasta,
+         'filtros_activos': bool(filtros_query)},
     )
 
 
@@ -399,6 +413,8 @@ def configurar_impresion(request):
                      'ofrecer_al_finalizar': request.POST.get('ofrecer_al_finalizar') == 'on',
                      'impresion_manual': request.POST.get('impresion_manual') == 'on',
                      'mensaje': request.POST.get('mensaje', '')})
+            from django.contrib import messages
+            messages.success(request, 'Configuración de impresión guardada correctamente.')
             return redirect('ventas:configurar_impresion')
         except (ValidationError, ValueError, OSError) as exc:
             error = str(exc)
