@@ -1,27 +1,36 @@
+{% load static %}
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Comprobante de venta #{{ venta.pk }}</title>
+<title>Comprobante de venta #{{ venta.pk }} — {{ NOMBRE_NEGOCIO }}</title>
 <style>
   body { font: 14px/1.4 Arial, sans-serif; margin: 0; padding: 16px; background: #eef1f5; color: #17212d; }
   .acciones { max-width: 680px; margin: 0 auto 16px; display: flex; gap: 8px; flex-wrap: wrap; }
   .acciones a, .acciones button { font: inherit; padding: 8px 12px; border: 1px solid #63748a; border-radius: 5px; background: white; color: #17212d; cursor: pointer; text-decoration: none; }
+  .acciones .principal { background: #126b48; border-color: #126b48; color: white; }
+  .acciones button:disabled { opacity: .65; cursor: wait; }
+  #estado-impresion, .aviso-impresion { max-width: 680px; margin: 0 auto 12px; }
+  #estado-impresion.error { color: #a01818; }
   .vista { width: {{ impresion.ancho }}mm; max-width: 100%; margin: auto; background: white; box-shadow: 0 3px 16px #0002; }
   .vista img { display: block; width: 100%; height: auto; }
   details { max-width: 680px; margin: 16px auto; }
-  @media print { @page { size: {{ impresion.ancho }}mm 210mm; margin: 0; }
-    html, body { margin: 0; padding: 0; width: {{ impresion.ancho }}mm; background: white; }
-    .acciones, details { display: none !important; }
-    .vista { width: {{ impresion.ancho }}mm; max-width: none; margin: 0; box-shadow: none; }
+  .titulo-pagina { max-width: 680px; margin: 0 auto 16px; font-size: 20px; }
+  @media print { @page { size: {{ pagina.ancho }}mm {{ pagina.alto }}mm; margin: 0; }
+    html, body { margin: 0; padding: 0; width: {{ pagina.ancho }}mm; background: white; }
+    .acciones, #estado-impresion, .aviso-impresion, details, .titulo-pagina { display: none !important; }
+    .vista { width: {{ pagina.ancho }}mm; max-width: none; margin: 0; box-shadow: none; }
   }
 </style></head><body>
+<h1 class="titulo-pagina">Comprobante de venta #{{ venta.pk }}</h1>
 <nav class="acciones" aria-label="Acciones del comprobante">
-  {% if impresion.impresion_manual %}<button type="button" id="imprimir-comprobante">Imprimir comprobante (Windows)</button>{% endif %}
+  {% if escpos_listo %}
+  <form id="form-escpos" data-escpos data-estado="estado-impresion" method="post" action="{% url 'ventas:comprobante_escpos' venta.pk %}">{% csrf_token %}<input type="hidden" name="intento_impresion" value="{{ intento_impresion }}"><button class="principal" id="imprimir-escpos" type="submit">Imprimir ticket</button></form>
+  {% endif %}
+  {% if impresion.impresion_manual and not escpos_listo %}<button type="button" id="imprimir-comprobante">Imprimir comprobante (Windows)</button>{% endif %}
   <a href="{% url 'ventas:comprobante_pdf' venta.pk %}" target="_blank" rel="noopener">Abrir PDF de una página</a>
   <a href="{% url 'ventas:detalle' venta.pk %}">Volver al detalle</a>
-  {% if impresion.metodo == 'ESC/POS' and impresion.escpos_confirmado %}
-  <form method="post" action="{% url 'ventas:comprobante_escpos' venta.pk %}">{% csrf_token %}<button type="submit">Enviar a cola ESC/POS</button></form>
-  {% endif %}
 </nav>
+<div id="estado-impresion" role="status" aria-live="polite"></div>
+{% if not escpos_listo %}<p class="aviso-impresion">Para imprimir sin márgenes ni saltos de página, un administrador debe activar «ESC/POS» en Impresión de tickets con una cola compatible.</p>{% endif %}
 <main class="vista" aria-label="Vista previa continua del comprobante">
   <img id="imagen-ticket" src="{% url 'ventas:comprobante_imagen' venta.pk %}" alt="Comprobante no fiscal de venta #{{ venta.pk }}" width="{% if impresion.ancho == 58 %}384{% else %}576{% endif %}">
 </main>
@@ -35,19 +44,9 @@
 (() => {
   const imagen = document.getElementById('imagen-ticket');
   const boton = document.getElementById('imprimir-comprobante');
-  const pagina = document.createElement('style');
-  document.head.appendChild(pagina);
-  const ancho = {{ impresion.ancho }};
-  function ajustar() {
-    if (!imagen.complete || !imagen.naturalHeight) return false;
-    const alto = Math.ceil(ancho * imagen.naturalHeight / imagen.naturalWidth);
-    pagina.textContent = '@media print { @page { size: ' + ancho + 'mm ' + alto + 'mm; margin: 0; } }';
-    return true;
-  }
   if (boton) boton.addEventListener('click', () => {
-    if (!ajustar()) { alert('Espera a que cargue el comprobante.'); return; }
+    if (!imagen.complete || !imagen.naturalWidth) { alert('Espera a que cargue el comprobante.'); return; }
     window.print();
   });
-  window.addEventListener('beforeprint', ajustar);
 })();
-</script></body></html>
+</script><script src="{% static 'js/escpos.js' %}"></script></body></html>

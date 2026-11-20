@@ -33,7 +33,7 @@
 
     <div class="d-flex flex-column gap-2">
       {% if escpos_listo %}
-      <form data-escpos data-estado="estado-impresion-pos" method="post" action="{% url 'ventas:comprobante_escpos' venta.pk %}">{% csrf_token %}<button type="submit" class="btn btn-primary w-100" id="btn-imprimir-ticket">{% include 'components/_icono.html' with icono='impresora' %} Imprimir ticket</button></form>
+      <form data-escpos data-estado="estado-impresion-pos" method="post" action="{% url 'ventas:comprobante_escpos' venta.pk %}">{% csrf_token %}<input type="hidden" name="intento_impresion" value="{{ intento_impresion }}"><button type="submit" class="btn btn-primary w-100" id="btn-imprimir-ticket">{% include 'components/_icono.html' with icono='impresora' %} Imprimir ticket</button></form>
       <div id="estado-impresion-pos" role="status" aria-live="polite"></div>
       {% elif ofrecer_comprobante %}<a href="{% url 'ventas:comprobante' venta.pk %}" class="btn btn-outline-primary" target="_blank" rel="noopener">Ver / Imprimir comprobante</a>{% endif %}
       <button type="button"

@@ -4,6 +4,7 @@ from decimal import Decimal
 from io import BytesIO
 from pathlib import Path
 import math
+import os
 
 from PIL import Image, ImageDraw, ImageFont
 from django.conf import settings
@@ -77,6 +78,49 @@ def _envolver(texto, fuente, maximo):
     return lineas
 
 
+def _envolver_columnas(texto, primera, siguientes):
+    """Respeta palabras; divide solo las que exceden una línea completa."""
+    palabras = ' '.join(str(texto).split()).split(' ')
+    salida = []
+    while palabras:
+        limite = primera if not salida else siguientes
+        renglon = ''
+        while palabras:
+            palabra = palabras[0]
+            candidato = f'{renglon} {palabra}'.strip()
+            if len(candidato) <= limite:
+                renglon = candidato
+                palabras.pop(0)
+            elif renglon:
+                break
+            else:
+                renglon = palabra[:limite]
+                if len(palabra) == limite:
+                    palabras.pop(0)
+                else:
+                    palabras[0] = palabra[limite:]
+                break
+        salida.append(renglon)
+    return salida
+
+
+def formatear_par(etiqueta, monto, columnas):
+    """Líneas (texto izquierdo, importe derecho); el importe ocupa la primera."""
+    if not 2 <= len(monto) < columnas:
+        raise ValueError('El importe no cabe en el ancho configurado.')
+    partes = _envolver_columnas(etiqueta, columnas - len(monto) - 1, columnas)
+    return [(partes[0], monto), *((parte, None) for parte in partes[1:])]
+
+
+def formatear_item(detalle, columnas):
+    """Nombre e importe juntos, seguidos de cantidad, precio y unidad."""
+    filas = formatear_par(detalle.nombre, f'Bs {detalle.subtotal:.2f}', columnas)
+    descripcion = f'  {detalle.cantidad} x {detalle.precio:.2f} · {detalle.presentacion}'
+    filas.extend((f'  {parte}', None) for parte in _envolver_columnas(
+        descripcion[2:], columnas - 2, columnas - 2))
+    return filas
+
+
 def renderizar(ticket, configuracion):
     """Una sola imagen RGB; devuelve dimensiones y zonas para pruebas de margen."""
     ancho = 576 if configuracion['ancho'] == 80 else 384
@@ -85,9 +129,18 @@ def renderizar(ticket, configuracion):
     arriba = round(configuracion['margen_superior_mm'] * escala)
     abajo = round(configuracion['margen_inferior_mm'] * escala)
     letra, titulo = _fuente(19), _fuente(23)
+    columnas = configuracion.get('columnas_80', 48) if configuracion['ancho'] == 80 else configuracion.get('columnas_58', 32)
+    ruta_mono = Path(os.environ.get('WINDIR', 'C:/Windows')) / 'Fonts' / 'consola.ttf'
+    if not ruta_mono.exists():
+        ruta_mono = Path(reportlab.__file__).parent / 'fonts' / 'Vera.ttf'
+    tamano_mono = 19
+    while tamano_mono > 8 and ImageFont.truetype(str(ruta_mono), tamano_mono).getlength('W' * columnas) > ancho - 2 * margen_lateral:
+        tamano_mono -= 1
+    mono = ImageFont.truetype(str(ruta_mono), tamano_mono)
     alto_linea = 27
     contenido = ancho - 2 * margen_lateral
     operaciones = []
+    importes = []
     y = arriba
 
     def linea(texto, *, centrado=False, derecha=False, fuente=letra, ancho_texto=contenido):
@@ -101,6 +154,16 @@ def renderizar(ticket, configuracion):
             operaciones.append((x, y, renglon, fuente))
             y += alto_linea + (5 if fuente is titulo else 0)
 
+    def par(filas):
+        nonlocal y
+        for izquierda, importe in filas:
+            operaciones.append((margen_lateral, y, izquierda, mono))
+            if importe:
+                x = margen_lateral + round(contenido - mono.getlength(importe))
+                operaciones.append((x, y, importe, mono))
+                importes.append((y, x, round(mono.getlength(importe))))
+            y += alto_linea
+
     linea(ticket.negocio, centrado=True, fuente=titulo)
     linea('DOCUMENTO NO FISCAL', centrado=True)
     y += 8
@@ -109,22 +172,13 @@ def renderizar(ticket, configuracion):
     linea(f'Cajero: {ticket.cajero}')
     y += 8
     for detalle in ticket.lineas:
-        linea(detalle.nombre)
-        linea(detalle.presentacion)
-        importe = f'{detalle.cantidad} x {detalle.precio:.2f}     Bs {detalle.subtotal:.2f}'
-        linea(importe, derecha=True)
+        par(formatear_item(detalle, columnas))
         y += 5
     y += 6
-    linea(f'TOTAL: Bs {ticket.total:.2f}', derecha=True)
+    par(formatear_par('TOTAL', f'Bs {ticket.total:.2f}', columnas))
     y += 8
-    linea('Pagos:')
     for pago in ticket.pagos:
-        monto = f'Bs {pago.monto:.2f}'
-        espacio = contenido - letra.getlength(monto) - 8
-        for nombre in _envolver(pago.metodo, letra, espacio):
-            operaciones.append((margen_lateral, y, nombre, letra))
-            y += alto_linea
-        operaciones.append((margen_lateral + round(contenido - letra.getlength(monto)), y - alto_linea, monto, letra))
+        par(formatear_par(pago.metodo, f'Bs {pago.monto:.2f}', columnas))
     y += 9
     linea(ticket.mensaje, centrado=True)
     linea('DOCUMENTO NO FISCAL', centrado=True)
@@ -135,7 +189,8 @@ def renderizar(ticket, configuracion):
     for x, py, texto, fuente in operaciones:
         lapiz.text((x, py), texto, font=fuente, fill='black')
     return imagen, {'ancho_px': ancho, 'alto_px': alto, 'ultimo_texto_px': ultimo_texto,
-                    'margen_superior_px': arriba, 'margen_inferior_px': abajo}
+                    'margen_superior_px': arriba, 'margen_inferior_px': abajo,
+                    'importes': importes}
 
 
 def medidas_pagina(meta, configuracion):

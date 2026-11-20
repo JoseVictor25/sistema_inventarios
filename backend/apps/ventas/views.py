@@ -250,8 +250,10 @@ def confirmar(request):
     except (ValidationError, OSError):
         ofrecer = DEFAULT['ofrecer_al_finalizar']
         escpos_listo = False
+    from uuid import uuid4
     return render(request, "ventas/partials/_venta_confirmada.html",
-                  {"venta": venta, "ofrecer_comprobante": ofrecer, "escpos_listo": escpos_listo})
+                  {"venta": venta, "ofrecer_comprobante": ofrecer, "escpos_listo": escpos_listo,
+                   "intento_impresion": uuid4().hex})
 
 
 @login_required
@@ -300,6 +302,7 @@ def detalle(request, pk):
 @permiso_requerido("vender")
 @require_GET
 def comprobante(request, pk):
+    from uuid import uuid4
     from .impresion import leer
     from django.http import Http404
     try:
@@ -316,6 +319,7 @@ def comprobante(request, pk):
         "ticket": ticket,
         "pagina": medidas_pagina(meta, configuracion),
         "escpos_listo": configuracion['metodo'] == 'ESC/POS' and configuracion['escpos_confirmado'],
+        "intento_impresion": uuid4().hex,
     })
 
 
@@ -367,17 +371,33 @@ def pdf_comprobante(request, pk):
 @require_POST
 def imprimir_escpos(request, pk):
     import logging
+    from uuid import UUID
+    from django.core.cache import cache
     from django.http import HttpResponse
     from .ticket import renderizar
     from .escpos import bytes_raster, enviar_cola, listar_colas
+    from .impresion import avance_final
     ticket, configuracion = _ticket_autorizado(request, pk)
     if configuracion['metodo'] != 'ESC/POS' or not configuracion['escpos_confirmado']:
         return HttpResponse('ESC/POS no está habilitado.', status=403)
     try:
+        intento = UUID(request.POST.get('intento_impresion', ''))
+        if intento.version != 4:
+            raise ValueError()
+    except (ValueError, TypeError, AttributeError):
+        return HttpResponse('Falta el identificador del intento de impresión.', status=400)
+    clave = f'escpos:{pk}:{intento.hex}'
+    if not cache.add(clave, True, timeout=600):
+        return HttpResponse('Este ticket ya fue enviado a la cola.', status=409)
+    try:
         if configuracion['impresora'] not in listar_colas():
+            cache.delete(clave)
             return HttpResponse('La cola configurada no está disponible.', status=503)
-        imagen, _ = renderizar(ticket, configuracion)
-        datos = bytes_raster(imagen, alimentar=configuracion['alimentar_lineas'],
+        # El raster enviado se recorta; el avance físico es independiente.
+        imagen, _ = renderizar(ticket, {**configuracion, 'margen_inferior_mm': 0})
+        datos = bytes_raster(imagen, avance_final_mm=avance_final(configuracion),
+                             margen_superior_mm=configuracion['margen_superior_mm'], recortar=True,
+                             ancho_mm=configuracion['ancho'],
                              cortar=configuracion['corte_automatico'])
         trabajo = enviar_cola(configuracion['impresora'], datos)
     except (OSError, ValueError, RuntimeError):
@@ -388,9 +408,49 @@ def imprimir_escpos(request, pk):
 
 
 @login_required
+@permiso_requerido('gestionar_usuarios')
+@require_POST
+def imprimir_calibracion(request):
+    """Una regla de 0 a 40 mm, enviada con el mismo cierre que un ticket."""
+    import logging
+    from uuid import UUID
+    from django.core.cache import cache
+    from django.http import HttpResponse
+    from .impresion import leer, avance_final
+    from .escpos import bytes_raster, enviar_cola, imagen_calibracion, listar_colas
+    configuracion = leer()
+    if configuracion['metodo'] != 'ESC/POS' or not configuracion['escpos_confirmado']:
+        return HttpResponse('ESC/POS no está habilitado.', status=403)
+    try:
+        intento = UUID(request.POST.get('intento_impresion', ''))
+        if intento.version != 4:
+            raise ValueError()
+    except (ValueError, TypeError, AttributeError):
+        return HttpResponse('Falta el identificador del intento de impresión.', status=400)
+    clave = f'escpos:calibracion:{intento.hex}'
+    if not cache.add(clave, True, timeout=600):
+        return HttpResponse('Esta calibración ya fue enviada a la cola.', status=409)
+    try:
+        if configuracion['impresora'] not in listar_colas():
+            cache.delete(clave)
+            return HttpResponse('La cola configurada no está disponible.', status=503)
+        imagen = imagen_calibracion(configuracion['ancho'])
+        datos = bytes_raster(imagen, avance_final_mm=avance_final(configuracion),
+                             margen_superior_mm=configuracion['margen_superior_mm'],
+                             ancho_mm=configuracion['ancho'],
+                             cortar=configuracion['corte_automatico'], recortar=True)
+        trabajo = enviar_cola(configuracion['impresora'], datos)
+    except (OSError, ValueError, RuntimeError):
+        logging.getLogger(__name__).exception('No se pudo enviar la calibración ESC/POS')
+        return HttpResponse('No se pudo enviar la calibración a la cola.', status=503)
+    return HttpResponse(f'Calibración {trabajo} aceptada por la cola.')
+
+
+@login_required
 @permiso_requerido("gestionar_usuarios")
 @require_http_methods(["GET", "POST"])
 def configurar_impresion(request):
+    from uuid import uuid4
     from .impresion import leer, guardar
     from django.core.exceptions import ValidationError
     from django.shortcuts import redirect
@@ -407,6 +467,10 @@ def configurar_impresion(request):
                      'escpos_confirmado': request.POST.get('escpos_confirmado') == 'on',
                      'corte_automatico': request.POST.get('corte_automatico') == 'on',
                      'alimentar_lineas': int(request.POST.get('alimentar_lineas', 2)),
+                     'avance_final_mm': (None if request.POST.get('avance_final_mm', '').strip() == ''
+                                         else int(request.POST['avance_final_mm'])),
+                     'columnas_80': int(request.POST.get('columnas_80', 48)),
+                     'columnas_58': int(request.POST.get('columnas_58', 32)),
                      'margen_superior_mm': int(request.POST.get('margen_superior_mm', 2)),
                      'margen_inferior_mm': int(request.POST.get('margen_inferior_mm', 5)),
                      'vista_previa': request.POST.get('vista_previa') == 'on',
@@ -423,4 +487,5 @@ def configurar_impresion(request):
     except OSError:
         colas = []
     return render(request, 'ventas/configurar_impresion.html',
-                  {'impresion': leer(), 'error': error, 'colas': colas}, status=422 if error else 200)
+                  {'impresion': leer(), 'error': error, 'colas': colas,
+                   'intento_calibracion': uuid4().hex}, status=422 if error else 200)

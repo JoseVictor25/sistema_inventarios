@@ -5,6 +5,7 @@ app_name = "ventas"
 
 urlpatterns = [
     path("impresion/", views.configurar_impresion, name="configurar_impresion"),
+    path("impresion/calibracion/", views.imprimir_calibracion, name="imprimir_calibracion"),
     path("nueva/", views.pos, name="pos"),
     path("buscar/", views.buscar, name="buscar"),
     path("carrito/agregar/", views.carrito_agregar, name="carrito_agregar"),

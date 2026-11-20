@@ -10,7 +10,14 @@ DEFAULT = {'ancho': 80, 'vista_previa': True, 'ofrecer_al_finalizar': False,
            'impresion_manual': True, 'metodo': 'Windows', 'mensaje': 'Gracias por su compra',
            'margen_superior_mm': 2, 'margen_inferior_mm': 5,
            'impresora': '', 'escpos_confirmado': False, 'alimentar_lineas': 2,
-           'corte_automatico': False}
+           'corte_automatico': False, 'columnas_80': 48, 'columnas_58': 32,
+           'avance_final_mm': None}
+
+
+def avance_final(datos):
+    """Un valor explícito, incluso cero, prevalece sobre el defecto por modo."""
+    valor = datos['avance_final_mm']
+    return (8 if datos['corte_automatico'] else 32) if valor is None else valor
 
 
 def ruta():
@@ -49,6 +56,10 @@ def guardar(datos):
             or type(datos.get('corte_automatico')) is not bool
             or type(datos.get('alimentar_lineas')) is not int
             or not 0 <= datos['alimentar_lineas'] <= 8
+            or type(datos.get('columnas_80')) is not int or not 24 <= datos['columnas_80'] <= 64
+            or type(datos.get('columnas_58')) is not int or not 16 <= datos['columnas_58'] <= 48
+            or (datos.get('avance_final_mm') is not None and
+                (type(datos['avance_final_mm']) is not int or not 0 <= datos['avance_final_mm'] <= 40))
             or (datos['metodo'] == 'ESC/POS' and
                 (not datos['escpos_confirmado'] or not datos['impresora'].strip()))):
         raise ValidationError('Configuración de impresión inválida.')
