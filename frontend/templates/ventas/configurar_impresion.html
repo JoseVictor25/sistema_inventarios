@@ -18,8 +18,6 @@
 <label for="impresora" class="form-label">Cola de impresión ESC/POS</label>
 <select id="impresora" name="impresora" class="form-select mb-3"><option value="">Seleccione una cola</option>{% for cola in colas %}<option value="{{ cola }}" {% if cola == impresion.impresora %}selected{% endif %}>{{ cola }}</option>{% endfor %}</select>
 <label class="form-check mb-2"><input class="form-check-input" type="checkbox" name="escpos_confirmado" {% if impresion.escpos_confirmado %}checked{% endif %}> Confirmo que esta cola acepta trabajos RAW ESC/POS</label>
-<label for="alimentar" class="form-label">Líneas finales de alimentación (0–8)</label>
-<input id="alimentar" name="alimentar_lineas" type="number" min="0" max="8" value="{{ impresion.alimentar_lineas }}" class="form-control mb-3">
 <label class="form-check mb-2"><input class="form-check-input" type="checkbox" name="corte_automatico" {% if impresion.corte_automatico %}checked{% endif %}> Solicitar corte parcial (solo cortador comprobado)</label>
 <label for="avance-final" class="form-label">Avance final antes de cortar/rasgar (mm, 0–40)</label>
 <input id="avance-final" name="avance_final_mm" type="number" min="0" max="40" value="{{ impresion.avance_final_mm|default_if_none:'' }}" class="form-control mb-3">

@@ -1,9 +1,11 @@
 """Vistas de ventas: POS, carrito HTMX, confirmación y consulta inmutable."""
 from datetime import timedelta
 from decimal import Decimal
+from uuid import UUID, uuid4
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.db.models import F, Q
 from django.shortcuts import render
 from django.utils import timezone
@@ -250,7 +252,6 @@ def confirmar(request):
     except (ValidationError, OSError):
         ofrecer = DEFAULT['ofrecer_al_finalizar']
         escpos_listo = False
-    from uuid import uuid4
     return render(request, "ventas/partials/_venta_confirmada.html",
                   {"venta": venta, "ofrecer_comprobante": ofrecer, "escpos_listo": escpos_listo,
                    "intento_impresion": uuid4().hex})
@@ -302,7 +303,6 @@ def detalle(request, pk):
 @permiso_requerido("vender")
 @require_GET
 def comprobante(request, pk):
-    from uuid import uuid4
     from .impresion import leer
     from django.http import Http404
     try:
@@ -371,8 +371,6 @@ def pdf_comprobante(request, pk):
 @require_POST
 def imprimir_escpos(request, pk):
     import logging
-    from uuid import UUID
-    from django.core.cache import cache
     from django.http import HttpResponse
     from .ticket import renderizar
     from .escpos import bytes_raster, enviar_cola, listar_colas
@@ -401,6 +399,7 @@ def imprimir_escpos(request, pk):
                              cortar=configuracion['corte_automatico'])
         trabajo = enviar_cola(configuracion['impresora'], datos)
     except (OSError, ValueError, RuntimeError):
+        cache.delete(clave)
         logging.getLogger(__name__).exception('No se pudo enviar el comprobante a la cola ESC/POS')
         return HttpResponse('No se pudo enviar el trabajo a la cola.', status=503)
     logging.getLogger(__name__).info('Comprobante de venta %s aceptado por spooler, trabajo %s', pk, trabajo)
@@ -413,8 +412,6 @@ def imprimir_escpos(request, pk):
 def imprimir_calibracion(request):
     """Una regla de 0 a 40 mm, enviada con el mismo cierre que un ticket."""
     import logging
-    from uuid import UUID
-    from django.core.cache import cache
     from django.http import HttpResponse
     from .impresion import leer, avance_final
     from .escpos import bytes_raster, enviar_cola, imagen_calibracion, listar_colas
@@ -441,6 +438,7 @@ def imprimir_calibracion(request):
                              cortar=configuracion['corte_automatico'], recortar=True)
         trabajo = enviar_cola(configuracion['impresora'], datos)
     except (OSError, ValueError, RuntimeError):
+        cache.delete(clave)
         logging.getLogger(__name__).exception('No se pudo enviar la calibración ESC/POS')
         return HttpResponse('No se pudo enviar la calibración a la cola.', status=503)
     return HttpResponse(f'Calibración {trabajo} aceptada por la cola.')
@@ -450,7 +448,6 @@ def imprimir_calibracion(request):
 @permiso_requerido("gestionar_usuarios")
 @require_http_methods(["GET", "POST"])
 def configurar_impresion(request):
-    from uuid import uuid4
     from .impresion import leer, guardar
     from django.core.exceptions import ValidationError
     from django.shortcuts import redirect
@@ -466,7 +463,6 @@ def configurar_impresion(request):
                      'impresora': nombre,
                      'escpos_confirmado': request.POST.get('escpos_confirmado') == 'on',
                      'corte_automatico': request.POST.get('corte_automatico') == 'on',
-                     'alimentar_lineas': int(request.POST.get('alimentar_lineas', 2)),
                      'avance_final_mm': (None if request.POST.get('avance_final_mm', '').strip() == ''
                                          else int(request.POST['avance_final_mm'])),
                      'columnas_80': int(request.POST.get('columnas_80', 48)),

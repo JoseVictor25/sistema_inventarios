@@ -131,6 +131,12 @@ class ComprobanteTests(TestCase):
         self.assertEqual(leer()['columnas_80'], 48)
         self.assertEqual(leer()['columnas_58'], 32)
 
+    def test_configuracion_anterior_ignora_alimentar_lineas(self):
+        from apps.ventas.impresion import ruta
+        ruta().write_text('{"ancho": 80, "alimentar_lineas": 2}', encoding='utf-8')
+        self.assertEqual(leer()['ancho'], 80)
+        self.assertNotIn('alimentar_lineas', leer())
+
     def test_columnas_configurables_y_rangos(self):
         from apps.ventas.ticket import formatear_par
         palabra = 'P' * 40
@@ -143,7 +149,7 @@ class ComprobanteTests(TestCase):
         self.assertEqual((leer()['columnas_80'], leer()['columnas_58']), (44, 30))
         for clave, valor in (('columnas_80', '23'), ('columnas_80', '65'),
                              ('columnas_58', '15'), ('columnas_58', '49'),
-                             ('alimentar_lineas', '9'), ('margen_superior_mm', '0'),
+                             ('margen_superior_mm', '0'),
                              ('margen_inferior_mm', '16'),
                              ('avance_final_mm', '-1'), ('avance_final_mm', '41')):
             self.assertEqual(self.client.post('/ventas/impresion/', {**datos, clave: valor}).status_code, 422)
@@ -187,8 +193,13 @@ class ComprobanteTests(TestCase):
                 self.assertIn(b'\x1d\x76\x30\x00', datos)
                 self.assertTrue(datos.endswith(b'\n\x1bJ\xff\x1bJ\x01'))
                 self.assertFalse(datos.endswith(b'\x1d\x56\x01'))
+            intento_fallido = {'intento_impresion': uuid4().hex}
             with patch('apps.ventas.escpos.enviar_cola', side_effect=OSError('sin papel')):
-                self.assertEqual(self.client.post(ruta, {'intento_impresion': uuid4().hex}).status_code, 503)
+                self.assertEqual(self.client.post(ruta, intento_fallido).status_code, 503)
+            with patch('apps.ventas.escpos.enviar_cola', return_value=43) as reintento:
+                self.assertEqual(self.client.post(ruta, intento_fallido).status_code, 200)
+                self.assertEqual(self.client.post(ruta, intento_fallido).status_code, 409)
+                reintento.assert_called_once()
             self.assertEqual(antes, (Venta.objects.count(), Pago.objects.count(), list(Lote.objects.values_list('pk', 'cantidad_actual'))))
 
     def test_escpos_un_trabajo_y_avance_para_1_5_20_productos(self):
@@ -203,7 +214,7 @@ class ComprobanteTests(TestCase):
             respuesta = self.client.post('/ventas/impresion/', {
                 'ancho': '80', 'metodo': 'ESC/POS', 'impresora': 'Cola ESC/POS simulada',
                 'escpos_confirmado': 'on', 'margen_superior_mm': '2',
-                'margen_inferior_mm': '5', 'alimentar_lineas': '0',
+                'margen_inferior_mm': '5',
                 'corte_automatico': 'on',
             })
             self.assertEqual(respuesta.status_code, 302)
@@ -306,6 +317,13 @@ class ComprobanteTests(TestCase):
                     self.assertEqual(self.client.post(ruta, intento).status_code, 409)
                     cola.assert_called_once()
                     self.assertTrue(cola.call_args.args[1].endswith(cierre))
+            intento_fallido = {'intento_impresion': uuid4().hex}
+            with patch('apps.ventas.escpos.enviar_cola', side_effect=OSError('cola no disponible')):
+                self.assertEqual(self.client.post(ruta, intento_fallido).status_code, 503)
+            with patch('apps.ventas.escpos.enviar_cola', return_value=78) as reintento:
+                self.assertEqual(self.client.post(ruta, intento_fallido).status_code, 200)
+                self.assertEqual(self.client.post(ruta, intento_fallido).status_code, 409)
+                reintento.assert_called_once()
 
     def test_pagina_vertical_para_tickets_cortos_y_largos(self):
         from apps.ventas.ticket import medidas_pagina

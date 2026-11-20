@@ -37,7 +37,7 @@ def main():
     fuente = RAIZ / 'docs/ticket_ejemplo_30.png'
     destino = RAIZ / 'docs/ticket_escpos_decodificado.png'
     with Image.open(fuente) as original:
-        datos = bytes_raster(original.convert('RGB'), alimentar=0)
+        datos = bytes_raster(original.convert('RGB'), avance_final_mm=0)
     imagen = decodificar(datos)
     imagen.save(destino)
     print(f'Raster reconstruido: {destino} ({imagen.width} x {imagen.height} px)')

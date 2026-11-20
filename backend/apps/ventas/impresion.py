@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError
 DEFAULT = {'ancho': 80, 'vista_previa': True, 'ofrecer_al_finalizar': False,
            'impresion_manual': True, 'metodo': 'Windows', 'mensaje': 'Gracias por su compra',
            'margen_superior_mm': 2, 'margen_inferior_mm': 5,
-           'impresora': '', 'escpos_confirmado': False, 'alimentar_lineas': 2,
+           'impresora': '', 'escpos_confirmado': False,
            'corte_automatico': False, 'columnas_80': 48, 'columnas_58': 32,
            'avance_final_mm': None}
 
@@ -54,8 +54,6 @@ def guardar(datos):
             or not isinstance(datos.get('impresora'), str) or len(datos['impresora']) > 200
             or type(datos.get('escpos_confirmado')) is not bool
             or type(datos.get('corte_automatico')) is not bool
-            or type(datos.get('alimentar_lineas')) is not int
-            or not 0 <= datos['alimentar_lineas'] <= 8
             or type(datos.get('columnas_80')) is not int or not 24 <= datos['columnas_80'] <= 64
             or type(datos.get('columnas_58')) is not int or not 16 <= datos['columnas_58'] <= 48
             or (datos.get('avance_final_mm') is not None and
