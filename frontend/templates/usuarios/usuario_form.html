@@ -3,7 +3,7 @@
 {% block contenido %}
 <section class="card shadow-sm" aria-labelledby="titulo-usuario">
   <div class="card-body">
-    <h1 id="titulo-usuario" class="h4 mb-3">{% if creando %}Crear usuario{% else %}Editar usuario{% endif %}</h1>
+    <h1 id="titulo-usuario" class="titulo-pagina h4 mb-3">{% if creando %}Crear usuario{% else %}Editar usuario{% endif %}</h1>
     {% if not creando %}<p>La contraseña y los privilegios técnicos se conservan.</p>{% endif %}
     <p>Un usuario sin rol no tiene permisos de negocio. Un usuario inactivo no puede ingresar.</p>
     <form method="post">

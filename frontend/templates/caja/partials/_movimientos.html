@@ -7,10 +7,10 @@
       {% csrf_token %}{{ form_movimiento.as_p }}<button class="btn btn-primary mb-3">Registrar movimiento</button>
     </form>
     {% endif %}
-    <div class="table-responsive"><table class="table table-striped align-middle">
+    <div class="table-responsive"><table class="table table-striped align-middle"><caption class="visually-hidden">Movimientos de caja</caption>
       <thead><tr><th>Fecha</th><th>Concepto</th><th>Tipo</th><th class="text-end">Importe</th></tr></thead><tbody>
-      {% for mov in movimientos %}<tr><td class="text-nowrap">{{ mov.fecha|date:'d/m H:i' }}</td><td style="overflow-wrap:anywhere">{{ mov.concepto }}</td><td>{{ mov.get_tipo_display }}</td><td class="text-end text-nowrap {% if mov.tipo == 'INGRESO' %}text-success{% else %}text-danger{% endif %}">{% if mov.tipo == 'INGRESO' %}+{% else %}−{% endif %} Bs {{ mov.monto|floatformat:2 }}</td></tr>
-      {% empty %}<tr><td colspan="4">Sin movimientos.</td></tr>{% endfor %}
+      {% for mov in movimientos %}<tr><td class="text-nowrap">{{ mov.fecha|date:'d/m H:i' }}</td><td class="texto-rompible">{{ mov.concepto }}</td><td>{{ mov.get_tipo_display }}</td><td class="text-end text-nowrap {% if mov.tipo == 'INGRESO' %}text-success{% else %}text-danger{% endif %}">{% if mov.tipo == 'INGRESO' %}+{% else %}−{% endif %} Bs {{ mov.monto|floatformat:2 }}</td></tr>
+      {% empty %}<tr><td colspan="4">Sin movimientos. Registra un ingreso o egreso para empezar.</td></tr>{% endfor %}
       </tbody></table></div>
   </div>
 </section>

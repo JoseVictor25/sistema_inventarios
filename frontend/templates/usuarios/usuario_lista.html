@@ -3,7 +3,7 @@
 {% block contenido %}
 <section class="card shadow-sm" aria-labelledby="titulo-usuarios">
   <div class="card-header d-flex flex-column flex-sm-row flex-wrap gap-2 align-items-start align-items-sm-center">
-    <h1 id="titulo-usuarios" class="h4 mb-0 me-auto">Usuarios</h1>
+    <h1 id="titulo-usuarios" class="titulo-pagina h4 mb-0 me-auto">Usuarios</h1>
     <div class="d-flex gap-2 flex-wrap">
       <a class="btn btn-primary btn-sm" href="{% url 'usuarios:usuario_crear' %}" id="btn-crear-usuario">
         <span aria-hidden="true">+</span> Crear usuario
@@ -63,7 +63,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="5" class="text-center text-muted py-4">No hay usuarios registrados.</td>
+            <td colspan="5" class="text-center text-muted py-4">No hay usuarios registrados. Crea un usuario para empezar.</td>
           </tr>
           {% endfor %}
         </tbody>

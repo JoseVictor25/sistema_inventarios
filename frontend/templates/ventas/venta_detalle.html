@@ -6,13 +6,14 @@
 <div class="container-fluid px-0">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <div>
-      <h1 class="h4 mb-0 fw-bold">Venta #{{ venta.pk }}</h1>
+      <h1 class="titulo-pagina h4 mb-0 fw-bold">Venta #{{ venta.pk }}</h1>
       <span class="text-muted small">Detalle inmutable de la transacción</span>
     </div>
 
     <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'ventas:comprobante' venta.pk %}" class="btn btn-outline-primary btn-sm">Ver / Imprimir comprobante</a>
       <a href="{% url 'ventas:lista' %}" class="btn btn-outline-secondary btn-sm">
-        ← Volver al listado
+        {% include 'components/_icono.html' with icono='flecha-izq' %} Volver al listado
       </a>
       <a href="{% url 'ventas:pos' %}" class="btn btn-primary btn-sm">
         + Nueva venta
@@ -78,7 +79,7 @@
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" id="tabla-detalles-venta">
+            <table class="table table-hover align-middle mb-0" id="tabla-detalles-venta"><caption class="visually-hidden">Productos de la venta</caption>
               <thead class="table-light">
                 <tr>
                   <th scope="col">Producto y presentación</th>

@@ -2,7 +2,7 @@
 {% block titulo %}{{ titulo }} · {{ NOMBRE_NEGOCIO }}{% endblock %}
 {% block contenido %}
 <a href="{% url 'reportes:inicio' %}">Volver a reportes</a>
-<h1 class="h3 mt-3">{{ titulo }}</h1>
+<h1 class="titulo-pagina h3 mt-3">{{ titulo }}</h1>
 <div class="card"><div class="card-body">
 <form method="get" class="row g-3 align-items-end">
 {% if form_filtros.non_field_errors %}<div class="col-12 alert alert-danger" role="alert">{{ form_filtros.non_field_errors }}</div>{% endif %}
@@ -15,7 +15,7 @@
 {% for nota in notas %}<p class="alert alert-info">{{ nota }}</p>{% endfor %}
 {% if grafico and filas %}<div class="card mb-3"><div class="card-body grafico-reporte"><canvas id="grafico-ventas" role="img" aria-label="Total de ventas por período; datos disponibles en la tabla"></canvas></div></div>{{ grafico|json_script:'datos-grafico' }}{% endif %}
 <div class="card"><div class="table-responsive"><table class="table table-striped align-middle mb-0"><caption class="px-3">{{ titulo }} — {{ filas|length }} filas</caption><thead><tr>{% for clave, etiqueta, tipo in columnas %}<th scope="col">{{ etiqueta }}</th>{% endfor %}</tr></thead><tbody>
-{% for fila in tabla %}<tr>{% for celda in fila %}<td{% if celda.tipo == 'moneda' or celda.tipo == 'entero' %} class="text-end text-nowrap"{% endif %}>{{ celda.texto }}</td>{% endfor %}</tr>{% empty %}<tr><td colspan="{{ columnas|length }}">No hay resultados para los filtros seleccionados.</td></tr>{% endfor %}
+{% for fila in tabla %}<tr>{% for celda in fila %}<td{% if celda.tipo == 'moneda' or celda.tipo == 'entero' %} class="text-end text-nowrap"{% endif %}>{{ celda.texto }}</td>{% endfor %}</tr>{% empty %}<tr><td colspan="{{ columnas|length }}">No hay resultados para estos filtros. Prueba con otro período.</td></tr>{% endfor %}
 </tbody><tfoot><tr>{% for valor in pie %}<th{% if not forloop.first %} class="text-end"{% endif %}>{{ valor }}</th>{% endfor %}</tr></tfoot></table></div></div>
 {% else %}<p class="mt-3">Selecciona los filtros y pulsa Consultar. El intervalo máximo es de 366 fechas incluidas.</p>{% endif %}
 {% endblock %}

@@ -2,8 +2,33 @@
 from decimal import Decimal, InvalidOperation
 
 from django import forms
+from django.utils import timezone
+from .models import Venta
+from apps.usuarios.models import Usuario
 from apps.core.exceptions import ErrorDeNegocio
 from .models import MetodoPago
+
+
+class FiltroVentasForm(forms.Form):
+    desde = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}))
+    hasta = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}))
+    vendedor = forms.ModelChoiceField(required=False, queryset=Usuario.objects.none(),
+                                     widget=forms.Select(attrs={'class': 'form-select'}))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['vendedor'].queryset = Usuario.objects.filter(
+            pk__in=Venta.objects.values('usuario_id').distinct()).order_by('username')
+
+    def clean(self):
+        datos = super().clean()
+        desde = datos.get('desde') or timezone.localdate()
+        hasta = datos.get('hasta') or timezone.localdate()
+        if desde > hasta:
+            raise forms.ValidationError('La fecha desde no puede ser posterior a la fecha hasta.')
+        if (hasta - desde).days > 366:
+            raise forms.ValidationError('El rango no puede superar 366 días.')
+        return datos
 
 
 def leer_pagos(post_data, total_venta=None):

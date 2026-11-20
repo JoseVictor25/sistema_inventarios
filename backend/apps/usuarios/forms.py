@@ -1,8 +1,17 @@
 """Formularios ordinarios con campos explícitos, sin privilegios técnicos."""
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 
 from .models import Usuario
+
+
+class FormularioIngreso(AuthenticationForm):
+    """Campos accesibles y consistentes con Bootstrap."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].widget.attrs.update({'class': 'form-control', 'autocomplete': 'username', 'autofocus': True})
+        self.fields['password'].widget.attrs.update({'class': 'form-control', 'autocomplete': 'current-password'})
 
 
 CAMPOS_USUARIO = ("username", "first_name", "last_name", "rol", "is_active")

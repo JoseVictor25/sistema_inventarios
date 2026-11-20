@@ -6,6 +6,7 @@ import tempfile
 import warnings
 from PIL import Image, UnidentifiedImageError
 from django.conf import settings
+from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse, Http404
 from django.shortcuts import render, redirect
@@ -59,7 +60,12 @@ def configurar(request):
         ruta = ruta_qr()
         if request.method == 'POST':
             if request.POST.get('accion') == 'eliminar':
+                existia = ruta.exists()
                 ruta.unlink(missing_ok=True)
+                if existia:
+                    messages.success(request, 'QR eliminado correctamente.')
+                else:
+                    messages.info(request, 'No había un QR configurado.')
             elif request.POST.get('accion') == 'guardar' and 'imagen' in request.FILES:
                 datos = normalizar(request.FILES['imagen'])
                 nombre = None
@@ -70,6 +76,7 @@ def configurar(request):
                         f.flush()
                         os.fsync(f.fileno())
                     os.replace(nombre, ruta)
+                    messages.success(request, 'QR guardado correctamente.')
                 finally:
                     if nombre:
                         Path(nombre).unlink(missing_ok=True)

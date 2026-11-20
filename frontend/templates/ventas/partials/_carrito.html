@@ -53,8 +53,7 @@
                    value="{{ item.cantidad }}"
                    min="1"
                    step="1"
-                   class="form-control form-control-sm text-center input-cantidad-linea"
-                   style="width: 65px;"
+                   class="control-ancho-65 form-control form-control-sm text-center input-cantidad-linea"
                    hx-post="{% url 'ventas:carrito_actualizar' %}"
                    hx-trigger="change"
                    hx-target="#carrito"
@@ -70,7 +69,7 @@
                     hx-swap="outerHTML"
                     title="Quitar producto"
                     aria-label="Quitar {{ item.producto.nombre }}">
-              ✕
+              {% include 'components/_icono.html' with icono='cerrar' tam=16 %}
             </button>
           </div>
         </div>
@@ -111,96 +110,19 @@
           <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
             <span class="small fw-bold text-secondary">Métodos de pago</span>
             <button type="button"
-                    class="btn btn-outline-primary btn-sm py-0 px-2"
+                    class="texto-compacto btn btn-outline-primary btn-sm py-0 px-2"
                     id="btn-agregar-metodo"
-                    style="font-size: 0.78rem;">
+                   >
               + Añadir método
             </button>
           </div>
 
           <div id="lista-pagos">
-            {# Fila de pago inicial #}
-            <div class="card p-2 mb-2 bg-light border fila-pago" data-fila-pago>
-              <div class="row g-2 align-items-center">
-                <div class="col-12 col-sm-5">
-                  <select name="metodo_id" class="form-select form-select-sm select-metodo" aria-label="Método de pago">
-                    {% for m in metodos_pago %}
-                      <option value="{{ m.id }}" data-es-qr="{% if m.nombre|upper == 'QR' %}1{% else %}0{% endif %}" data-es-efectivo="{% if m.es_efectivo %}1{% else %}0{% endif %}">
-                        {{ m.nombre }}
-                      </option>
-                    {% endfor %}
-                  </select>
-                </div>
-                <div class="col-8 col-sm-5">
-                  <div class="input-group input-group-sm">
-                    <span class="input-group-text px-1">{{ MONEDA_SIMBOLO }}</span>
-                    <input type="number"
-                           name="monto"
-                           class="form-control form-control-sm text-end input-monto-pago"
-                           step="0.01"
-                           min="0.01"
-                           placeholder="0.00"
-                           value="{{ carrito.total|stringformat:'.2f' }}"
-                           aria-label="Monto a pagar">
-                  </div>
-                </div>
-                <div class="col-4 col-sm-2 text-end">
-                  <button type="button" class="btn btn-outline-danger btn-sm px-2 btn-quitar-metodo" title="Quitar método" style="display: none;">
-                    ✕
-                  </button>
-                </div>
-              </div>
-              <div class="fila-referencia mt-1" style="display: none;">
-                <input type="text"
-                       name="referencia"
-                       class="form-control form-control-sm input-referencia"
-                       placeholder="N° comprobante / autorización (opcional)"
-                       aria-label="Referencia de pago">
-              </div>
-            </div>
+            {% include 'ventas/partials/_fila_pago.html' with monto_inicial=carrito.total|stringformat:'.2f' mostrar_quitar=False %}
           </div>
 
           {# Template oculto para clonar nuevas filas de pago #}
-          <template id="template-fila-pago">
-            <div class="card p-2 mb-2 bg-light border fila-pago" data-fila-pago>
-              <div class="row g-2 align-items-center">
-                <div class="col-12 col-sm-5">
-                  <select name="metodo_id" class="form-select form-select-sm select-metodo" aria-label="Método de pago">
-                    {% for m in metodos_pago %}
-                      <option value="{{ m.id }}" data-es-qr="{% if m.nombre|upper == 'QR' %}1{% else %}0{% endif %}" data-es-efectivo="{% if m.es_efectivo %}1{% else %}0{% endif %}">
-                        {{ m.nombre }}
-                      </option>
-                    {% endfor %}
-                  </select>
-                </div>
-                <div class="col-8 col-sm-5">
-                  <div class="input-group input-group-sm">
-                    <span class="input-group-text px-1">{{ MONEDA_SIMBOLO }}</span>
-                    <input type="number"
-                           name="monto"
-                           class="form-control form-control-sm text-end input-monto-pago"
-                           step="0.01"
-                           min="0.01"
-                           placeholder="0.00"
-                           value="0.00"
-                           aria-label="Monto a pagar">
-                  </div>
-                </div>
-                <div class="col-4 col-sm-2 text-end">
-                  <button type="button" class="btn btn-outline-danger btn-sm px-2 btn-quitar-metodo" title="Quitar método">
-                    ✕
-                  </button>
-                </div>
-              </div>
-              <div class="fila-referencia mt-1" style="display: none;">
-                <input type="text"
-                       name="referencia"
-                       class="form-control form-control-sm input-referencia"
-                       placeholder="N° comprobante / autorización (opcional)"
-                       aria-label="Referencia de pago">
-              </div>
-            </div>
-          </template>
+          <template id="template-fila-pago">{% include 'ventas/partials/_fila_pago.html' with monto_inicial='0.00' mostrar_quitar=True %}</template>
 
           {# Resumen de cobertura #}
           <div class="p-2 bg-body-secondary rounded small mb-2" id="resumen-cobertura">
@@ -242,8 +164,8 @@
               <span class="fw-semibold" id="chglbl">Cambio / Vuelto:</span>
               <span id="chg" class="fs-6 fw-bold text-success">{{ MONEDA_SIMBOLO }} 0.00</span>
             </div>
-            <div id="aviso-efectivo-insuficiente" class="text-danger small mt-1" style="display: none;">
-              ⚠ Efectivo recibido menor al aplicado.
+            <div id="aviso-efectivo-insuficiente" class="text-danger small mt-1 d-none">
+              {% include 'components/_icono.html' with icono='alerta' tam=16 %} Efectivo recibido menor al aplicado.
             </div>
           </div>
         </div>
@@ -251,7 +173,7 @@
         {# Aviso si la caja está cerrada #}
         {% if not caja %}
           <div class="alert alert-warning py-1 px-2 small mb-2 text-center" role="alert" id="alerta-caja-cerrada">
-            ⚠ Abre tu turno de caja para confirmar la venta.
+            {% include 'components/_icono.html' with icono='alerta' tam=16 %} Abre tu turno de caja para confirmar la venta.
           </div>
         {% endif %}
 

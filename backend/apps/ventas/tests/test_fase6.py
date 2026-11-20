@@ -3,13 +3,16 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from decimal import Decimal
 from io import StringIO
+from pathlib import Path
+import tempfile
+from unittest.mock import patch
 from threading import Barrier
 from uuid import uuid4
 
 from django.core.exceptions import PermissionDenied
 from django.core.management import call_command
 from django.db import connections
-from django.test import Client, TestCase, TransactionTestCase
+from django.test import Client, TestCase, TransactionTestCase, override_settings
 from django.utils import timezone
 
 from apps.caja import services as caja_servicios
@@ -513,6 +516,25 @@ class VistasVentasHTTPTests(TestCase):
         })
         self.assertEqual(res2.status_code, 422)
         self.assertContains(res2, "Agrega al menos un producto a la venta", status_code=422)
+
+    def test_ticket_desde_pos_solo_con_escpos_confirmado(self):
+        with tempfile.TemporaryDirectory() as temporal, override_settings(DATA_DIR=Path(temporal)):
+            pres = self.datos['pres1_unidad']
+            self.client.post('/ventas/carrito/agregar/', {'presentacion_id': pres.pk, 'cantidad': 1})
+            normal = self.client.post('/ventas/confirmar/', {'metodo_id': self.efectivo.pk, 'monto': '50.00'})
+            self.assertNotContains(normal, 'id="btn-imprimir-ticket"')
+            self.client.force_login(self.dueno)
+            with patch('apps.ventas.escpos.listar_colas', return_value=['Cola simulada']):
+                configurado = self.client.post('/ventas/impresion/', {
+                    'ancho': '80', 'metodo': 'ESC/POS', 'impresora': 'Cola simulada',
+                    'escpos_confirmado': 'on', 'margen_superior_mm': '2', 'margen_inferior_mm': '5',
+                })
+            self.assertEqual(configurado.status_code, 302)
+            self.client.force_login(self.vendedor)
+            self.client.post('/ventas/carrito/agregar/', {'presentacion_id': pres.pk, 'cantidad': 1})
+            escpos = self.client.post('/ventas/confirmar/', {'metodo_id': self.efectivo.pk, 'monto': '50.00'})
+            self.assertContains(escpos, 'id="btn-imprimir-ticket"')
+            self.assertContains(escpos, 'id="estado-impresion-pos"')
 
     def test_ventas_lista_y_detalle(self):
         """Historial y detalle de venta responden 200 inmutables."""
