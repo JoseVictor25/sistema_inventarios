@@ -19,6 +19,10 @@ import sys
 NOMBRE_LOCK = '.instancia.lock'
 
 
+class BloqueoInstanciaActiva(OSError):
+    """El cerrojo ya está retenido por otra instancia del programa."""
+
+
 def ruta_lock(directorio_datos: Path) -> Path:
     return Path(directorio_datos) / NOMBRE_LOCK
 
@@ -45,7 +49,7 @@ def bloqueo_instancia(directorio_datos: Path):
                 tomado = True
             except OSError:
                 manejador.close()
-                raise OSError(
+                raise BloqueoInstanciaActiva(
                     'Ya existe una instancia activa del Sistema de Inventarios. '
                     'Ciérrala antes de realizar operaciones de mantenimiento.'
                 ) from None
@@ -56,7 +60,7 @@ def bloqueo_instancia(directorio_datos: Path):
                 tomado = True
             except OSError:
                 manejador.close()
-                raise OSError('Ya existe una instancia activa.') from None
+                raise BloqueoInstanciaActiva('Ya existe una instancia activa.') from None
 
         yield manejador
     finally:

@@ -27,3 +27,5 @@ Cuando aparezca «Restauración completada», abre el programa normalmente. Si a
 - No edites la base ni el manifiesto.
 - La restauración reemplaza los datos actuales por los que contiene la copia seleccionada.
 - La base de seguridad anterior queda en la carpeta de respaldos configurada en el equipo.
+- `BACKUP_CONSERVAR` indica los días naturales de cobertura: se guardan todas las copias verificadas de las últimas 24 horas (hasta ocho) y, para los días anteriores, solo la más reciente de cada día UTC hasta completar esa cobertura.
+- `BACKUP_HORAS_MIN_CIERRE` controla cada cuántas horas se permite un respaldo al cerrar el programa. Su valor predeterminado es 6 y el mínimo es 1; el respaldo de inicio mantiene su límite de 24 horas.

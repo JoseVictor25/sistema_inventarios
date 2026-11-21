@@ -8,16 +8,28 @@ import tempfile
 
 from apps.core.respaldos import (ErrorRespaldo, _metadatos, _qr_manifiesto,
     crear_copia, verificar_copia)
-from .bloqueo_instancia import bloqueo_instancia
+from .bloqueo_instancia import BloqueoInstanciaActiva, bloqueo_instancia
 
 
-def restaurar_con_bloqueo(copia, db, directorio_datos, directorio_respaldos, conservar, qr_actual=None):
-    """CLI seguro: impide restaurar mientras la aplicación tenga el cerrojo."""
+def restaurar_con_bloqueo(copia, directorio_datos, db=None, directorio_respaldos=None,
+                           conservar=None, qr_actual=None, *, preparar=None):
+    """Camino CLI real: prepara y restaura dentro del cerrojo de instancia."""
     try:
         with bloqueo_instancia(Path(directorio_datos)):
+            if preparar is not None:
+                preparar()
+                from django.conf import settings
+                from django.db import connections
+                connections.close_all()
+                db = settings.DB_PATH
+                directorio_respaldos = settings.BACKUP_DIR
+                conservar = settings.BACKUP_CONSERVAR
+                qr_actual = settings.DATA_DIR / 'qr_bancario.png'
             return restaurar(copia, db, directorio_respaldos, conservar, qr_actual)
-    except OSError as error:
+    except BloqueoInstanciaActiva as error:
         raise ErrorRespaldo(f'No se puede restaurar mientras el programa está en ejecución: {error}') from error
+    except OSError as error:
+        raise ErrorRespaldo(f'No se pudo restaurar por un error del sistema: {error}') from error
 
 
 def restaurar(copia, db, directorio_respaldos, conservar, qr_actual=None):

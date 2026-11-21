@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
 from apps.core import respaldos
 sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 from desktop.bloqueo_instancia import bloqueo_instancia
@@ -44,13 +44,23 @@ class RestauracionLauncherTests(SimpleTestCase):
             return con.execute('SELECT valor FROM usuarios_usuario').fetchone()[0]
 
     def _restaurar(self, copia=None):
-        return restaurar_con_bloqueo(copia or self.copia, self.db, self.datos,
-            self.backups, 5, self.datos / 'qr_bancario.png')
+        with override_settings(DB_PATH=self.db, BACKUP_DIR=self.backups,
+                               BACKUP_CONSERVAR=5, DATA_DIR=self.datos):
+            def preparar():
+                self.assertTrue(bloqueo_activo(self.datos))
+            return restaurar_con_bloqueo(copia or self.copia, self.datos, preparar=preparar)
 
     def test_restauracion_correcta_y_respaldo_de_seguridad(self):
+        with closing(sqlite3.connect(self.db)) as conexion:
+            conexion.execute('PRAGMA journal_mode=WAL')
+            conexion.execute("INSERT INTO usuarios_usuario VALUES (2, 'confirmada en WAL')")
+            conexion.commit()
         resultado = self._restaurar()
         self.assertEqual(self._valor(), 'respaldo')
         self.assertTrue((self.backups / resultado['respaldo_seguridad']).is_file())
+        with closing(sqlite3.connect(self.backups / resultado['respaldo_seguridad'])) as seguridad:
+            self.assertEqual(seguridad.execute('SELECT valor FROM usuarios_usuario ORDER BY id').fetchall(),
+                             [('actual',), ('confirmada en WAL',)])
 
     def test_copia_corrupta_se_rechaza_antes_de_tocar_base(self):
         corrupta = self.root / 'corrupta.sqlite3'
@@ -61,7 +71,14 @@ class RestauracionLauncherTests(SimpleTestCase):
 
     def test_instancia_activa_se_rechaza(self):
         with bloqueo_instancia(self.datos):
-            with self.assertRaisesRegex(respaldos.ErrorRespaldo, 'programa está en ejecución'):
+            with self.assertRaisesRegex(respaldos.ErrorRespaldo, 'No se puede restaurar mientras el programa está en ejecución'):
+                self._restaurar()
+        self.assertEqual(self._valor(), 'actual')
+
+    def test_otro_oserror_muestra_causa_distinta_y_conserva_base(self):
+        with patch('desktop.restauracion.restaurar', side_effect=PermissionError('permiso denegado')):
+            with self.assertRaisesRegex(respaldos.ErrorRespaldo,
+                    'No se pudo restaurar por un error del sistema: permiso denegado'):
                 self._restaurar()
         self.assertEqual(self._valor(), 'actual')
 
@@ -77,3 +94,8 @@ class RestauracionLauncherTests(SimpleTestCase):
             with self.assertRaisesRegex(respaldos.ErrorRespaldo, 'base anterior fue recuperada'):
                 self._restaurar()
         self.assertEqual(self._valor(), 'actual')
+
+
+def bloqueo_activo(directorio):
+    from desktop.bloqueo_instancia import detectar_instancia_activa
+    return detectar_instancia_activa(directorio)[0]

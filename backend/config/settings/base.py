@@ -81,6 +81,7 @@ MONEDA_SIMBOLO = env_str("MONEDA_SIMBOLO", "Bs")
 DIAS_ALERTA_VENCIMIENTO = env_int("DIAS_ALERTA_VENCIMIENTO", 30, minimo=0)
 STOCK_MINIMO_DEFECTO = env_int("STOCK_MINIMO_DEFECTO", 5, minimo=0)
 BACKUP_CONSERVAR = env_int("BACKUP_CONSERVAR", 30, minimo=1)
+BACKUP_HORAS_MIN_CIERRE = env_int("BACKUP_HORAS_MIN_CIERRE", 6, minimo=1)
 
 # --- Aplicaciones ------------------------------------------------------------
 INSTALLED_APPS = [

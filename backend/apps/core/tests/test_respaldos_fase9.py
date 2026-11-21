@@ -1,5 +1,5 @@
 """Archivos SQLite ficticios independientes; no utiliza la base Django activa."""
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from contextlib import closing
 import json
 import os
@@ -81,7 +81,9 @@ class RespaldosTests(SimpleTestCase):
         self.assertFalse(list(self.destino.glob('respaldo_*.sqlite3')))
 
     def test_colision_no_sobrescribe_ni_borra(self):
-        with patch.object(r, 'uuid4', return_value=UUID(int=1)), patch.object(r, 'datetime') as reloj:
+        # Esta prueba solo cubre la colisión de nombres; la retención tiene su
+        # propio reloj UTC y se prueba separadamente con fechas deterministas.
+        with patch.object(r, '_retener'), patch.object(r, 'uuid4', return_value=UUID(int=1)), patch.object(r, 'datetime') as reloj:
             reloj.now.return_value = datetime(2026, 10, 27, tzinfo=timezone.utc)
             primero = self.crear()
             with self.assertRaises(r.ErrorRespaldo):
@@ -104,9 +106,70 @@ class RespaldosTests(SimpleTestCase):
         desconocido.write_bytes(b'archivo ajeno')
         segundo = self.crear(2)
         tercero = self.crear(2)
-        self.assertFalse((self.destino / primero['archivo']).exists())
-        for nombre in (segundo['archivo'], tercero['archivo'], desconocido.name):
+        # BACKUP_CONSERVAR es cobertura diaria; dentro de las últimas 24 horas
+        # se conservan todas las copias hasta el tope independiente de ocho.
+        for nombre in (primero['archivo'], segundo['archivo'], tercero['archivo'], desconocido.name):
             self.assertTrue((self.destino / nombre).exists())
+
+    def _cambiar_fecha(self, copia, fecha):
+        manifiesto = copia.with_suffix('.json')
+        datos = json.loads(manifiesto.read_text(encoding='utf-8'))
+        datos['fecha'] = fecha.isoformat()
+        manifiesto.write_text(json.dumps(datos, ensure_ascii=False), encoding='utf-8')
+
+    def test_retencion_limita_recientes_y_conserva_una_copia_por_dia(self):
+        ahora = datetime(2026, 2, 10, 12, tzinfo=timezone.utc)
+        copias = []
+        fechas = []
+        with patch.object(r, '_retener'):
+            for horas in range(1, 10):
+                copias.append(self.crear(4))
+                fechas.append(ahora - timedelta(hours=horas))
+            for dias, cantidad in ((2, 3), (3, 2), (4, 2), (5, 2)):
+                for horas in range(1, cantidad + 1):
+                    copias.append(self.crear(4))
+                    fechas.append(ahora - timedelta(days=dias, hours=horas))
+        por_nombre = {}
+        for resultado, fecha in zip(copias, fechas):
+            ruta = self.destino / resultado['archivo']
+            self._cambiar_fecha(ruta, fecha)
+            por_nombre[ruta.name] = fecha
+
+        desconocido = self.destino / ('respaldo_20200101_000000_' + ('0' * 32) + '.sqlite3')
+        desconocido.write_bytes(b'no gestionado')
+        desconocido.with_suffix('.json').write_text('{}', encoding='utf-8')
+        ajeno = self.destino / 'notas.txt'
+        ajeno.write_text('no tocar', encoding='utf-8')
+
+        r._retener(self.destino, 4, self.origen, ahora=ahora)
+        recientes = sorted((nombre for nombre, fecha in por_nombre.items() if fecha >= ahora - timedelta(hours=24)),
+                           key=lambda nombre: por_nombre[nombre], reverse=True)
+        dias_antiguos = {fecha.date() for fecha in por_nombre.values()
+                         if fecha < ahora - timedelta(hours=24)}
+        esperados = set(recientes[:8])
+        for dia in sorted(dias_antiguos, reverse=True)[:3]:
+            grupo = [(nombre, fecha) for nombre, fecha in por_nombre.items() if fecha.date() == dia]
+            esperados.add(max(grupo, key=lambda par: par[1])[0])
+        self.assertEqual({nombre for nombre in por_nombre if (self.destino / nombre).exists()}, esperados)
+        fechas_conservadas = {por_nombre[nombre].date() for nombre in esperados}
+        self.assertEqual(len(fechas_conservadas), 4)
+        self.assertTrue(desconocido.exists())
+        self.assertEqual(ajeno.read_text(encoding='utf-8'), 'no tocar')
+
+    def test_retencion_nunca_elimina_la_ultima_copia_verificada(self):
+        ahora = datetime(2026, 2, 10, 12, tzinfo=timezone.utc)
+        copias = []
+        with patch.object(r, '_retener'):
+            for horas in range(40, 35, -1):
+                copias.append(self.crear(1))
+        for indice, resultado in enumerate(copias):
+            ruta = self.destino / resultado['archivo']
+            self._cambiar_fecha(ruta, ahora - timedelta(days=3, hours=indice))
+        ultimo = max(copias, key=lambda fila: json.loads(
+            (self.destino / fila['archivo']).with_suffix('.json').read_text())['fecha'])
+        r._retener(self.destino, 1, self.origen, ahora=ahora)
+        self.assertTrue((self.destino / ultimo['archivo']).exists())
+        self.assertEqual(sum(1 for fila in copias if (self.destino / fila['archivo']).exists()), 1)
 
     def test_copia_alterada_no_se_purga(self):
         primero = self.crear(1)

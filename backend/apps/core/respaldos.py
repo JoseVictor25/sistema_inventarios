@@ -192,17 +192,51 @@ def listar_copias(directorio):
         raise ErrorRespaldo('No se pudo consultar la carpeta de respaldos.') from None
 
 
-def _retener(directorio, conservar, origen):
+def _retener(directorio, conservar, origen, *, ahora=None):
+    """Retiene hasta ocho copias recientes y cobertura diaria en UTC.
+
+    `conservar` es el número de días naturales de cobertura total. Se incluyen
+    primero todas las copias de las últimas 24 horas (máximo ocho); después,
+    una copia por día anterior hasta alcanzar esa cobertura.
+    """
+    directorio = Path(directorio).resolve()
+    ahora = ahora or datetime.now(timezone.utc)
+    if ahora.tzinfo is None:
+        raise ErrorRespaldo('La fecha de retención debe incluir zona horaria.')
+    limite = ahora.astimezone(timezone.utc).timestamp() - 24 * 60 * 60
     candidatos = []
     for ruta in directorio.glob('respaldo_*.sqlite3'):
-        datos = _metadatos(ruta, origen)
+        # Aceptar también `origen` si es el respaldo recién publicado en un
+        # destino externo; nunca excluir la copia más nueva de la retención.
+        datos = _metadatos(ruta)
         if datos:
             try:
                 verificar_copia(ruta)
             except ErrorRespaldo:
                 continue
-            candidatos.append((datos['fecha'], ruta.name, ruta))
-    for _, _, ruta in sorted(candidatos, reverse=True)[conservar:]:
+            fecha = datetime.fromisoformat(datos['fecha']).astimezone(timezone.utc)
+            candidatos.append((fecha, ruta.name, ruta))
+    candidatos.sort(reverse=True)
+    conservar_rutas = set()
+    recientes = [fila for fila in candidatos if fila[0].timestamp() >= limite]
+    conservar_rutas.update(fila[2] for fila in recientes[:8])
+    dias = {fila[0].date() for fila in recientes[:8]}
+    for fila in candidatos:
+        fecha, _, ruta = fila
+        if fecha.timestamp() >= limite:
+            continue
+        dia = fecha.date()
+        if dia not in dias and len(dias) < conservar:
+            conservar_rutas.add(ruta)
+            dias.add(dia)
+    # Por ejemplo, con BACKUP_CONSERVAR=1 y más de ocho copias en la última
+    # jornada, la copia globalmente más nueva debe sobrevivir siempre.
+    if candidatos:
+        conservar_rutas.add(candidatos[0][2])
+    origen = Path(origen).resolve()
+    for _, _, ruta in candidatos:
+        if ruta in conservar_rutas:
+            continue
         # Solo archivos gestionados, verificados y dentro del directorio resuelto.
         if ruta.resolve().parent != directorio or ruta.resolve() == origen:
             raise ErrorRespaldo('Se rechazó una ruta insegura durante la retención.')

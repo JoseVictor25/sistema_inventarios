@@ -21,7 +21,7 @@ def _crear_respaldo_automatico(settings):
     return resultado
 
 
-def _respaldo_vencido(settings):
+def _respaldo_vencido(settings, horas=24, *, ahora=None):
     from apps.core.respaldos import listar_copias
     from datetime import datetime, timezone
     import logging
@@ -29,10 +29,15 @@ def _respaldo_vencido(settings):
         ultimo = next((fila['fecha'] for fila in listar_copias(settings.BACKUP_DIR) if fila['verificado']), None)
         if not ultimo:
             return True
-        return (datetime.now(timezone.utc) - datetime.fromisoformat(ultimo)).total_seconds() > 24 * 60 * 60
+        ahora = ahora or datetime.now(timezone.utc)
+        return (ahora - datetime.fromisoformat(ultimo)).total_seconds() > horas * 60 * 60
     except Exception:
         logging.getLogger(__name__).exception('No se pudo comprobar la antigüedad del último respaldo')
         return True
+
+
+def _respaldo_cierre_vencido(settings, *, ahora=None):
+    return _respaldo_vencido(settings, settings.BACKUP_HORAS_MIN_CIERRE, ahora=ahora)
 
 
 def main():
@@ -77,6 +82,13 @@ def main():
     from contextlib import nullcontext
 
     try:
+        if args.restaurar:
+            from desktop.restauracion import restaurar_con_bloqueo
+            resultado = restaurar_con_bloqueo(args.restaurar, ruta, preparar=lambda: configurar(
+                ruta, solo_respaldo=True, modo=modo, sid_operador=args.operador_sid))
+            print('Restauración completada. Base reemplazada; respaldo de seguridad:', resultado['respaldo_seguridad'])
+            return 0
+
         # El bloqueo de instancia cubre el servidor HTTP: mantenimiento y el
         # instalador pueden detectar una instancia activa mediante este cerrojo.
         with (nullcontext() if args.respaldo else bloqueo_instancia(ruta)):
@@ -91,16 +103,6 @@ def main():
                 from django.conf import settings
                 resultado = _crear_respaldo_automatico(settings)
                 print('Respaldo verificado:', resultado['archivo'], resultado['sha256'])
-                return 0
-
-            if args.restaurar:
-                from django.conf import settings
-                from desktop.restauracion import restaurar
-                connections.close_all()
-                # El contexto exterior de bloqueo_instancia sigue retenido aquí.
-                resultado = restaurar(args.restaurar, settings.DB_PATH,
-                    settings.BACKUP_DIR, settings.BACKUP_CONSERVAR, settings.DATA_DIR / 'qr_bancario.png')
-                print('Restauración completada. Base reemplazada; respaldo de seguridad:', resultado['respaldo_seguridad'])
                 return 0
 
             from apps.core.primer_uso import habilitar
@@ -176,7 +178,10 @@ def main():
             servidor = None
             return 0
     except Exception as error:
-        print('No se pudo iniciar el sistema:', str(error), file=sys.stderr)
+        if args.restaurar:
+            print(str(error), file=sys.stderr)
+        else:
+            print('No se pudo iniciar el sistema:', str(error), file=sys.stderr)
         return 1
     finally:
         if servidor:
@@ -188,10 +193,11 @@ def main():
                 try:
                     if respaldo_inicio and respaldo_inicio.is_alive():
                         respaldo_inicio.join()
-                    resultado = _crear_respaldo_automatico(settings)
-                    logging.getLogger(__name__).info('Respaldo automático de cierre completado: %s', resultado['archivo'])
-                    if resultado['advertencia']:
-                        logging.getLogger(__name__).warning('%s', resultado['advertencia'])
+                    if _respaldo_cierre_vencido(settings):
+                        resultado = _crear_respaldo_automatico(settings)
+                        logging.getLogger(__name__).info('Respaldo automático de cierre completado: %s', resultado['archivo'])
+                        if resultado['advertencia']:
+                            logging.getLogger(__name__).warning('%s', resultado['advertencia'])
                 except Exception:
                     logging.getLogger(__name__).exception('Falló el respaldo automático de cierre')
 
