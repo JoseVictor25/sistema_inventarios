@@ -9,7 +9,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import IntegrityError, OperationalError, transaction
-from django.db.models import F, Q, Sum, Value, IntegerField
+from django.db.models import Exists, F, OuterRef, Q, Sum, Value, IntegerField
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
@@ -27,6 +27,12 @@ def _validar_filtros(clase, filtros):
     if not form.is_valid():
         raise ErrorDeNegocio(' '.join(str(e) for errores in form.errors.values() for e in errores))
     return form.cleaned_data
+
+
+def _elevar_bloqueo_inventario(error):
+    if not any(texto in str(error).lower() for texto in ('locked', 'busy')):
+        raise error
+    raise ErrorDeNegocio('Otra operación está actualizando el inventario. Actualiza la página y revisa el historial antes de reintentar.') from None
 
 
 def _stock():
@@ -54,12 +60,42 @@ def listar_stock(usuario, filtros=None):
     # Paso 1: los servicios también comprueban permisos.
     autorizar(usuario, 'ver_stock')
     datos = _validar_filtros(FiltroStockForm, filtros)
-    # Paso 2: stock bajo incluye cero; los inactivos con existencias se conservan.
+    # Paso 2: el filtro de stock bajo requiere la suma completa para filtrar.
+    # En el listado normal, ordenar y paginar productos primero evita agregar
+    # los lotes de todo el catálogo en cada solicitud.
+    if datos.get('solo_bajo') != '1':
+        from .models import Lote
+        tiene_stock = Lote.objects.filter(producto_id=OuterRef('pk'), cantidad_actual__gt=0)
+        productos = Producto.objects.annotate(_tiene_stock=Exists(tiene_stock)).filter(
+            Q(activo=True) | Q(_tiene_stock=True)
+        ).order_by('nombre', 'pk')
+        if datos.get('q'):
+            productos = productos.filter(Q(codigo__icontains=datos['q']) | Q(nombre__icontains=datos['q']))
+        pagina = Paginator(productos.values_list('pk', flat=True), 20).get_page(datos.get('page') or 1)
+        ids = list(pagina.object_list)
+        if not ids:
+            pagina.object_list = []
+            return pagina
+        agregados = Lote.objects.filter(producto_id__in=ids).values('producto_id').annotate(
+            total=Coalesce(Sum('cantidad_actual'), Value(0), output_field=IntegerField()),
+            disponible=Coalesce(Sum('cantidad_actual', filter=Q(fecha_vencimiento__isnull=True) |
+                                    Q(fecha_vencimiento__gte=timezone.localdate())),
+                                Value(0), output_field=IntegerField()),
+        )
+        por_producto = {fila['producto_id']: fila for fila in agregados}
+        filas = Producto.objects.filter(pk__in=ids).values(
+            'id', 'codigo', 'nombre', 'activo', 'stock_minimo', 'categoria__nombre')
+        por_id = {fila['id']: fila for fila in filas}
+        pagina.object_list = [dict(por_id[pk], stock_actual=por_producto.get(pk, {}).get('total', 0),
+                                   stock_disponible=por_producto.get(pk, {}).get('disponible', 0))
+                              for pk in ids]
+        return pagina
+
+    # Stock bajo incluye cero; los inactivos con existencias se conservan.
     consulta = _stock()
     if datos.get('q'):
         consulta = consulta.filter(Q(codigo__icontains=datos['q']) | Q(nombre__icontains=datos['q']))
-    if datos.get('solo_bajo') == '1':
-        consulta = consulta.filter(stock_total__lte=F('stock_minimo'))
+    consulta = consulta.filter(stock_total__lte=F('stock_minimo'))
     return Paginator(_filas_stock(consulta), 20).get_page(datos.get('page') or 1)
 
 
@@ -217,6 +253,8 @@ def ajustar_inventario(usuario, lote, tipo, cantidad, motivo, *, clave=None):
         actual = Lote.objects.get(pk=identificador)
     except Lote.DoesNotExist:
         raise ErrorDeNegocio('El lote indicado no existe.')
+    except OperationalError as error:
+        _elevar_bloqueo_inventario(error)
 
     # Validar o generar clave UUID
     if clave is None:
@@ -233,9 +271,12 @@ def ajustar_inventario(usuario, lote, tipo, cantidad, motivo, *, clave=None):
     huella = _calcular_huella(usuario.pk, identificador, tipo, cantidad, motivo_limpio)
 
     # Paso 4: comprobar si ya existe una operación confirmada con esta clave
-    previa = OperacionAjusteInventario.objects.select_related(
-        'movimiento', 'movimiento__lote', 'auditoria'
-    ).filter(clave=clave).first()
+    try:
+        previa = OperacionAjusteInventario.objects.select_related(
+            'movimiento', 'movimiento__lote', 'auditoria'
+        ).filter(clave=clave).first()
+    except OperationalError as error:
+        _elevar_bloqueo_inventario(error)
     if previa is not None and previa.movimiento is not None:
         if previa.usuario_id != usuario.pk or previa.huella != huella:
             raise ErrorDeNegocio('La clave ya fue utilizada con otros datos. Actualiza la página.')

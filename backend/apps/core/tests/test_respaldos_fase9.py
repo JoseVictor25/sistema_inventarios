@@ -188,8 +188,21 @@ class RespaldosTests(SimpleTestCase):
             c.commit()
             c.execute("INSERT INTO usuarios_usuario VALUES (3, 'sin confirmar')")
             copia = self.destino / self.crear()['archivo']
+            r.verificar_copia(copia)  # abrir en mode=ro incluye las páginas confirmadas del WAL
             with closing(sqlite3.connect(copia)) as recuperada:
                 self.assertEqual(recuperada.execute('SELECT COUNT(*) FROM usuarios_usuario').fetchone()[0], 2)
             c.rollback()
         finally:
             c.close()
+
+    def test_copia_externa_verificada_y_destino_no_disponible(self):
+        externo = self.raiz / 'externo'
+        resultado = r.crear_copia(self.origen, self.destino, 2, directorio_externo=externo)
+        copia_externa = externo / resultado['archivo']
+        self.assertEqual(r.verificar_copia(copia_externa)['sha256'], resultado['sha256'])
+        self.assertTrue(r.listar_copias(externo)[0]['verificado'])
+        destino_no_disponible = self.raiz / 'archivo_que_no_es_carpeta'
+        destino_no_disponible.write_text('ocupado')
+        resultado = r.crear_copia(self.origen, self.destino, 2, directorio_externo=destino_no_disponible / 'copias')
+        self.assertIn('destino externo', resultado['advertencia'])
+        self.assertTrue(r.listar_copias(self.destino)[0]['verificado'])

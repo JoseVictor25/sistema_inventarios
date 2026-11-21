@@ -211,7 +211,40 @@ def _retener(directorio, conservar, origen):
         logger.info('Retención: eliminado respaldo gestionado %s', ruta.name)
 
 
-def crear_copia(origen, directorio, conservar, *, limite_segundos=120, qr=None):
+def _copiar_externo(archivo, directorio, conservar):
+    """Copia un respaldo verificado y su manifiesto a un segundo destino."""
+    directorio = Path(directorio).resolve()
+    nombre = Path(archivo['archivo']).name
+    origen = Path(archivo['_directorio']) / nombre
+    destino = directorio / nombre
+    parcial, meta_parcial = directorio / (nombre + '.partial'), directorio / (nombre + '.json.partial')
+    try:
+        directorio.mkdir(parents=True, exist_ok=True)
+        with _bloqueo(directorio):
+            if destino.exists() or destino.with_suffix('.json').exists():
+                raise ErrorRespaldo('El respaldo ya existe en el destino externo.')
+            try:
+                shutil.copyfile(origen, parcial)
+                if hash_archivo(parcial) != archivo['sha256']:
+                    raise ErrorRespaldo('La copia externa no coincide con el respaldo verificado.')
+                shutil.copyfile(origen.with_suffix('.json'), meta_parcial)
+                _publicar(parcial, destino)
+                _publicar(meta_parcial, destino.with_suffix('.json'))
+                if _metadatos(destino) is None:
+                    raise ErrorRespaldo('No se pudo verificar el respaldo en el destino externo.')
+                verificar_copia(destino)
+                _retener(directorio, conservar, destino)
+            finally:
+                parcial.unlink(missing_ok=True)
+                meta_parcial.unlink(missing_ok=True)
+        logger.info('Respaldo copiado al destino externo: %s', destino)
+        return ''
+    except (OSError, ErrorRespaldo):
+        logger.exception('No se pudo copiar el respaldo al destino externo')
+        return 'No se pudo copiar el respaldo al destino externo; verifica que la carpeta o unidad esté disponible.'
+
+
+def crear_copia(origen, directorio, conservar, *, limite_segundos=120, qr=None, directorio_externo=None):
     """Publica una copia consistente y luego aplica retención segura.
 
     Pasos: 1. Validar rutas/configuración. 2. Bloquear entre procesos.
@@ -290,8 +323,12 @@ def crear_copia(origen, directorio, conservar, *, limite_segundos=120, qr=None):
                 logger.exception('Respaldo creado; retención incompleta')
                 advertencia = 'Respaldo creado y verificado; no se pudo completar la retención.'
             logger.info('Respaldo verificado: %s, bytes=%s, sha256=%s', nombre, datos['tamano'], datos['sha256'])
-            return dict({k: v for k, v in datos.items() if k != 'qr'},
-                        qr_incluido='qr' in datos, advertencia=advertencia)
+            resultado = dict({k: v for k, v in datos.items() if k != 'qr'},
+                             qr_incluido='qr' in datos, advertencia=advertencia)
+            if directorio_externo:
+                aviso = _copiar_externo(dict(resultado, _directorio=directorio), directorio_externo, conservar)
+                resultado['advertencia'] = ' '.join(x for x in (advertencia, aviso) if x)
+            return resultado
     except ErrorRespaldo as error:
         logger.warning('Respaldo no completado: %s', error)
         raise

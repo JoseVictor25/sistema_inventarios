@@ -3,6 +3,10 @@
 {% block contenido %}
 <h1 class="titulo-pagina h3">Respaldos del sistema</h1>
 <p>Copias verificadas de SQLite. Los reportes Excel/PDF no reemplazan un respaldo.</p>
+<p><strong>Carpeta local:</strong> <span class="text-break">{{ directorio }}</span></p>
+<p><strong>Último respaldo verificado:</strong> {{ ultimo_verificado|default:'Ninguno' }}</p>
+<p><strong>Destino externo:</strong> {% if externo_configurado %}Configurado{% else %}No configurado{% endif %}</p>
+{% if advertencia_externa %}<div class="alert alert-warning">{{ advertencia_externa }}</div>{% endif %}
 <form method="post" action="{% url 'core:respaldo_crear' %}" class="mb-3">{% csrf_token %}<button class="btn btn-primary">Respaldar ahora</button></form>
 <p class="text-muted">La creación puede tardar. Si hay otra copia en curso, espera a que termine. No se ofrece restauración desde esta pantalla.</p>
 <div class="table-responsive"><table class="table table-striped"><caption class="visually-hidden">Respaldos disponibles</caption><thead><tr><th>Archivo</th><th>Fecha (UTC)</th><th>Tamaño</th><th class="d-none d-md-table-cell">Verificación</th><th class="d-none d-md-table-cell">SHA-256</th></tr></thead><tbody>

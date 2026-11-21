@@ -2,8 +2,37 @@
 import argparse
 from pathlib import Path
 import sys
+import threading
+import logging
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+
+def _crear_respaldo_automatico(settings):
+    from apps.core.respaldos import crear_copia
+    resultado = crear_copia(settings.DB_PATH, settings.BACKUP_DIR, settings.BACKUP_CONSERVAR,
+        qr=settings.DATA_DIR / 'qr_bancario.png',
+        directorio_externo=getattr(settings, 'BACKUP_DIR_EXTERNO', None))
+    try:
+        from apps.core.services import _guardar_advertencia_externa
+        _guardar_advertencia_externa(resultado['advertencia'])
+    except Exception:
+        logging.getLogger(__name__).exception('No se pudo registrar el estado del destino externo')
+    return resultado
+
+
+def _respaldo_vencido(settings):
+    from apps.core.respaldos import listar_copias
+    from datetime import datetime, timezone
+    import logging
+    try:
+        ultimo = next((fila['fecha'] for fila in listar_copias(settings.BACKUP_DIR) if fila['verificado']), None)
+        if not ultimo:
+            return True
+        return (datetime.now(timezone.utc) - datetime.fromisoformat(ultimo)).total_seconds() > 24 * 60 * 60
+    except Exception:
+        logging.getLogger(__name__).exception('No se pudo comprobar la antigüedad del último respaldo')
+        return True
 
 
 def main():
@@ -13,6 +42,7 @@ def main():
     parser.add_argument('--instalado', action='store_true', help='Ejecuta en modo instalado permanente (usa ProgramData).')
     parser.add_argument('--inicializar', action='store_true', help='Autoriza crear una instalación nueva.')
     parser.add_argument('--respaldo', action='store_true', help='Crea copia de seguridad y finaliza sin abrir interfaz.')
+    parser.add_argument('--restaurar', metavar='RUTA_DEL_RESPALDO', help='Restaura una copia verificada (solo instalación cerrada).')
     parser.add_argument('--navegador', action='store_true', help='Usa navegador predeterminado en lugar de WebView2.')
     parser.add_argument('--puerto', type=int, default=8000, help='Puerto local HTTP preferido.')
     parser.add_argument('--diagnostico', action='store_true', help='Prueba HTTP y cierre sin abrir interfaz.')
@@ -33,13 +63,17 @@ def main():
     else:
         parser.error('Se requiere indicar --datos-temporales (para pruebas) o --instalado (para uso persistente).')
 
+    if args.restaurar and (modo != 'instalado' or args.respaldo or args.inicializar):
+        parser.error('--restaurar requiere --instalado y no se combina con --respaldo ni --inicializar.')
+
     ruta.mkdir(parents=True, exist_ok=True)
     sys.path.insert(0, str(recursos() / 'backend'))
 
-    from apps.core.respaldos import crear_copia
     from desktop.inicializacion import configurar
     from django.db import connections
     servidor = None
+    respaldo_inicio = None
+    inicio_normal = False
     from contextlib import nullcontext
 
     try:
@@ -49,16 +83,24 @@ def main():
             configurar(
                 ruta,
                 autorizar_nueva=args.inicializar and not args.respaldo,
-                solo_respaldo=args.respaldo,
+                solo_respaldo=args.respaldo or bool(args.restaurar),
                 modo=modo,
                 sid_operador=args.operador_sid
             )
             if args.respaldo:
-                from apps.core.respaldos import crear_copia
                 from django.conf import settings
-                resultado = crear_copia(settings.DB_PATH, settings.BACKUP_DIR, settings.BACKUP_CONSERVAR,
-                                       qr=settings.DATA_DIR / 'qr_bancario.png')
+                resultado = _crear_respaldo_automatico(settings)
                 print('Respaldo verificado:', resultado['archivo'], resultado['sha256'])
+                return 0
+
+            if args.restaurar:
+                from django.conf import settings
+                from desktop.restauracion import restaurar
+                connections.close_all()
+                # El contexto exterior de bloqueo_instancia sigue retenido aquí.
+                resultado = restaurar(args.restaurar, settings.DB_PATH,
+                    settings.BACKUP_DIR, settings.BACKUP_CONSERVAR, settings.DATA_DIR / 'qr_bancario.png')
+                print('Restauración completada. Base reemplazada; respaldo de seguridad:', resultado['respaldo_seguridad'])
                 return 0
 
             from apps.core.primer_uso import habilitar
@@ -85,6 +127,19 @@ def main():
 
             servidor = Servidor(get_wsgi_application(), args.puerto)
             servidor.iniciar()
+            inicio_normal = True
+            if _respaldo_vencido(settings):
+                def respaldo_en_segundo_plano():
+                    try:
+                        resultado = _crear_respaldo_automatico(settings)
+                        logging.getLogger(__name__).info('Respaldo automático de inicio completado: %s', resultado['archivo'])
+                        if resultado['advertencia']:
+                            logging.getLogger(__name__).warning('%s', resultado['advertencia'])
+                    except Exception:
+                        logging.getLogger(__name__).exception('Falló el respaldo automático de inicio')
+                respaldo_inicio = threading.Thread(target=respaldo_en_segundo_plano,
+                    name='respaldo-inicio', daemon=True)
+                respaldo_inicio.start()
 
             if args.diagnostico:
                 from urllib.request import urlopen
@@ -129,6 +184,16 @@ def main():
         from django.conf import settings
         if settings.configured:
             connections.close_all()
+            if inicio_normal:
+                try:
+                    if respaldo_inicio and respaldo_inicio.is_alive():
+                        respaldo_inicio.join()
+                    resultado = _crear_respaldo_automatico(settings)
+                    logging.getLogger(__name__).info('Respaldo automático de cierre completado: %s', resultado['archivo'])
+                    if resultado['advertencia']:
+                        logging.getLogger(__name__).warning('%s', resultado['advertencia'])
+                except Exception:
+                    logging.getLogger(__name__).exception('Falló el respaldo automático de cierre')
 
 
 if __name__ == '__main__':

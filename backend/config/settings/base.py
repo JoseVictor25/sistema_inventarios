@@ -70,6 +70,7 @@ ALLOWED_HOSTS = env_lista("ALLOWED_HOSTS", "localhost,127.0.0.1")
 DATA_DIR = Path(env_str("DATA_DIR", BASE_DIR / "datos"))
 DB_PATH = Path(env_str("DB_PATH", DATA_DIR / "db.sqlite3"))
 BACKUP_DIR = Path(env_str("BACKUP_DIR", DATA_DIR / "respaldos"))
+BACKUP_DIR_EXTERNO = Path(os.environ["BACKUP_DIR_EXTERNO"]) if os.environ.get("BACKUP_DIR_EXTERNO", "").strip() else None
 LOG_DIR = Path(env_str("LOG_DIR", DATA_DIR / "logs"))
 for carpeta in (DATA_DIR, BACKUP_DIR, LOG_DIR):
     carpeta.mkdir(parents=True, exist_ok=True)
@@ -146,6 +147,7 @@ DATABASES = {
             # (ej. cambios de precio simultáneos) sean serializadas correctamente
             # en lugar de fallar instantáneamente con busy_timeout=0 (valor por defecto).
             "timeout": 5,
+            "init_command": "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;",
         },
     }
 }

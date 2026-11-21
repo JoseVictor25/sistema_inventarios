@@ -9,6 +9,7 @@ from django.contrib.auth.models import AnonymousUser, Permission
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.management import call_command
 from django.db import connection
+from django.db.models import F
 from django.test import TestCase, Client, override_settings
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
@@ -59,6 +60,24 @@ class ConsultasFase7Tests(TestCase):
         self.assertEqual(fila['stock_actual'], 19)
         self.assertEqual(fila['stock_disponible'], 9)
         self.assertEqual(self.producto.stock_actual, 19)
+
+    def test_listado_stock_paginado_conserva_filas_del_calculo_global(self):
+        hoy = timezone.localdate()
+        lote(self.producto, 'STOCK-1', 4, hoy - timedelta(days=1))
+        lote(self.producto, 'STOCK-2', 3, hoy + timedelta(days=2))
+        inactivo = Producto.objects.create(codigo='F7-INACTIVO', nombre='Producto inactivo',
+            categoria=self.producto.categoria, activo=False, stock_minimo=5)
+        lote(inactivo, 'STOCK-3', 2)
+        Producto.objects.create(codigo='F7-VACIO', nombre='Z producto vacío', categoria=self.producto.categoria)
+        legacy = list(s._filas_stock(s._stock()).order_by('nombre', 'pk'))
+        actual = list(s.listar_stock(self.vendedor))
+        self.assertEqual(actual, legacy[:20])
+        con_busqueda = list(s.listar_stock(self.vendedor, {'q': 'F7'}))
+        esperado = list(s._filas_stock(s._stock().filter(codigo__icontains='F7') |
+            s._stock().filter(nombre__icontains='F7')).order_by('nombre', 'pk'))
+        self.assertEqual(con_busqueda, esperado[:20])
+        self.assertEqual(list(s.listar_stock(self.vendedor, {'solo_bajo': '1'})),
+            list(s._filas_stock(s._stock().filter(stock_total__lte=F('stock_minimo')))))
 
     def test_solo_vencidos_no_hay_disponible(self):
         lote(self.producto, 'VENCIDO', 10, timezone.localdate() - timedelta(days=1))

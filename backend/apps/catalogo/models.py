@@ -84,6 +84,7 @@ class Producto(EntidadAuditable):
 
     class Meta:
         ordering = ["nombre"]
+        indexes = [models.Index(fields=["nombre"], name="producto_nombre_idx")]
         verbose_name = "producto"
         verbose_name_plural = "productos"
 

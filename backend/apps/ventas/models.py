@@ -83,6 +83,7 @@ class Venta(EntidadAuditable):
 
     class Meta:
         ordering = ["-fecha"]
+        indexes = [models.Index(fields=["fecha"], name="venta_fecha_idx")]
         verbose_name = "venta"
         verbose_name_plural = "ventas"
         constraints = [
