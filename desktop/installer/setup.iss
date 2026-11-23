@@ -8,15 +8,16 @@
 ; Flujo de permisos NTFS aprobado:
 ;   1. Inno Setup crea {commonappdata}\SistemaInventarios\ con uninsneveruninstall.
 ;      La carpeta hereda los permisos del directorio padre (ProgramData).
-;   2. En el PRIMER ARRANQUE, el proceso de la aplicación (ejecutado bajo la cuenta
-;      del operador) llama a aplicar_permisos_seguros() de desktop/seguridad.py,
-;      que aplica las ACLs correctas con el SID real del operador.
-;   3. Los arranques posteriores verifican el SID antes de arrancar (validar_operador).
+;   2. Si se proporciona /OPERATOR_SID, Setup aplica ACLs al SID indicado antes
+;      del primer arranque. La aplicación NO aplica ACLs automáticamente.
+;   3. El primer proceso que inicializa registra su SID; los siguientes validan
+;      ese registro (validar_operador).
 ;   4. Cambio de operador: solo mediante migrar_operador() con autorización Admin.
 ;
-; El parámetro /OPERATOR_SID puede pasarse al primer arranque para pre-registrar
-; el SID si el operador se conoce antes de la instalación (caso kiosco/empresa).
-; Sin ese parámetro, el primer arranque detecta el SID del proceso automáticamente.
+; El parámetro /OPERATOR_SID se pasa a Setup durante la instalación para aplicar
+; ACL al SID conocido antes de instalar (caso kiosco/empresa).
+; Sin ese parámetro, la carpeta conserva ACL heredadas de ProgramData; el primer
+; arranque puede rechazarlas y cualquier usuario con acceso heredado podría leer .env.
 ;
 #define ProductName "Sistema de Inventarios"
 #define ProductVersion "0.10.0"
@@ -31,7 +32,11 @@
 AppId={{E3488284-3044-4D29-AB90-33D28FD02467}
 AppName={#ProductName}
 AppVersion={#ProductVersion}
+#ifdef SOLO_PRUEBAS_VM
+AppVerName=SOLO PRUEBAS VM - NO ENTREGAR AL CLIENTE
+#else
 AppVerName={#ProductName} {#ProductVersion} - PRELIMINAR B3 PERSISTENTE
+#endif
 DefaultDirName={autopf}\SistemaInventarios
 DefaultGroupName={#ProductName}
 PrivilegesRequired=admin
@@ -39,7 +44,11 @@ ArchitecturesAllowed=x64compatible and not arm64
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0.22000
 OutputDir={#BuildOutput}
+#ifdef SOLO_PRUEBAS_VM
+OutputBaseFilename=Instalador_Sistema_Inventarios_0.10.0_SOLO_PRUEBAS_VM_NO_ENTREGAR
+#else
 OutputBaseFilename=Instalador_Sistema_Inventarios_0.10.0_B3_BLOQUEADO
+#endif
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -50,6 +59,9 @@ DisableProgramGroupPage=yes
 
 [Languages]
 Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
+
+[Messages]
+WindowsVersionNotSupported=Este sistema requiere Windows 11 de 64 bits (compilación 22000 o posterior). Windows 10 y versiones anteriores no son compatibles.
 
 [Tasks]
 Name: "desktopicon"; Description: "Crear acceso directo en el escritorio"; Flags: unchecked
@@ -63,8 +75,8 @@ Name: "{commonappdata}\SistemaInventarios"; Flags: uninsneveruninstall
 #include VerifiedFiles
 
 [Icons]
-Name: "{group}\{#ProductName}"; Filename: "{app}\SistemaInventarios.exe"; WorkingDir: "{app}"
-Name: "{commondesktop}\{#ProductName}"; Filename: "{app}\SistemaInventarios.exe"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{group}\{#ProductName}"; Filename: "{app}\SistemaInventarios.exe"; WorkingDir: "{app}"; Parameters: "--operador-sid={param:OPERATOR_SID|}"
+Name: "{commondesktop}\{#ProductName}"; Filename: "{app}\SistemaInventarios.exe"; WorkingDir: "{app}"; Tasks: desktopicon; Parameters: "--operador-sid={param:OPERATOR_SID|}"
 
 ; POLÍTICA DE SEGURIDAD Y DESINSTALACIÓN:
 ; - Sin [Run]: la aplicación nunca debe ejecutarse con la cuenta administrativa del instalador.
@@ -218,7 +230,7 @@ begin
     end
     else
     begin
-      Log('No se especificó /OPERATOR_SID en la instalación. La carpeta hereda permisos y el primer arranque del operador aplicará su SID.');
+      Log('No se especificó /OPERATOR_SID. La carpeta hereda ACL de ProgramData; el primer arranque puede rechazarlas.');
     end;
   end;
 end;
@@ -226,6 +238,7 @@ end;
 function InitializeSetup(): Boolean;
 var
   Msg: String;
+  SidOperador: String;
 begin
   if WebView2EquipoDisponible() then
     Log('WebView2 registrado por equipo detectado.')
@@ -245,6 +258,21 @@ begin
          '- Falta la firma digital definitiva del ejecutable.' + #13#10 +
          '- No se alterará ningún archivo ni directorio del sistema.';
 
+#ifdef SOLO_PRUEBAS_VM
+  SidOperador := ObtenerParametroOperador();
+  if not ValidarFormatoSid(SidOperador) then
+  begin
+    SuppressibleMsgBox('La variante SOLO PRUEBAS VM requiere /OPERATOR_SID=<SID válido del operador>.',
+      mbError, MB_OK, IDOK);
+    Result := False;
+    Exit;
+  end;
+  SuppressibleMsgBox('SOLO PRUEBAS VM - NO ENTREGAR AL CLIENTE' + #13#10 +
+    'Este instalador permite pruebas manuales únicamente en una máquina virtual limpia con Windows 11. No usar en equipos reales ni entregar a clientes.',
+    mbInformation, MB_OK, IDOK);
+  Result := True;
+#else
   SuppressibleMsgBox(Msg, mbError, MB_OK, IDOK);
   Result := False;
+#endif
 end;

@@ -200,7 +200,7 @@ Comando ejecutado:
 
 ## 6. Limitaciones y tareas pendientes para B4
 
-1. **Pruebas en máquina virtual limpia (Windows 10 y Windows 11)**:
+1. **Pruebas en máquina virtual limpia con Windows 11 x64 (compilación 22000 o posterior)**. Windows 10, Windows 7, Windows 8/8.1 y Windows ARM64 quedan fuera de soporte y no se probarán:
    - Despliegue del instalador en un entorno donde nunca ha existido Python ni Django.
    - Verificación de la instalación por equipo en `C:\Program Files\SistemaInventarios\`.
    - Creación de permisos ACL reales en `C:\ProgramData\SistemaInventarios\` por el instalador.

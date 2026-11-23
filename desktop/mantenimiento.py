@@ -168,10 +168,17 @@ def ensayar_migraciones_en_copia(directorio_datos):
     temp_dir = tempfile.mkdtemp(prefix='Inventarios_ensayo_migracion_')
     temp_path = Path(temp_dir)
     try:
-        # Copiar base y .env a la carpeta temporal aislada
+        # SQLite backup() incluye páginas confirmadas aún en WAL sin checkpoint
+        # ni escritura en los archivos de la base original.
         copia_db = temp_path / 'db.sqlite3'
         copia_env = temp_path / '.env'
-        shutil.copy2(db_original, copia_db)
+        origen = sqlite3.connect(db_original.resolve().as_uri() + '?mode=ro', uri=True)
+        destino = sqlite3.connect(copia_db)
+        try:
+            origen.backup(destino)
+        finally:
+            destino.close()
+            origen.close()
         shutil.copy2(env_original, copia_env)
 
         from dotenv import dotenv_values
@@ -196,27 +203,27 @@ def ensayar_migraciones_en_copia(directorio_datos):
         import django
         from django.conf import settings
         if settings.configured:
-            settings.DATA_DIR = temp_path
-            settings.DB_PATH = copia_db
-            settings.DATABASES['default']['NAME'] = copia_db
-            settings.LOG_DIR = temp_path / 'logs'
             (temp_path / 'logs').mkdir(parents=True, exist_ok=True)
             if hasattr(settings, 'LOGGING') and 'handlers' in settings.LOGGING and 'archivo' in settings.LOGGING['handlers']:
                 settings.LOGGING['handlers']['archivo']['filename'] = temp_path / 'logs' / 'sistema.log'
 
         django.setup()
-        from django.db import connection, connections
+        from django.db import connections
         from django.db.migrations.executor import MigrationExecutor
-        from django.core.management import call_command
 
-        ejecutor = MigrationExecutor(connection)
+        # Un alias aislado evita reutilizar una conexión ya abierta a la original.
+        alias = 'ensayo_migraciones'
+        settings.DATABASES[alias] = dict(settings.DATABASES['default'], NAME=str(copia_db))
+        conexion_copia = connections[alias]
+        ejecutor = MigrationExecutor(conexion_copia)
         plan = ejecutor.migration_plan(ejecutor.loader.graph.leaf_nodes())
 
         # Ejecutar migraciones en la copia
-        call_command('migrate', interactive=False, verbosity=0)
+        ejecutor.migrate(ejecutor.loader.graph.leaf_nodes())
 
-        # Cerrar conexiones antes de verificar integridad física
-        connections.close_all()
+        # Cerrar únicamente la conexión temporal: close_all() también puede
+        # checkpointar una conexión previa de la aplicación a la base original.
+        conexion_copia.close()
 
         # Comprobar integridad física y de claves foráneas de la copia migrada
         con = sqlite3.connect(copia_db.resolve().as_uri() + '?mode=ro', uri=True)
@@ -249,7 +256,8 @@ def ensayar_migraciones_en_copia(directorio_datos):
     finally:
         try:
             from django.db import connections
-            connections.close_all()
+            if 'ensayo_migraciones' in connections:
+                connections['ensayo_migraciones'].close()
         except Exception:
             pass
         # Eliminar el directorio temporal del ensayo

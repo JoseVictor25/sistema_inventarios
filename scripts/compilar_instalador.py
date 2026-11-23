@@ -1,4 +1,4 @@
-"""Inspecciona onedir y compila B3 bloqueado, exclusivamente en una salida TEMP nueva."""
+"""Inspecciona onedir y compila instaladores en una salida TEMP nueva."""
 import argparse
 import hashlib
 import json
@@ -82,16 +82,27 @@ def preparar(paquete, salida):
     return manifiesto
 
 
+def comando_compilacion(iscc, salida, solo_pruebas_vm=False):
+    comando = [str(Path(iscc).resolve()), '/DVerifiedFiles=' + str(salida / 'archivos.iss'),
+               '/DBuildOutput=' + str(salida / 'salida')]
+    if solo_pruebas_vm:
+        comando.append('/DSOLO_PRUEBAS_VM')
+    comando.append(str(RAIZ / 'desktop/installer/setup.iss'))
+    return comando
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--paquete', required=True, type=Path)
     parser.add_argument('--solo-verificar', action='store_true')
+    parser.add_argument('--solo-pruebas-vm', action='store_true',
+                        help='Genera una variante claramente marcada que permite probar en VM; nunca entregar.')
     parser.add_argument('--iscc', type=Path, help='Compilador Inno Setup previamente instalado por el operador.')
     args = parser.parse_args()
     if Path(sys.executable).resolve() != RAIZ / 'venv/Scripts/python.exe':
         parser.error('Utiliza venv/Scripts/python.exe.')
     antes = {p: sha(RAIZ / p) for p in PROTEGIDOS}
-    salida = Path(tempfile.mkdtemp(prefix='Inventarios_instalador_B3_'))
+    salida = Path(tempfile.mkdtemp(prefix='Inventarios_instalador_SOLO_PRUEBAS_VM_' if args.solo_pruebas_vm else 'Inventarios_instalador_B3_'))
     print('Evidencias y salida:', salida, flush=True)
     try:
         contenido = preparar(args.paquete, salida)
@@ -102,15 +113,15 @@ def main():
         if not iscc or not iscc.is_file():
             print('ISCC.exe no encontrado. Consulta desktop/installer/README.md. No se instaló software.')
             return 2
-        comando = [str(iscc.resolve()), '/DVerifiedFiles=' + str(salida / 'archivos.iss'),
-                   '/DBuildOutput=' + str(salida / 'salida'), str(RAIZ / 'desktop/installer/setup.iss')]
+        comando = comando_compilacion(iscc, salida, args.solo_pruebas_vm)
         with (salida / 'compilacion.txt').open('w', encoding='utf-8') as log:
             resultado = subprocess.run(comando, stdout=log, stderr=subprocess.STDOUT)
         if resultado.returncode:
             print('Error en compilación de Inno Setup (código %s). Revise %s' % (resultado.returncode, salida / 'compilacion.txt'))
             return resultado.returncode
         for exe in (salida / 'salida').glob('*.exe'):
-            print('Instalador BLOQUEADO B3, no ejecutado:', exe, 'SHA-256:', sha(exe))
+            etiqueta = 'SOLO PRUEBAS VM - NO ENTREGAR AL CLIENTE' if args.solo_pruebas_vm else 'BLOQUEADO B3'
+            print('Instalador ' + etiqueta + ', no ejecutado:', exe, 'SHA-256:', sha(exe))
         return 0
     finally:
         if antes != {p: sha(RAIZ / p) for p in PROTEGIDOS}:

@@ -94,7 +94,12 @@ def main():
         with (nullcontext() if args.respaldo else bloqueo_instancia(ruta)):
             configurar(
                 ruta,
-                autorizar_nueva=args.inicializar and not args.respaldo,
+                # El acceso directo instalado no lleva argumentos. Autorizar la
+                # creacion inicial solo en el paquete congelado evita exigir
+                # --inicializar al operador; la configuracion() rechaza una
+                # instalacion incompleta o con archivos existentes parciales.
+                autorizar_nueva=(args.inicializar or (getattr(sys, 'frozen', False) and modo == 'instalado'))
+                    and not args.respaldo,
                 solo_respaldo=args.respaldo or bool(args.restaurar),
                 modo=modo,
                 sid_operador=args.operador_sid
@@ -169,7 +174,7 @@ def main():
                     servidor = None
                     return 0
                 except Exception:
-                    print('No se pudo abrir WebView2. Se usará el navegador local.')
+                    print('WebView2 no está disponible o no pudo abrirse. Se abrirá el navegador predeterminado.')
 
             import webbrowser
             webbrowser.open(url)
