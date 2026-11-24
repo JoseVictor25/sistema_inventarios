@@ -97,16 +97,22 @@ begin
   Result := Result and (Version <> '') and (Version <> '0.0.0.0');
 end;
 
+function RutaInstalacionPredeterminada(): String;
+begin
+  { La ruta elegida aún no está disponible durante InitializeSetup. }
+  Result := ExpandConstant('{autopf}\SistemaInventarios');
+end;
+
 function DetectarInstalacionPrevia(): Boolean;
 begin
-  Result := FileExists(ExpandConstant('{app}\SistemaInventarios.exe'));
+  Result := FileExists(RutaInstalacionPredeterminada() + '\SistemaInventarios.exe');
 end;
 
 function DetectarProcesosActivos(): Boolean;
 var
   ExePath: String;
 begin
-  ExePath := ExpandConstant('{app}\SistemaInventarios.exe');
+  ExePath := RutaInstalacionPredeterminada() + '\SistemaInventarios.exe';
   { Si el archivo existe pero no puede abrirse en modo lectura/escritura exclusiva, está activo }
   Result := False;
   if FileExists(ExePath) then

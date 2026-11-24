@@ -1,6 +1,7 @@
 import importlib.util
 import os
 from pathlib import Path
+import re
 import tempfile
 import unittest
 
@@ -64,6 +65,26 @@ class InstaladorTests(unittest.TestCase):
         self.assertIn('E3488284-3044-4D29-AB90-33D28FD02467', texto)
         self.assertIn('"0.10.0"', texto)
         self.assertIn('PrivilegesRequired=admin', texto)
+
+    def test_initialize_setup_call_graph_no_expande_app(self):
+        texto = (RAIZ / 'desktop/installer/setup.iss').read_text(encoding='utf-8')
+        codigo = texto.split('[Code]', 1)[1]
+        inicios = list(re.finditer(r'(?im)^\s*(?:function|procedure)\s+(\w+)\b', codigo))
+        rutinas = {
+            match.group(1).lower(): codigo[match.end():inicios[i + 1].start() if i + 1 < len(inicios) else len(codigo)]
+            for i, match in enumerate(inicios)
+        }
+        pendientes = ['initializesetup']
+        visitadas = set()
+        while pendientes:
+            nombre = pendientes.pop()
+            if nombre in visitadas or nombre not in rutinas:
+                continue
+            visitadas.add(nombre)
+            cuerpo = rutinas[nombre]
+            self.assertNotIn('{app}', cuerpo.lower(), f'{nombre} expande {{app}} antes de elegir destino')
+            llamadas = re.findall(r'\b([A-Za-z_]\w*)\s*\(', cuerpo)
+            pendientes.extend(llamada.lower() for llamada in llamadas if llamada.lower() in rutinas)
 
     def test_variante_vm_solo_se_define_con_opcion_explicita_y_es_distintiva(self):
         texto = (RAIZ / 'desktop/installer/setup.iss').read_text(encoding='utf-8')
