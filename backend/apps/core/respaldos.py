@@ -21,12 +21,40 @@ from uuid import uuid4
 
 logger = logging.getLogger(__name__)
 PATRON = re.compile(r'^respaldo_\d{8}_\d{6}_[0-9a-f]{32}\.sqlite3$')
+PATRON_PARTE = re.compile(r'^(respaldo_\d{8}_\d{6}_[0-9a-f]{32}\.sqlite3)\.partial(?:-(?:wal|shm))?$')
 TABLAS = {'django_migrations', 'usuarios_usuario', 'usuarios_rol', 'usuarios_permiso',
           'catalogo_producto', 'inventario_lote', 'ventas_venta', 'compras_compra', 'caja_caja', 'auditoria_logauditoria'}
 
 
 class ErrorRespaldo(Exception):
     """Error operativo que puede mostrarse sin revelar datos ni credenciales."""
+
+
+def _borrar_auxiliares(ruta):
+    ruta = Path(ruta)
+    for auxiliar in (Path(str(ruta) + '-wal'), Path(str(ruta) + '-shm'),
+                     Path(str(ruta) + '.partial-wal'), Path(str(ruta) + '.partial-shm')):
+        auxiliar.unlink(missing_ok=True)
+
+
+def _limpiar_huerfanos(directorio):
+    directorio = Path(directorio)
+    for ruta in directorio.iterdir():
+        nombre = ruta.name
+        base = None
+        if PATRON.fullmatch(nombre):
+            base = ruta
+        else:
+            for sufijo in ('-wal', '-shm'):
+                if nombre.endswith(sufijo) and PATRON.fullmatch(nombre[:-len(sufijo)]):
+                    base = directorio / nombre[:-len(sufijo)]
+                    break
+            if base is None:
+                coincidencia = PATRON_PARTE.fullmatch(nombre)
+                if coincidencia:
+                    base = directorio / coincidencia.group(1)
+        if base is not None and not base.exists():
+            ruta.unlink(missing_ok=True)
 
 
 def _validar_qr(datos):
@@ -242,6 +270,7 @@ def _retener(directorio, conservar, origen, *, ahora=None):
             raise ErrorRespaldo('Se rechazó una ruta insegura durante la retención.')
         ruta.unlink()
         ruta.with_suffix('.json').unlink()
+        _borrar_auxiliares(ruta)
         logger.info('Retención: eliminado respaldo gestionado %s', ruta.name)
 
 
@@ -255,6 +284,7 @@ def _copiar_externo(archivo, directorio, conservar):
     try:
         directorio.mkdir(parents=True, exist_ok=True)
         with _bloqueo(directorio):
+            _limpiar_huerfanos(directorio)
             if destino.exists() or destino.with_suffix('.json').exists():
                 raise ErrorRespaldo('El respaldo ya existe en el destino externo.')
             try:
@@ -270,6 +300,7 @@ def _copiar_externo(archivo, directorio, conservar):
                 _retener(directorio, conservar, destino)
             finally:
                 parcial.unlink(missing_ok=True)
+                _borrar_auxiliares(parcial)
                 meta_parcial.unlink(missing_ok=True)
         logger.info('Respaldo copiado al destino externo: %s', destino)
         return ''
@@ -299,6 +330,7 @@ def crear_copia(origen, directorio, conservar, *, limite_segundos=120, qr=None, 
         directorio.mkdir(parents=True, exist_ok=True)
         # Paso 2: el mismo bloqueo cubre publicación y retención.
         with _bloqueo(directorio):
+            _limpiar_huerfanos(directorio)
             fecha = datetime.now(timezone.utc)
             nombre = f'respaldo_{fecha:%Y%m%d_%H%M%S}_{uuid4().hex}.sqlite3'
             final = directorio / nombre
@@ -318,6 +350,9 @@ def crear_copia(origen, directorio, conservar, *, limite_segundos=120, qr=None, 
                 destino = sqlite3.connect(provisional)
                 try:
                     fuente.backup(destino, pages=256, progress=progreso, sleep=.05)
+                    modo = destino.execute('PRAGMA journal_mode=DELETE').fetchone()[0]
+                    if modo.lower() != 'delete':
+                        raise ErrorRespaldo('No se pudo preparar la copia SQLite para publicación.')
                 finally:
                     destino.close()
             finally:
@@ -376,6 +411,7 @@ def crear_copia(origen, directorio, conservar, *, limite_segundos=120, qr=None, 
                     ruta.unlink()
                 except OSError:
                     logger.warning('No se pudo retirar un archivo provisional de respaldo')
+            _borrar_auxiliares(ruta)
 
 
 def recuperar_temporal(copia, destino):

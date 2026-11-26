@@ -20,10 +20,10 @@ def habilitar():
 
 
 class PrimerDuenoForm(forms.Form):
-    autorizacion = forms.CharField(widget=forms.PasswordInput)
-    username = forms.CharField(max_length=150)
-    password1 = forms.CharField(widget=forms.PasswordInput)
-    password2 = forms.CharField(widget=forms.PasswordInput)
+    autorizacion = forms.CharField(label='Código local de un solo uso (aparece en la ventana negra)', widget=forms.PasswordInput)
+    username = forms.CharField(label='Usuario', max_length=150)
+    password1 = forms.CharField(label='Contraseña', widget=forms.PasswordInput)
+    password2 = forms.CharField(label='Repetir contraseña', widget=forms.PasswordInput)
 
     def clean(self):
         datos = super().clean()

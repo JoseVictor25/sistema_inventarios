@@ -11,6 +11,14 @@ from apps.core.respaldos import (ErrorRespaldo, _metadatos, _qr_manifiesto,
 from .bloqueo_instancia import BloqueoInstanciaActiva, bloqueo_instancia
 
 
+def _limpiar_temporales_restauracion(directorio):
+    import re
+    patron = re.compile(r'^db_restaurada_[^/\\]+\.sqlite3(?:-(?:wal|shm))?$')
+    for ruta in Path(directorio).iterdir():
+        if patron.fullmatch(ruta.name) and ruta.is_file() and not ruta.is_symlink():
+            ruta.unlink(missing_ok=True)
+
+
 def restaurar_con_bloqueo(copia, directorio_datos, db=None, directorio_respaldos=None,
                            conservar=None, qr_actual=None, *, preparar=None):
     """Camino CLI real: prepara y restaura dentro del cerrojo de instancia."""
@@ -34,12 +42,29 @@ def restaurar_con_bloqueo(copia, directorio_datos, db=None, directorio_respaldos
 
 def restaurar(copia, db, directorio_respaldos, conservar, qr_actual=None):
     """Prepara/verifica todo antes del replace; necesita bloqueo de instancia del llamador."""
+    copia = Path(copia)
+    manifiesto_indicado = copia.suffix.lower() == '.json'
+    if manifiesto_indicado:
+        hermana = copia.with_suffix('.sqlite3')
+        if not hermana.is_file():
+            raise ErrorRespaldo('Indica el archivo .sqlite3 del respaldo; el .json es su manifiesto y se lee solo.')
+        copia = hermana
+    _limpiar_temporales_restauracion(Path(db).parent)
     copia, db = Path(copia).resolve(), Path(db).resolve()
     meta = _metadatos(copia)
     if meta is None:
+        if manifiesto_indicado:
+            raise ErrorRespaldo('Indica el archivo .sqlite3 del respaldo; el .json es su manifiesto y se lee solo.')
         raise ErrorRespaldo('El respaldo o su manifiesto no son válidos.')
-    verificacion = verificar_copia(copia)
+    try:
+        verificacion = verificar_copia(copia)
+    except ErrorRespaldo:
+        if manifiesto_indicado:
+            raise ErrorRespaldo('Indica el archivo .sqlite3 del respaldo; el .json es su manifiesto y se lee solo.') from None
+        raise
     if verificacion['sha256'] != meta['sha256']:
+        if manifiesto_indicado:
+            raise ErrorRespaldo('Indica el archivo .sqlite3 del respaldo; el .json es su manifiesto y se lee solo.')
         raise ErrorRespaldo('El hash del respaldo no coincide con el manifiesto.')
     copia_seguridad = crear_copia(db, directorio_respaldos, conservar, qr=qr_actual)
     seguridad = Path(directorio_respaldos) / copia_seguridad['archivo']
@@ -94,5 +119,9 @@ def restaurar(copia, db, directorio_respaldos, conservar, qr_actual=None):
     finally:
         if temporal:
             temporal.unlink(missing_ok=True)
+        if temporal:
+            Path(str(temporal) + '-wal').unlink(missing_ok=True)
+            Path(str(temporal) + '-shm').unlink(missing_ok=True)
         if qr_temp:
             qr_temp.unlink(missing_ok=True)
+        _limpiar_temporales_restauracion(db.parent)

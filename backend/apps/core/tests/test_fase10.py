@@ -40,6 +40,11 @@ class PrimerUsoTests(TestCase):
 
     def test_ruta_y_bloqueo_posterior(self):
         self.assertEqual(self.client.get('/configuracion-inicial/').status_code, 200)
+        contenido = self.client.get('/configuracion-inicial/').content.decode()
+        for etiqueta in ('Código local de un solo uso (aparece en la ventana negra)', 'Usuario', 'Contraseña', 'Repetir contraseña'):
+            self.assertIn(etiqueta, contenido)
+        for etiqueta_interna in ('Autorizacion', 'Username', 'Password1', 'Password2'):
+            self.assertNotIn(etiqueta_interna, contenido)
         self.assertEqual(self.client.post('/configuracion-inicial/', self.datos()).status_code, 302)
         self.assertEqual(self.client.get('/configuracion-inicial/').status_code, 403)
 
@@ -54,6 +59,14 @@ class PrimerUsoTests(TestCase):
 
 
 class RutasDesktopTests(SimpleTestCase):
+    def test_mensaje_cuenta_no_autorizada_no_expone_detalle(self):
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
+        from desktop.launcher import _mensaje_inicio, MENSAJE_CUENTA_NO_AUTORIZADA
+        self.assertEqual(_mensaje_inicio(PermissionError("[Errno 13] C:\\ProgramData\\SistemaInventarios\\.instancia.lock")),
+                         MENSAJE_CUENTA_NO_AUTORIZADA)
+        self.assertNotIn('Errno', _mensaje_inicio(PermissionError('detalle')))
     def test_rechaza_rutas_no_temporales(self):
         from pathlib import Path
         import sys

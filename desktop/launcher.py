@@ -5,6 +5,15 @@ import sys
 import threading
 import logging
 
+MENSAJE_CUENTA_NO_AUTORIZADA = ('Esta cuenta de Windows no está autorizada para usar el sistema. '
+                               'Inicia sesión con la cuenta con la que se instaló.')
+
+
+def _mensaje_inicio(error):
+    if isinstance(error, PermissionError):
+        return MENSAJE_CUENTA_NO_AUTORIZADA
+    return f'No se pudo iniciar el sistema: {error}'
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
@@ -72,6 +81,8 @@ def main():
         parser.error('--restaurar requiere --instalado y no se combina con --respaldo ni --inicializar.')
 
     ruta.mkdir(parents=True, exist_ok=True)
+    if not args.respaldo and not args.restaurar:
+        print('No cierres esta ventana mientras uses el sistema. Para salir, cierra la ventana del programa.', flush=True)
     sys.path.insert(0, str(recursos() / 'backend'))
 
     from desktop.inicializacion import configurar
@@ -183,10 +194,13 @@ def main():
             servidor = None
             return 0
     except Exception as error:
+        logging.getLogger(__name__).exception('Fallo técnico durante el arranque')
         if args.restaurar:
             print(str(error), file=sys.stderr)
+        elif isinstance(error, PermissionError):
+            print(MENSAJE_CUENTA_NO_AUTORIZADA, file=sys.stderr)
         else:
-            print('No se pudo iniciar el sistema:', str(error), file=sys.stderr)
+            print(_mensaje_inicio(error), file=sys.stderr)
         return 1
     finally:
         if servidor:

@@ -43,6 +43,9 @@ class RespaldosTests(SimpleTestCase):
         self.assertEqual(json.loads(copia.with_suffix('.json').read_text())['motor'], 'inventarios-backup-v1')
         self.assertTrue(r.listar_copias(self.destino)[0]['verificado'])
         self.assertFalse(list(self.destino.glob('*.partial')))
+        with closing(sqlite3.connect(copia.as_uri() + '?mode=ro', uri=True)) as comprobacion:
+            self.assertEqual(comprobacion.execute('PRAGMA journal_mode').fetchone()[0], 'delete')
+        self.assertFalse(any(Path(str(copia) + s).exists() for s in ('-wal', '-shm')))
 
     def test_restaurar_solo_a_archivo_nuevo_temporal(self):
         resultado = self.crear()
@@ -90,15 +93,15 @@ class RespaldosTests(SimpleTestCase):
                 self.crear()
         self.assertEqual(r.hash_archivo(self.destino / primero['archivo']), primero['sha256'])
 
-    def test_colision_provisional_no_borra_archivo_ajeno(self):
+    def test_limpia_parcial_gestionado_anterior_antes_de_crear(self):
         self.destino.mkdir()
         archivo = self.destino / ('respaldo_20261027_000000_' + UUID(int=1).hex + '.sqlite3.partial')
         archivo.write_bytes(b'provisional anterior')
-        with patch.object(r, 'uuid4', return_value=UUID(int=1)), patch.object(r, 'datetime') as reloj:
+        with patch.object(r, '_retener'), patch.object(r, 'uuid4', return_value=UUID(int=1)), patch.object(r, 'datetime') as reloj:
             reloj.now.return_value = datetime(2026, 10, 27, tzinfo=timezone.utc)
-            with self.assertRaises(r.ErrorRespaldo):
-                self.crear()
-        self.assertEqual(archivo.read_bytes(), b'provisional anterior')
+            resultado = self.crear()
+        self.assertTrue((self.destino / resultado['archivo']).is_file())
+        self.assertFalse(archivo.exists())
 
     def test_retencion_solo_copias_gestionadas(self):
         primero = self.crear(2)
@@ -251,12 +254,41 @@ class RespaldosTests(SimpleTestCase):
             c.commit()
             c.execute("INSERT INTO usuarios_usuario VALUES (3, 'sin confirmar')")
             copia = self.destino / self.crear()['archivo']
+            with closing(sqlite3.connect(copia.as_uri() + '?mode=ro', uri=True)) as comprobacion:
+                self.assertEqual(comprobacion.execute('PRAGMA journal_mode').fetchone()[0], 'delete')
+            self.assertFalse(any(Path(str(copia) + s).exists() for s in ('-wal', '-shm')))
             r.verificar_copia(copia)  # abrir en mode=ro incluye las páginas confirmadas del WAL
             with closing(sqlite3.connect(copia)) as recuperada:
                 self.assertEqual(recuperada.execute('SELECT COUNT(*) FROM usuarios_usuario').fetchone()[0], 2)
             c.rollback()
         finally:
             c.close()
+
+    def test_limpia_huerfanos_gestionados_y_preserva_nombres_parecidos(self):
+        self.destino.mkdir()
+        stem = 'respaldo_20260101_010101_' + ('a' * 32) + '.sqlite3'
+        for sufijo in ('-wal', '-shm', '.partial', '.partial-wal', '.partial-shm'):
+            (self.destino / (stem + sufijo)).write_bytes(b'huerfano')
+        ajeno = self.destino / (stem.replace('.sqlite3', '_notas.sqlite3-wal'))
+        ajeno.write_bytes(b'no tocar')
+        self.crear()
+        self.assertFalse(any((self.destino / (stem + s)).exists() for s in ('-wal', '-shm', '.partial', '.partial-wal', '.partial-shm')))
+        self.assertEqual(ajeno.read_bytes(), b'no tocar')
+
+    def test_retencion_elimina_sidecars_del_respaldo(self):
+        primero = self.crear()
+        copia = self.destino / primero['archivo']
+        ahora = datetime(2026, 2, 10, 12, tzinfo=timezone.utc)
+        self._cambiar_fecha(copia, ahora - timedelta(days=4))
+        self.crear()
+        for sufijo in ('-wal', '-shm', '.partial-wal', '.partial-shm'):
+            (self.destino / (copia.name + sufijo)).write_bytes(b'auxiliar')
+        # La copia antigua deja de ser retenida al aplicar una cobertura de un día.
+        (copia.with_suffix('.json')).write_text(json.dumps(dict(json.loads(copia.with_suffix('.json').read_text()), fecha=(ahora - timedelta(days=4)).isoformat())))
+        r._retener(self.destino, 1, self.origen, ahora=ahora)
+        self.assertFalse(copia.exists())
+        self.assertFalse(copia.with_suffix('.json').exists())
+        self.assertFalse(any((self.destino / (copia.name + s)).exists() for s in ('-wal', '-shm', '.partial-wal', '.partial-shm')))
 
     def test_copia_externa_verificada_y_destino_no_disponible(self):
         externo = self.raiz / 'externo'

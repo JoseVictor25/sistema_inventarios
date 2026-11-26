@@ -1,6 +1,7 @@
 """Restauración limitada a directorios temporales y copias SQLite de prueba."""
 from contextlib import closing
 import sqlite3
+import json
 import sys
 import tempfile
 from pathlib import Path
@@ -58,6 +59,7 @@ class RestauracionLauncherTests(SimpleTestCase):
         resultado = self._restaurar()
         self.assertEqual(self._valor(), 'respaldo')
         self.assertTrue((self.backups / resultado['respaldo_seguridad']).is_file())
+        self.assertFalse(list(self.datos.glob('db_restaurada_*.sqlite3*')))
         with closing(sqlite3.connect(self.backups / resultado['respaldo_seguridad'])) as seguridad:
             self.assertEqual(seguridad.execute('SELECT valor FROM usuarios_usuario ORDER BY id').fetchall(),
                              [('actual',), ('confirmada en WAL',)])
@@ -68,6 +70,50 @@ class RestauracionLauncherTests(SimpleTestCase):
         with self.assertRaises(respaldos.ErrorRespaldo):
             self._restaurar(corrupta)
         self.assertEqual(self._valor(), 'actual')
+
+    def test_acepta_manifiesto_y_limpia_temporal_previo(self):
+        anterior = self.datos / 'db_restaurada_abc.sqlite3'
+        anterior.write_bytes(b'resto')
+        Path(str(anterior) + '-wal').write_bytes(b'resto')
+        resultado = self._restaurar(self.copia.with_suffix('.json'))
+        self.assertEqual(self._valor(), 'respaldo')
+        self.assertFalse(list(self.datos.glob('db_restaurada_*.sqlite3*')))
+
+    def test_restauracion_legacy_wal_con_auxiliares(self):
+        with closing(sqlite3.connect(self.copia)) as conexion:
+            conexion.execute('PRAGMA journal_mode=WAL')
+            conexion.execute("INSERT INTO usuarios_usuario VALUES (2, 'legacy WAL')")
+            conexion.commit()
+        manifiesto = self.copia.with_suffix('.json')
+        datos = json.loads(manifiesto.read_text(encoding='utf-8'))
+        datos['tamano'] = self.copia.stat().st_size
+        datos['sha256'] = respaldos.hash_archivo(self.copia)
+        manifiesto.write_text(json.dumps(datos), encoding='utf-8')
+        # Sidecars válidos presentes durante la restauración, como en copias B4.
+        with closing(sqlite3.connect(self.copia)) as conexion:
+            conexion.execute('PRAGMA journal_mode=WAL')
+            conexion.execute("INSERT INTO usuarios_usuario VALUES (3, 'legacy auxiliar')")
+            conexion.commit()
+            datos['tamano'] = self.copia.stat().st_size
+            datos['sha256'] = respaldos.hash_archivo(self.copia)
+            manifiesto.write_text(json.dumps(datos), encoding='utf-8')
+            resultado = self._restaurar()
+        self.assertEqual(self._valor(), 'respaldo')
+        self.assertFalse(list(self.datos.glob('db_restaurada_*.sqlite3*')))
+
+    def test_manifiesto_sin_base_indica_archivo_necesario(self):
+        manifiesto = self.root / 'ausente.json'
+        manifiesto.write_text('{}')
+        with self.assertRaisesRegex(respaldos.ErrorRespaldo, r'Indica el archivo \.sqlite3 del respaldo'):
+            self._restaurar(manifiesto)
+
+    def test_manifiesto_con_base_no_valida_indica_archivo_necesario(self):
+        copia = self.root / 'invalido.sqlite3'
+        copia.write_bytes(b'no sqlite')
+        manifiesto = copia.with_suffix('.json')
+        manifiesto.write_text('{}')
+        with self.assertRaisesRegex(respaldos.ErrorRespaldo, r'Indica el archivo \.sqlite3 del respaldo'):
+            self._restaurar(manifiesto)
 
     def test_instancia_activa_se_rechaza(self):
         with bloqueo_instancia(self.datos):
