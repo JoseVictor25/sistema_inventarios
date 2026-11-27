@@ -67,6 +67,104 @@ class RutasDesktopTests(SimpleTestCase):
         self.assertEqual(_mensaje_inicio(PermissionError("[Errno 13] C:\\ProgramData\\SistemaInventarios\\.instancia.lock")),
                          MENSAJE_CUENTA_NO_AUTORIZADA)
         self.assertNotIn('Errno', _mensaje_inicio(PermissionError('detalle')))
+
+
+class LauncherPermisoBloqueoTests(SimpleTestCase):
+    def setUp(self):
+        import tempfile
+        from pathlib import Path
+        import sys
+        raiz = Path(__file__).resolve().parents[4]
+        if str(raiz) not in sys.path:
+            sys.path.insert(0, str(raiz))
+        self.temp = tempfile.TemporaryDirectory(prefix='launcher_permiso_')
+        self.addCleanup(self.temp.cleanup)
+        self.ruta = Path(self.temp.name)
+
+    def _ejecutar_launcher(self, error):
+        from argparse import Namespace
+        from contextlib import contextmanager
+        from io import StringIO
+        from unittest.mock import patch
+        import sys
+        from desktop import launcher
+
+        args = Namespace(datos_temporales=str(self.ruta), datos_instalados=None,
+            instalado=False, inicializar=False, respaldo=False, restaurar=None,
+            navegador=True, puerto=8000, diagnostico=False, operador_sid=None)
+
+        @contextmanager
+        def bloqueo(_ruta):
+            raise error
+            yield
+
+        salida = StringIO()
+        errores = StringIO()
+        with patch('argparse.ArgumentParser.parse_args', return_value=args), \
+             patch('desktop.rutas.validar_temporal', return_value=self.ruta), \
+             patch('desktop.rutas.recursos', return_value=self.ruta), \
+             patch('desktop.bloqueo_instancia.bloqueo_instancia', bloqueo), \
+             patch.object(sys, 'stdout', salida), patch.object(sys, 'stderr', errores):
+            resultado = launcher.main()
+        return resultado, salida.getvalue(), errores.getvalue()
+
+    def test_permissionerror_lock_muestra_mensaje_registra_traceback_y_detiene_inicio(self):
+        import logging
+        from unittest.mock import patch
+        from desktop.bloqueo_instancia import ErrorPermisoBloqueo
+        from desktop.launcher import MENSAJE_CUENTA_NO_AUTORIZADA
+
+        error = ErrorPermisoBloqueo(13, 'Permission denied', str(self.ruta / '.instancia.lock'))
+        with patch.object(logging.getLogger('desktop.launcher'), 'exception') as log_general:
+            resultado, salida, errores = self._ejecutar_launcher(error)
+        self.assertEqual(resultado, 1)
+        self.assertEqual(salida, '')
+        self.assertEqual(errores.strip(), MENSAJE_CUENTA_NO_AUTORIZADA)
+        log_general.assert_not_called()
+        contenido = (self.ruta / 'logs' / 'sistema.log').read_text(encoding='utf-8')
+        self.assertIn('ErrorPermisoBloqueo', contenido)
+        self.assertIn('Traceback (most recent call last)', contenido)
+        self.assertNotIn('Fallo técnico durante el arranque', errores)
+
+    def test_error_inesperado_conserva_manejo_tecnico(self):
+        from unittest.mock import patch
+        from desktop.launcher import MENSAJE_CUENTA_NO_AUTORIZADA
+        error = RuntimeError('fallo inesperado de prueba')
+        with patch('logging.Logger.exception') as log_exception:
+            resultado, _salida, errores = self._ejecutar_launcher(error)
+        self.assertEqual(resultado, 1)
+        self.assertIn('No se pudo iniciar el sistema: fallo inesperado de prueba', errores)
+        self.assertNotIn(MENSAJE_CUENTA_NO_AUTORIZADA, errores)
+        log_exception.assert_called_once()
+
+    def test_cuenta_autorizada_conserva_el_flujo_normal_del_bloqueo(self):
+        from argparse import Namespace
+        from contextlib import contextmanager
+        from unittest.mock import patch
+        import sys
+        from desktop import launcher
+        args = Namespace(datos_temporales=str(self.ruta), datos_instalados=None,
+            instalado=False, inicializar=False, respaldo=False, restaurar=None,
+            navegador=True, puerto=8000, diagnostico=False, operador_sid=None)
+        llamadas = []
+
+        @contextmanager
+        def bloqueo(_ruta):
+            llamadas.append('adquirido')
+            try:
+                yield
+            finally:
+                llamadas.append('liberado')
+
+        with patch('argparse.ArgumentParser.parse_args', return_value=args), \
+             patch('desktop.rutas.validar_temporal', return_value=self.ruta), \
+             patch('desktop.rutas.recursos', return_value=self.ruta), \
+             patch('desktop.bloqueo_instancia.bloqueo_instancia', bloqueo), \
+             patch('desktop.inicializacion.configurar', side_effect=RuntimeError('fin de prueba')):
+            # El bloqueo se adquiere antes de configurar; se alcanza y libera en el flujo normal.
+            resultado = launcher.main()
+        self.assertEqual(resultado, 1)
+        self.assertEqual(llamadas, ['adquirido', 'liberado'])
     def test_rechaza_rutas_no_temporales(self):
         from pathlib import Path
         import sys

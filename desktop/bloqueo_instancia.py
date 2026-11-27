@@ -23,6 +23,10 @@ class BloqueoInstanciaActiva(OSError):
     """El cerrojo ya está retenido por otra instancia del programa."""
 
 
+class ErrorPermisoBloqueo(PermissionError):
+    """No se pudo abrir el archivo de bloqueo por falta de permisos."""
+
+
 def ruta_lock(directorio_datos: Path) -> Path:
     return Path(directorio_datos) / NOMBRE_LOCK
 
@@ -38,7 +42,10 @@ def bloqueo_instancia(directorio_datos: Path):
     if archivo.is_symlink():
         raise OSError('El archivo de control de instancia no es seguro (enlace simbólico).')
 
-    manejador = archivo.open('a+b')
+    try:
+        manejador = archivo.open('a+b')
+    except PermissionError as exc:
+        raise ErrorPermisoBloqueo(exc.errno, exc.strerror, exc.filename) from exc
     tomado = False
     try:
         manejador.seek(0)

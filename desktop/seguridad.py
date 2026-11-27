@@ -144,7 +144,7 @@ def verificar_directorio_seguro(directorio_datos, sid_esperado=None):
     # Inspección de ACLs en Windows
     if os.name == 'nt':
         inspeccion = inspeccionar_permisos_icacls(d)
-        if inspeccion.get('tiene_inseguros'):
+        if not inspeccion.get('seguro') or inspeccion.get('tiene_inseguros'):
             raise PermissionError(
                 f'El directorio de datos {d} tiene permisos inseguros asignados a '
                 'Everyone, Users o Authenticated Users. '
