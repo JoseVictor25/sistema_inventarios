@@ -14,6 +14,28 @@ def _mensaje_inicio(error):
         return MENSAJE_CUENTA_NO_AUTORIZADA
     return f'No se pudo iniciar el sistema: {error}'
 
+
+def _registrar_permiso_bloqueo(error, ruta):
+    """Registra el fallo previo a configurar Django sin emitirlo a consola."""
+    from logging.handlers import RotatingFileHandler
+
+    logs_dir = Path(ruta) / 'logs'
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    logger = logging.getLogger('desktop.launcher.bloqueo')
+    logger.propagate = False
+    logger.setLevel(logging.ERROR)
+    handler = RotatingFileHandler(logs_dir / 'sistema.log', maxBytes=1_000_000,
+                                  backupCount=4, encoding='utf-8')
+    handler.setFormatter(logging.Formatter(
+        '{asctime} [{levelname}] {name}: {message}', style='{'))
+    logger.addHandler(handler)
+    try:
+        logger.exception('No se pudo abrir el archivo de bloqueo de instancia',
+                         exc_info=(type(error), error, error.__traceback__))
+    finally:
+        logger.removeHandler(handler)
+        handler.close()
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
@@ -81,8 +103,6 @@ def main():
         parser.error('--restaurar requiere --instalado y no se combina con --respaldo ni --inicializar.')
 
     ruta.mkdir(parents=True, exist_ok=True)
-    if not args.respaldo and not args.restaurar:
-        print('No cierres esta ventana mientras uses el sistema. Para salir, cierra la ventana del programa.', flush=True)
     sys.path.insert(0, str(recursos() / 'backend'))
 
     from desktop.inicializacion import configurar
@@ -103,6 +123,8 @@ def main():
         # El bloqueo de instancia cubre el servidor HTTP: mantenimiento y el
         # instalador pueden detectar una instancia activa mediante este cerrojo.
         with (nullcontext() if args.respaldo else bloqueo_instancia(ruta)):
+            if not args.respaldo and not args.restaurar:
+                print('No cierres esta ventana mientras uses el sistema. Para salir, cierra la ventana del programa.', flush=True)
             configurar(
                 ruta,
                 # El acceso directo instalado no lleva argumentos. Autorizar la
@@ -194,6 +216,15 @@ def main():
             servidor = None
             return 0
     except Exception as error:
+        from desktop.bloqueo_instancia import ErrorPermisoBloqueo
+        if isinstance(error, ErrorPermisoBloqueo):
+            try:
+                _registrar_permiso_bloqueo(error, ruta)
+            except Exception:
+                # No exponer detalles técnicos; conservar el aviso amigable.
+                pass
+            print(MENSAJE_CUENTA_NO_AUTORIZADA, file=sys.stderr)
+            return 1
         logging.getLogger(__name__).exception('Fallo técnico durante el arranque')
         if args.restaurar:
             print(str(error), file=sys.stderr)

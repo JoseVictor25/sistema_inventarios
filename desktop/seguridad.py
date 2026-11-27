@@ -361,11 +361,12 @@ def aplicar_permisos_seguros(directorio_datos, sid_operador, *, solo_nuevo=False
     for cmd in comandos:
         res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode != 0:
-            logger.debug('icacls (%s) retornó código %s: %s', cmd[2] if len(cmd) > 2 else '', res.returncode, res.stdout or res.stderr)
-            # El /remove puede fallar si la entrada ya no existe; no es crítico
-            # si la herencia ya fue eliminada. Anotamos pero no abortamos.
-            if '/remove' not in ' '.join(cmd):
-                exito = False
+            logger.error(
+                'icacls (%s) retornó código %s: %s', cmd[2] if len(cmd) > 2 else '', 
+                 res.returncode, 
+                 res.stderr or res.stdout
+            )
+            exito = False
 
     # Registrar en operador.json que las ACLs fueron aplicadas
     if exito:

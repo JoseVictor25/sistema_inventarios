@@ -211,7 +211,7 @@ class AplicarPermisosSegurosTests(SimpleTestCase):
         registro = seguridad.leer_registro_operador(self.directorio)
         self.assertNotIn('acl_aplicadas', registro)
 
-    def test_fallo_de_remove_es_no_critico(self):
+    ''' def test_fallo_de_remove_es_no_critico(self):
         respuestas = [
             self.resultado_icacls(0),
             self.resultado_icacls(0),
@@ -230,8 +230,31 @@ class AplicarPermisosSegurosTests(SimpleTestCase):
 
         self.assertTrue(resultado)
         registro = seguridad.leer_registro_operador(self.directorio)
-        self.assertTrue(registro['acl_aplicadas'])
+        self.assertTrue(registro['acl_aplicadas']) 
+     '''
+    def test_fallo_de_remove_no_registra_acl(self):
+            respuestas = [
+            self.resultado_icacls(0),
+            self.resultado_icacls(0),
+            self.resultado_icacls(0),
+            self.resultado_icacls(1),
+        ]
 
+            with patch.object(
+            seguridad.subprocess,
+            'run',
+            side_effect=respuestas,
+            ) as ejecutar:
+             resultado = seguridad.aplicar_permisos_seguros(
+                self.directorio, self.SID_OPERADOR
+            )
+
+            self.assertFalse(resultado)
+            self.assertEqual(ejecutar.call_count, 4)
+            registro = seguridad.leer_registro_operador(self.directorio)
+            self.assertNotIn('acl_aplicadas', registro)
+     
+     
     def test_solo_nuevo_omite_acl_ya_aplicadas_al_mismo_sid(self):
         archivo = self.directorio / 'operador.json'
         registro = seguridad.leer_registro_operador(self.directorio)
@@ -252,3 +275,101 @@ class AplicarPermisosSegurosTests(SimpleTestCase):
 
         self.assertTrue(resultado)
         ejecutar.assert_not_called()
+
+class ConfigurarModoTests(SimpleTestCase):
+
+    def test_modo_temporal_no_se_clasifica_como_instalado(self):
+        from desktop import inicializacion
+
+        with tempfile.TemporaryDirectory(prefix='modo_temporal_') as temporal:
+            ruta = Path(temporal) / 'datos'
+
+            with patch.object(
+                inicializacion,
+                '_validar_ruta',
+                return_value=ruta,
+            ), patch.object(
+                inicializacion,
+                'validar_datos_instalados',
+            ) as validar_datos, patch.object(
+                inicializacion,
+                'verificar_directorio_seguro',
+            ) as verificar, patch.object(
+                inicializacion,
+                'validar_operador',
+            ) as validar:
+
+                with self.assertRaisesRegex(
+                    ValueError,
+                    'Instalación nueva: requiere --inicializar.',
+                ):
+                    inicializacion.configurar(
+                        ruta,
+                        autorizar_nueva=False,
+                        modo='temporal',
+                    )
+
+                validar_datos.assert_not_called()
+                verificar.assert_not_called()
+                validar.assert_not_called()
+
+    def test_modo_instalado_activa_validaciones_de_seguridad(self):
+        from desktop import inicializacion
+
+        with tempfile.TemporaryDirectory(prefix='modo_instalado_') as temporal:
+            ruta = Path(temporal) / 'datos'
+            ruta.mkdir()
+
+            (ruta / 'db.sqlite3').touch()
+            (ruta / '.env').write_text(
+                'SECRET_KEY=' + ('A' * 60) + '\n',
+                encoding='utf-8',
+            )
+
+            with patch.object(
+                inicializacion,
+                '_validar_ruta',
+                return_value=ruta,
+            ), patch.object(
+                inicializacion,
+                'verificar_directorio_seguro',
+                side_effect=ValueError(
+                    'Validación de seguridad simulada.'
+                ),
+            ) as verificar:
+
+                with self.assertRaisesRegex(
+                    ValueError,
+                    'Validación de seguridad simulada.',
+                ):
+                    inicializacion.configurar(
+                        ruta,
+                        modo='instalado',
+                    )
+
+                verificar.assert_called_once()
+    def test_no_crea_directorios_si_instalacion_nueva_no_esta_autorizada(self):
+        from desktop import inicializacion
+
+        with tempfile.TemporaryDirectory(prefix='orden_validacion_') as temporal:
+            ruta = Path(temporal) / 'datos'
+
+            with patch.object(
+                inicializacion,
+                '_validar_ruta',
+                return_value=ruta,
+            ):
+                with self.assertRaisesRegex(
+                    ValueError,
+                    'Instalación nueva: requiere --inicializar.',
+                ):
+                    inicializacion.configurar(
+                        ruta,
+                        autorizar_nueva=False,
+                        modo='temporal',
+                    )
+
+            self.assertFalse(
+                ruta.exists(),
+                'No debe crear el directorio antes de autorizar la instalación.',
+            )
