@@ -189,6 +189,8 @@ def registrar_operador(directorio_datos, sid, cuenta=None, version='0.10.0'):
 
     Lanza ValueError si el SID es inválido o si ya existe otro operador registrado.
     """
+    from .release_gate import require_installed_path_if_production
+    require_installed_path_if_production(directorio_datos)
     if not sid or not isinstance(sid, str) or not sid.startswith('S-1-'):
         raise ValueError('SID de operador inválido.')
 
@@ -246,6 +248,8 @@ def migrar_operador(directorio_datos, nuevo_sid, nuevo_cuenta=None, autorizacion
     Exige confirmación de administrador para evitar apropiación indebida de datos.
     Registra una auditoría inmutable en logs/migracion_operador.log.
     """
+    from .release_gate import require_installed_path_if_production
+    require_installed_path_if_production(directorio_datos)
     if not autorizacion_admin:
         raise PermissionError('La migración de operador exige autorización administrativa explícita.')
 
@@ -298,6 +302,45 @@ def migrar_operador(directorio_datos, nuevo_sid, nuevo_cuenta=None, autorizacion
     return nuevo_registro
 
 
+def observar_propietario(directorio_datos):
+    """Observa el SID owner; no certifica que la forma de asignarlo sea válida."""
+    if os.name != 'nt':
+        raise OSError('La observación del propietario solo está disponible en Windows.')
+    import ctypes
+    from ctypes import wintypes
+
+    advapi32 = ctypes.WinDLL('advapi32', use_last_error=True)
+    kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+    owner = ctypes.c_void_p()
+    descriptor = ctypes.c_void_p()
+    advapi32.GetNamedSecurityInfoW.argtypes = [
+        wintypes.LPWSTR, wintypes.DWORD, wintypes.DWORD,
+        ctypes.POINTER(ctypes.c_void_p), ctypes.c_void_p, ctypes.c_void_p,
+        ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p)]
+    advapi32.GetNamedSecurityInfoW.restype = wintypes.DWORD
+    status = advapi32.GetNamedSecurityInfoW(
+        str(directorio_datos), 1, 0x00000001,
+        ctypes.byref(owner), None, None, None, ctypes.byref(descriptor))
+    if status != 0:
+        raise OSError(status, 'No se pudo consultar el propietario del directorio.')
+    try:
+        owner_text = wintypes.LPWSTR()
+        advapi32.ConvertSidToStringSidW.argtypes = [ctypes.c_void_p, ctypes.POINTER(wintypes.LPWSTR)]
+        advapi32.ConvertSidToStringSidW.restype = wintypes.BOOL
+        if not advapi32.ConvertSidToStringSidW(owner, ctypes.byref(owner_text)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        try:
+            return owner_text.value
+        finally:
+            kernel32.LocalFree.argtypes = [ctypes.c_void_p]
+            kernel32.LocalFree.restype = ctypes.c_void_p
+            kernel32.LocalFree(ctypes.cast(owner_text, ctypes.c_void_p))
+    finally:
+        kernel32.LocalFree.argtypes = [ctypes.c_void_p]
+        kernel32.LocalFree.restype = ctypes.c_void_p
+        kernel32.LocalFree(descriptor)
+
+
 def generar_comandos_icacls(directorio_datos, sid_operador):
     """Genera la secuencia exacta de argumentos icacls para asegurar el directorio de datos.
 
@@ -345,6 +388,9 @@ def aplicar_permisos_seguros(directorio_datos, sid_operador, *, solo_nuevo=False
     """
     if os.name != 'nt':
         return True
+
+    from .release_gate import require_installed_path_if_production
+    require_installed_path_if_production(directorio_datos)
 
     directorio_datos = Path(directorio_datos).resolve()
 

@@ -9,46 +9,43 @@ El unico sistema operativo soportado es **Windows 11 x64 (compilacion 22000 o po
 Windows 10, Windows 7, Windows 8/8.1 y Windows ARM64 no son compatibles ni se probaran.
 En Windows 10, Setup debe mostrar en espanol que el sistema requiere Windows 11.
 
-## Estado de seguridad
+## Estados del artefacto y bloqueo
 
-La compilacion predeterminada conserva el bloqueo incondicional de
-`InitializeSetup`: muestra que el instalador esta bloqueado y termina sin instalar.
-Su nombre sigue siendo `Instalador_Sistema_Inventarios_0.10.0_B3_BLOQUEADO.exe`.
-No se debe retirar este bloqueo para una entrega real.
+- **Candidato:** onedir generado por `compilar_fase10.py`, con manifiesto sin firma.
+  No puede iniciar modo instalado ni preparar datos; no se compila a instalador.
+- **Autorizado:** payload inmutable cuyo manifiesto exacto tiene autorización Ed25519
+  válida, política compatible y evidencia T1-B aprobada. La clave de release y la
+  certificación T1-B aún no están provisionadas en este árbol.
+- **Distribuible:** payload autorizado aceptado por `compilar_instalador.py`; Setup
+  debe verificar el release aprobado. En el estado T1-A Setup sigue bloqueado.
 
-Para preparar exclusivamente la prueba manual en una VM limpia de Windows 11,
-agrega `--solo-pruebas-vm` al comando de compilacion. Esta variante solo continua
-tras mostrar un aviso, y se identifica con `SOLO_PRUEBAS_VM` en el nombre,
-`AppVerName` y el propio asistente. **No entregar al cliente.** Ambas variantes
-aplican la misma inspeccion estricta del paquete. La salida se crea en TEMP, nunca
-en el repositorio, y se imprime la ruta y SHA-256. Este script compila; no ejecuta
-el instalador ni ningun EXE del paquete.
+La ruta de candidato solo inspecciona o empaqueta en TEMP; no inicia EXE ni Setup.
+`--solo-pruebas-vm` está bloqueado. `InitializeSetup` retorna fallo antes de instalar.
+No se generan claves, firmas ficticias ni instaladores ejecutables en T1-A.
 
 ## Compilacion
 
-Usar un onedir aprobado de `scripts/compilar_fase10.py`. Desde la raiz:
+Generar un candidato onedir con `scripts/compilar_fase10.py`. No se ejecuta el EXE.
+La autorización se firma después sobre el manifiesto de hashes del candidato; el
+payload no se reconstruye. La clave privada permanece fuera del repositorio y del
+paquete. La firma se rechaza mientras falten clave pública fijada o validación T1-B.
 
 ```powershell
 .\venv\Scripts\python.exe scripts/compilar_instalador.py --paquete "RUTA\SistemaInventarios" --solo-verificar
-.\venv\Scripts\python.exe scripts/compilar_instalador.py --paquete "RUTA\SistemaInventarios"
-.\venv\Scripts\python.exe scripts/compilar_instalador.py --paquete "RUTA\SistemaInventarios" --solo-pruebas-vm
 ```
 
-El script copia el paquete inspeccionado a TEMP, conserva `contenido.json`, la
-lista explicita `archivos.iss`, el log del compilador y el instalador. Rechaza
-enlaces, hardlinks, bases/auxiliares SQLite, `.env`, logs, respaldos, carpetas
-privadas y archivos protegidos. La inspeccion es identica en ambas variantes.
+`--solo-verificar` solo inspecciona archivos y comunica si el paquete sigue siendo
+candidato; no autoriza distribución. La compilación final exige autorización válida,
+copia el payload a TEMP y vuelve a verificar sus hashes. El instalador se compila
+desde esa copia exacta; no se reconstruyen los binarios firmados. El compilador
+rechaza `--solo-pruebas-vm` hasta cerrar T1-B/B4.
 
 No hay secciones `[Run]`, `[UninstallRun]` ni `[UninstallDelete]`. ProgramData se
 marca `uninsneveruninstall`. Los accesos directos de Inicio y escritorio apuntan
 directamente a `SistemaInventarios.exe` y pasan `--operador-sid`; no pasan
-`--inicializar`. La variante VM exige `/OPERATOR_SID=<SID>` y Setup valida/aplica
-ACL a ese SID. El launcher
-congelado entra en modo instalado, autoriza el primer inicio y usa
-`C:\ProgramData\SistemaInventarios`. Para que Setup aplique ACL al operador
-estándar antes de su primer inicio, proporcionar `/OPERATOR_SID=<SID>` al
-instalador. Sin ese parámetro, la carpeta conserva ACL heredadas y la validación
-de seguridad puede rechazar el acceso; probar y registrar ambos escenarios B4.
+`--inicializar`. En T1-A no se generan accesos directos instalables ni se permite
+el arranque congelado: launcher y settings exigen autorización válida y T1-B.
+`InitializeSetup` permanece bloqueado, incluso si se define la macro VM.
 
 Inno Setup no se descarga ni instala mediante este script. `--iscc RUTA` permite
 indicar un compilador ya instalado.
@@ -81,10 +78,10 @@ Inno Setup no se descarga ni instala por este script. Verificar procedencia y
 firma antes de instalar ISCC. No hay icono comercial ni terminos legales
 aprobados para una version final.
 
-La variante de pruebas rechaza instalaciones sin `/OPERATOR_SID=<SID>` válido,
-aplica ACL al SID en Setup y lo transmite por los accesos directos. El instalador
-normal sigue bloqueado. `configurar()` no llama a `aplicar_permisos_seguros()`;
-el escenario sin SID no aplica a la variante VM porque Setup lo impide.
+El instalador normal y la variante VM siguen bloqueados. El modo productivo no
+puede considerarse preparado por una DACL correcta: requiere que T1-B valide el
+procedimiento de propietario BA y que la autorización firmada coincida con el
+manifiesto y el ejecutable exactos.
 
 ## Evidencia y pruebas
 

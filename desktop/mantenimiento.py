@@ -42,6 +42,8 @@ def parsear_version(version_str):
 
 def detectar_instalacion_previa(directorio_datos):
     """Inspecciona la presencia de una instalación previa en el directorio de datos."""
+    from .release_gate import require_installed_path_if_production
+    require_installed_path_if_production(directorio_datos)
     rutas = resolver_rutas(directorio_datos)
     datos_dir = rutas['datos']
     db = rutas['db']
@@ -75,6 +77,8 @@ def detectar_procesos_activos(directorio_datos):
     Limitación documentada (B4): no detecta el nombre del proceso ejecutable
     directamente. La detección se basa en cerrojos de archivo coordinados.
     """
+    from .release_gate import require_installed_path_if_production
+    require_installed_path_if_production(directorio_datos)
     from .bloqueo_instancia import detectar_instancia_activa, NOMBRE_LOCK
 
     rutas = resolver_rutas(directorio_datos)
@@ -138,6 +142,8 @@ def verificar_compatibilidad_version(version_instalada, version_nueva):
 
 def crear_respaldo_seguridad(directorio_datos):
     """Crea un respaldo íntegro y verificado antes de una actualización."""
+    from .release_gate import require_installed_path_if_production
+    require_installed_path_if_production(directorio_datos)
     rutas = resolver_rutas(directorio_datos)
     db = rutas['db']
     respaldos_dir = rutas['respaldos']
@@ -158,6 +164,8 @@ def ensayar_migraciones_en_copia(directorio_datos):
 
     Garantía: la base original NUNCA se modifica durante este ensayo.
     """
+    from .release_gate import require_installed_path_if_production
+    require_installed_path_if_production(directorio_datos)
     rutas = resolver_rutas(directorio_datos)
     db_original = rutas['db']
     env_original = rutas['env']
@@ -271,6 +279,8 @@ def planificar_actualizacion(directorio_datos, version_nueva, autorizar_migracio
         RuntimeError si hay procesos activos o si las migraciones fallan.
         ValueError si se intenta un downgrade.
     """
+    from .release_gate import require_installed_path_if_production
+    require_installed_path_if_production(directorio_datos)
     info = detectar_instalacion_previa(directorio_datos)
     if not info['instalada']:
         raise ValueError('No se detectó una instalación previa para actualizar.')
@@ -309,6 +319,8 @@ def planificar_actualizacion(directorio_datos, version_nueva, autorizar_migracio
 
 def documentar_recuperacion_fallida(directorio_datos, ruta_respaldo):
     """Genera las instrucciones precisas para restaurar los datos si una actualización se interrumpe."""
+    from .release_gate import require_installed_path_if_production
+    require_installed_path_if_production(directorio_datos)
     rutas = resolver_rutas(directorio_datos)
     db = rutas['db']
     respaldo = Path(ruta_respaldo)

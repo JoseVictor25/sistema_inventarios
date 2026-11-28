@@ -24,10 +24,14 @@ def _validar_ruta(ruta, modo=None):
     if modo == 'temporal':
         return validar_temporal(ruta)
     if modo == 'instalado':
+        from .release_gate import require_installed_path_if_production
+        require_installed_path_if_production(ruta)
         return validar_datos_instalados(ruta)
     try:
         return validar_temporal(ruta)
     except ValueError:
+        from .release_gate import require_installed_path_if_production
+        require_installed_path_if_production(ruta)
         return validar_datos_instalados(ruta)
 
 

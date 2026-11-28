@@ -316,6 +316,9 @@ def crear_copia(origen, directorio, conservar, *, limite_segundos=120, qr=None, 
         3. Copiar con API SQLite. 4. Verificar/publicar. 5. Retener y registrar.
     Lanza: ErrorRespaldo; nunca migra ni escribe en la base fuente.
     """
+    from desktop.release_gate import require_installed_path_if_production
+    require_installed_path_if_production(Path(origen).parent)
+    require_installed_path_if_production(directorio)
     # Paso 1: validar antes de abrir conexiones o crear el directorio destino.
     origen = Path(origen).resolve()
     directorio = Path(directorio).resolve()

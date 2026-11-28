@@ -4,6 +4,7 @@ from pathlib import Path
 import re
 import tempfile
 import unittest
+from unittest.mock import patch
 
 RAIZ = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location('compilar_instalador', RAIZ / 'scripts/compilar_instalador.py')
@@ -23,7 +24,8 @@ class InstaladorTests(unittest.TestCase):
 
     def test_paquete_completo_copiado_con_hashes(self):
         salida = self.root / 'salida'
-        contenido = modulo.preparar(self.paquete, salida)
+        with patch('desktop.release_gate.verify_release_authorization'):
+            contenido = modulo.preparar(self.paquete, salida)
         self.assertEqual(len(contenido), 2)
         for fila in contenido:
             self.assertEqual(modulo.sha(salida / 'payload' / fila['archivo']), fila['sha256'])
@@ -65,6 +67,8 @@ class InstaladorTests(unittest.TestCase):
         self.assertIn('E3488284-3044-4D29-AB90-33D28FD02467', texto)
         self.assertIn('"0.10.0"', texto)
         self.assertIn('PrivilegesRequired=admin', texto)
+        initialize = texto.split('function InitializeSetup(): Boolean;')[1]
+        self.assertIn('Result := False;\n  Exit;', initialize)
 
     def test_initialize_setup_call_graph_no_expande_app(self):
         texto = (RAIZ / 'desktop/installer/setup.iss').read_text(encoding='utf-8')
@@ -90,9 +94,9 @@ class InstaladorTests(unittest.TestCase):
         texto = (RAIZ / 'desktop/installer/setup.iss').read_text(encoding='utf-8')
         script = (RAIZ / 'scripts/compilar_instalador.py').read_text(encoding='utf-8')
         normal = modulo.comando_compilacion(Path('C:/ISCC.exe'), self.root, False)
-        vm = modulo.comando_compilacion(Path('C:/ISCC.exe'), self.root, True)
+        with self.assertRaises(ValueError):
+            modulo.comando_compilacion(Path('C:/ISCC.exe'), self.root, True)
         self.assertNotIn('/DSOLO_PRUEBAS_VM', normal)
-        self.assertIn('/DSOLO_PRUEBAS_VM', vm)
         self.assertIn("parser.add_argument('--solo-pruebas-vm'", script)
         self.assertIn('#ifdef SOLO_PRUEBAS_VM', texto)
         self.assertIn('OutputBaseFilename=Instalador_Sistema_Inventarios_0.10.0_SOLO_PRUEBAS_VM_NO_ENTREGAR', texto)
@@ -137,6 +141,11 @@ class InstaladorTests(unittest.TestCase):
         self.assertIn('Parameters: "--operador-sid={param:OPERATOR_SID|}"', iconos)
         self.assertIn("autorizar_nueva=(args.inicializar or (getattr(sys, 'frozen', False) and modo == 'instalado'))", launcher)
         self.assertIn('SOLO PRUEBAS VM requiere /OPERATOR_SID', texto)
+
+    def test_paquete_sin_autorizacion_solo_se_inspecciona_no_se_prepara_para_inno(self):
+        from desktop.release_gate import ReleaseGateError
+        with self.assertRaises(ReleaseGateError):
+            modulo.preparar(self.paquete, self.root / 'salida_no_autorizada')
 
     def test_descubrimiento_iscc_encuentra_compilador(self):
         iscc = modulo.buscar_iscc()

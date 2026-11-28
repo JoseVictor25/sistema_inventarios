@@ -279,3 +279,50 @@ contra papel real en la DT-230; comprobar alimentación, corte y eventual pagina
 del método Windows. La cola RAW no se utilizó con una impresora real. La imagen
 continua y el PDF no garantizan que un controlador Windows de página fija avance
 solo el papel necesario.
+
+## Corrección de orientación y polaridad ESC/POS (2026-11-15)
+
+**Síntoma confirmado por el usuario:** con un ticket corto, Chrome y WebView2
+mostraban una hoja horizontal de aproximadamente 210 × 80 mm. La regla anterior
+creaba `@page` en JavaScript con ancho 80 mm y alto cercano a 63 mm; al quedar
+el alto por debajo del ancho, el navegador o controlador giraba el formato fijo.
+Además, el raster ESC/POS invertía los bits: fondo blanco se enviaba como puntos
+negros. Este defecto se detectó antes de enviar trabajos RAW a una impresora real.
+
+`ticket.medidas_pagina()` calcula el alto desde la imagen y exige al menos
+`ancho + 1 mm` para la alternativa Windows. La plantilla recibe esa medida del
+servidor y deja de crear reglas `@page` en JavaScript. Esto evita solicitar una
+hoja horizontal; **no obliga al controlador Windows a aceptar longitud variable**.
+La ruta principal de térmicas compatibles es ESC/POS: se invierte correctamente la
+polaridad raster (`1` = punto negro), se envía por la cola Windows y se muestra el
+resultado del envío sin salir del comprobante. El texto aclara que una aceptación
+del spooler no equivale a impresión física. Windows y el PDF siguen disponibles.
+
+Para configurar una térmica: entrar como administrador en **Impresión de tickets**,
+elegir `ESC/POS`, el ancho 80 o 58 mm, seleccionar la cola Windows y marcar la
+confirmación RAW solo si el modelo y la cola lo aceptan. Guardar. El corte sigue
+desactivado por defecto. Si no funciona, volver a `Controlador Windows`. Una marca
+o un ancho de papel no garantizan compatibilidad ESC/POS; depende del firmware y
+de la cola. Como prueba alternativa en la DT-230, el operador puede crear una cola
+Windows adicional con controlador `Generic / Text Only` para el mismo puerto USB
+configurado en Windows y seleccionar esa cola; no se crea ni modifica aquí.
+
+**Evidencia automatizada:** `check` produjo `System check identified no issues
+(0 silenced).`; `makemigrations --check --dry-run` produjo `No changes detected`.
+`manage.py test apps.ventas apps.core.tests.test_qr --noinput` ejecutó **48 pruebas**:
+**47 aprobadas y 1 fallida**, la discrepancia conocida del texto del modal QR
+(`test_pos_modal_y_confirmacion` espera `Total de la venta: Bs`). Salida completa
+guardada íntegra en `docs/evidencias_tickets/check_2026-11-15.txt`,
+`docs/evidencias_tickets/migraciones_2026-11-15.txt` y
+`docs/evidencias_tickets/pruebas_2026-11-15.txt`.
+
+`scripts/verificar_raster_escpos.py` codificó el ticket ficticio de 30 productos y
+lo decodificó con la semántica ESC/POS: 576 × 2971 px, 12 bandas, texto negro sobre
+fondo blanco. Imagen: `docs/ticket_escpos_decodificado.png`. No hubo impresión
+física, validación del diálogo WebView2 actualizado ni prueba con la cola DT-230.
+
+**Discrepancia preexistente:** la regla general de la especificación pide que toda
+configuración viva en `.env`, pero las preferencias de tickets ya se guardan en
+`DATA_DIR/impresion.json` para permitir cambios desde la pantalla. Esta corrección
+no cambia esa persistencia ni toca `.env`; requiere una decisión aparte si se
+quiere reconciliar el contrato general con esa pantalla.

@@ -38,6 +38,8 @@ def bloqueo_instancia(directorio_datos: Path):
     Levanta:
         OSError: si ya existe una instancia activa (lock retenido).
     """
+    from .release_gate import require_installed_path_if_production
+    require_installed_path_if_production(directorio_datos)
     archivo = ruta_lock(directorio_datos)
     if archivo.is_symlink():
         raise OSError('El archivo de control de instancia no es seguro (enlace simbólico).')

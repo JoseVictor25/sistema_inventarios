@@ -102,6 +102,10 @@ def main():
     if args.restaurar and (modo != 'instalado' or args.respaldo or args.inicializar):
         parser.error('--restaurar requiere --instalado y no se combina con --respaldo ni --inicializar.')
 
+    if modo == 'instalado':
+        from desktop.release_gate import require_frozen_production
+        require_frozen_production(Path(sys.executable).resolve().parent)
+
     ruta.mkdir(parents=True, exist_ok=True)
     sys.path.insert(0, str(recursos() / 'backend'))
 

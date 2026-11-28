@@ -5,6 +5,7 @@ rutas, puertos, reglas del negocio) se leen del archivo .env. Ver
 backend/.env.example para la lista completa.
 """
 import os
+import sys
 import tempfile
 from pathlib import Path
 
@@ -69,6 +70,11 @@ ALLOWED_HOSTS = env_lista("ALLOWED_HOSTS", "localhost,127.0.0.1")
 
 # --- Rutas de datos ----------------------------------------------------------
 DATA_DIR = Path(env_str("DATA_DIR", BASE_DIR / "datos"))
+_program_data = Path(os.environ.get("ProgramData", "C:/ProgramData")) / "SistemaInventarios"
+_installed_data = os.path.normcase(os.path.abspath(DATA_DIR)) == os.path.normcase(os.path.abspath(_program_data))
+if _installed_data or getattr(sys, "frozen", False):
+    from desktop.release_gate import require_frozen_production
+    require_frozen_production(Path(sys.executable).resolve().parent)
 DB_PATH = Path(env_str("DB_PATH", DATA_DIR / "db.sqlite3"))
 # Una base de pruebas en archivo permite que SQLite aplique busy_timeout en
 # concurrencia WAL; Django la elimina al finalizar (también sus clones paralelos).

@@ -22,6 +22,8 @@ def _limpiar_temporales_restauracion(directorio):
 def restaurar_con_bloqueo(copia, directorio_datos, db=None, directorio_respaldos=None,
                            conservar=None, qr_actual=None, *, preparar=None):
     """Camino CLI real: prepara y restaura dentro del cerrojo de instancia."""
+    from .release_gate import require_installed_path_if_production
+    require_installed_path_if_production(directorio_datos)
     try:
         with bloqueo_instancia(Path(directorio_datos)):
             if preparar is not None:
@@ -42,6 +44,8 @@ def restaurar_con_bloqueo(copia, directorio_datos, db=None, directorio_respaldos
 
 def restaurar(copia, db, directorio_respaldos, conservar, qr_actual=None):
     """Prepara/verifica todo antes del replace; necesita bloqueo de instancia del llamador."""
+    from .release_gate import require_installed_path_if_production
+    require_installed_path_if_production(Path(db).parent)
     copia = Path(copia)
     manifiesto_indicado = copia.suffix.lower() == '.json'
     if manifiesto_indicado:

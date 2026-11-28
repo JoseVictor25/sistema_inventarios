@@ -1,5 +1,8 @@
-; B3 preliminar persistente: compilable, pero BLOQUEADO para uso real hasta validación B4 en máquina limpia.
-; ARQUITECTURA DE PERMISOS ACL (documentación de diseño):
+; T1-A: artefacto candidato, bloqueado para instalación y preparación de datos.
+; InitializeSetup falla cerrado antes de cualquier instalación. El código heredado
+; de instalación y ACL no es una ruta válida hasta completar T1-B y revisar release.
+; No habilitar macros de VM ni invocar ISCC directamente para distribuir.
+; ARQUITECTURA HISTÓRICA DE PERMISOS ACL (no habilitada en T1-A):
 ; ─────────────────────────────────────────────────────────
 ; El instalador se ejecuta elevado (Admin) con una cuenta que puede ser distinta
 ; del operador del negocio. Por este motivo el instalador NUNCA aplica ACLs de
@@ -246,6 +249,12 @@ var
   Msg: String;
   SidOperador: String;
 begin
+  SuppressibleMsgBox(
+    'InstalaciÃ³n bloqueada: este artefacto requiere autorizaciÃ³n de release y validaciÃ³n T1-B del propietario BA.',
+    mbError, MB_OK, IDOK);
+  Result := False;
+  Exit;
+
   if WebView2EquipoDisponible() then
     Log('WebView2 registrado por equipo detectado.')
   else
