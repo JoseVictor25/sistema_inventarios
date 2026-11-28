@@ -71,8 +71,10 @@ class RespaldoQRTests(SimpleTestCase):
             with self.assertRaises(r.ErrorRespaldo):
                 r.recuperar_temporal(copia, self.raiz / 'noautorizada')
         self.crear(conservar=1)
-        self.assertFalse(copia.exists())
-        self.assertFalse(copia.with_suffix('.json').exists())
+        # La retención ahora conserva todas las copias de las últimas 24 h;
+        # BACKUP_CONSERVAR limita la cobertura diaria más antigua.
+        self.assertTrue(copia.exists())
+        self.assertTrue(copia.with_suffix('.json').exists())
 
     def test_error_recuperacion_limpia_solo_sus_archivos(self):
         datos = self.crear()

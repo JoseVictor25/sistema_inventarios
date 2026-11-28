@@ -19,6 +19,14 @@ import sys
 NOMBRE_LOCK = '.instancia.lock'
 
 
+class BloqueoInstanciaActiva(OSError):
+    """El cerrojo ya está retenido por otra instancia del programa."""
+
+
+class ErrorPermisoBloqueo(PermissionError):
+    """No se pudo abrir el archivo de bloqueo por falta de permisos."""
+
+
 def ruta_lock(directorio_datos: Path) -> Path:
     return Path(directorio_datos) / NOMBRE_LOCK
 
@@ -30,11 +38,16 @@ def bloqueo_instancia(directorio_datos: Path):
     Levanta:
         OSError: si ya existe una instancia activa (lock retenido).
     """
+    from .release_gate import require_installed_path_if_production
+    require_installed_path_if_production(directorio_datos)
     archivo = ruta_lock(directorio_datos)
     if archivo.is_symlink():
         raise OSError('El archivo de control de instancia no es seguro (enlace simbólico).')
 
-    manejador = archivo.open('a+b')
+    try:
+        manejador = archivo.open('a+b')
+    except PermissionError as exc:
+        raise ErrorPermisoBloqueo(exc.errno, exc.strerror, exc.filename) from exc
     tomado = False
     try:
         manejador.seek(0)
@@ -45,7 +58,7 @@ def bloqueo_instancia(directorio_datos: Path):
                 tomado = True
             except OSError:
                 manejador.close()
-                raise OSError(
+                raise BloqueoInstanciaActiva(
                     'Ya existe una instancia activa del Sistema de Inventarios. '
                     'Ciérrala antes de realizar operaciones de mantenimiento.'
                 ) from None
@@ -56,7 +69,7 @@ def bloqueo_instancia(directorio_datos: Path):
                 tomado = True
             except OSError:
                 manejador.close()
-                raise OSError('Ya existe una instancia activa.') from None
+                raise BloqueoInstanciaActiva('Ya existe una instancia activa.') from None
 
         yield manejador
     finally:

@@ -3,6 +3,7 @@ import hashlib
 import logging
 import os
 from pathlib import Path
+import sqlite3
 import tempfile
 import unittest
 import sys
@@ -59,6 +60,20 @@ class MantenimientoActualizacionesB3Tests(unittest.TestCase):
             self.temp_dir.cleanup()
         except Exception:
             pass
+
+    def _estado_sqlite(self, db):
+        uri = Path(db).resolve().as_uri() + '?mode=ro'
+        con = sqlite3.connect(uri, uri=True)
+        try:
+            modo = con.execute('PRAGMA journal_mode').fetchone()[0]
+            volcado = tuple(con.iterdump())
+        finally:
+            con.close()
+        auxiliares = {}
+        for sufijo in ('-wal', '-shm'):
+            ruta = Path(str(db) + sufijo)
+            auxiliares[sufijo] = ruta.read_bytes() if ruta.exists() else None
+        return modo, volcado, auxiliares
 
     def test_parsear_version_correcta(self):
         self.assertEqual(parsear_version("0.10.0"), (0, 10, 0))
@@ -121,16 +136,42 @@ class MantenimientoActualizacionesB3Tests(unittest.TestCase):
         configurar(datos, autorizar_nueva=True, modo="instalado", sid_operador=self.sid_test)
 
         db_original = datos / "db.sqlite3"
-        hash_antes = sha(db_original)
+        estado_antes = self._estado_sqlite(db_original)
 
         # Ejecutar ensayo en copia
         resultado = ensayar_migraciones_en_copia(datos)
         self.assertTrue(resultado["ensayo_exitoso"])
         self.assertTrue(resultado["compatible"])
 
-        # Confirmar que la base original NO fue alterada
-        hash_despues = sha(db_original)
-        self.assertEqual(hash_antes, hash_despues)
+        # La semántica y los archivos WAL/SHM originales deben permanecer iguales.
+        self.assertEqual(estado_antes, self._estado_sqlite(db_original))
+
+    def test_ensayo_migraciones_preserva_wal_con_datos_pendientes(self):
+        datos = self.root / 'datos_ensayo_wal'
+        configurar(datos, autorizar_nueva=True, modo='instalado', sid_operador=self.sid_test)
+        db = datos / 'db.sqlite3'
+        con = sqlite3.connect(db)
+        try:
+            con.execute('PRAGMA journal_mode=WAL')
+            con.execute('PRAGMA wal_autocheckpoint=0')
+            con.execute(
+                "INSERT INTO auth_permission (name, content_type_id, codename) "
+                "VALUES ('pendiente WAL', 1, 'pendiente_wal_test')"
+            )
+            con.commit()
+            wal = Path(str(db) + '-wal')
+            self.assertTrue(wal.is_file())
+            self.assertGreater(wal.stat().st_size, 0)
+            estado_antes = self._estado_sqlite(db)
+
+            resultado = ensayar_migraciones_en_copia(datos)
+
+            self.assertTrue(resultado['ensayo_exitoso'], resultado['error'])
+            self.assertEqual(estado_antes, self._estado_sqlite(db))
+            self.assertEqual(estado_antes[0], 'wal')
+            self.assertIn('pendiente WAL', '\n'.join(estado_antes[1]))
+        finally:
+            con.close()
 
     def test_planificar_actualizacion_flujo_completo(self):
         datos = self.root / "datos_actualizar"

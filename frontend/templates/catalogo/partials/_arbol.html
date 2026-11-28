@@ -5,5 +5,5 @@
 {% if not nodo.categoria.activa %}<span class="badge text-bg-secondary">Inactiva</span>{% endif %}
 <a href="{% url 'catalogo:categoria_editar' nodo.categoria.pk %}">Editar categoría</a></div>
 {% if nodo.hijos %}{% include 'catalogo/partials/_arbol.html' with nodos=nodo.hijos %}{% endif %}
-</li>{% empty %}<li>No hay categorías registradas.</li>{% endfor %}
+</li>{% empty %}<li>No hay categorías registradas. Crea una categoría para organizar productos.</li>{% endfor %}
 </ul>

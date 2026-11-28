@@ -8,8 +8,9 @@ Base: main, commit 7e848e8. Se conserva íntegro el código funcional del Bloque
 - `desktop/installer/setup.iss`: AppId estable
   `{E3488284-3044-4D29-AB90-33D28FD02467}`, nombre Sistema de Inventarios,
   versión provisional 0.10.0, onedir completo, Program Files y privilegios de
-  instalación por equipo. Destino de compatibilidad preliminar: Windows 11 x64,
-  sin ARM64. Inicio y escritorio opcional.
+  instalación por equipo. Unico sistema soportado: Windows 11 x64 (compilación
+  22000 o posterior). Windows 10, Windows 7, Windows 8/8.1 y Windows ARM64
+  quedan fuera de soporte y no se probarán. Inicio y escritorio opcional.
 - Bloqueo incondicional en InitializeSetup, también para modo silencioso, antes
   de instalar archivos. No se presenta como instalador funcional mientras faltan
   rutas instaladas, SID, ACL y mantenimiento. No existe opción para saltar el bloqueo.

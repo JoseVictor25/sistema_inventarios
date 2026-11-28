@@ -1,11 +1,11 @@
 <div id="carrito" class="card shadow-sm border" aria-label="Venta confirmada">
   <div class="card-header bg-success text-white py-2 text-center">
-    <h3 class="h6 mb-0 fw-bold">✓ Venta registrada con éxito</h3>
+    <h3 class="h6 mb-0 fw-bold">Venta registrada con éxito</h3>
   </div>
 
   <div class="card-body p-4 text-center">
     <div class="mb-3">
-      <div class="fs-1 text-success mb-2">✓</div>
+      <div class="fs-1 text-success mb-2">{% include 'components/_icono.html' with icono='check' tam=40 %}</div>
       <h4 class="fw-bold text-dark mb-1">Venta #{{ venta.pk }}</h4>
       <p class="text-muted small mb-0">
         {{ venta.fecha|date:"d/m/Y H:i" }} · Turno #{{ venta.caja.pk }}
@@ -32,8 +32,12 @@
     </div>
 
     <div class="d-flex flex-column gap-2">
+      {% if escpos_listo %}
+      <form data-escpos data-estado="estado-impresion-pos" method="post" action="{% url 'ventas:comprobante_escpos' venta.pk %}">{% csrf_token %}<input type="hidden" name="intento_impresion" value="{{ intento_impresion }}"><button type="submit" class="btn btn-primary w-100" id="btn-imprimir-ticket">{% include 'components/_icono.html' with icono='impresora' %} Imprimir ticket</button></form>
+      <div id="estado-impresion-pos" role="status" aria-live="polite"></div>
+      {% elif ofrecer_comprobante %}<a href="{% url 'ventas:comprobante' venta.pk %}" class="btn btn-outline-primary" target="_blank" rel="noopener">Ver / Imprimir comprobante</a>{% endif %}
       <button type="button"
-              class="btn btn-primary"
+              class="btn {% if escpos_listo %}btn-outline-primary{% else %}btn-primary{% endif %}"
               id="btn-nueva-venta"
               hx-post="{% url 'ventas:carrito_vaciar' %}"
               hx-target="#carrito"
@@ -41,7 +45,7 @@
         + Nueva venta
       </button>
       <a href="{% url 'ventas:detalle' venta.pk %}" class="btn btn-outline-secondary btn-sm" id="btn-ver-detalle-venta">
-        Ver comprobante / detalle
+        Ver detalle de la venta
       </a>
     </div>
   </div>

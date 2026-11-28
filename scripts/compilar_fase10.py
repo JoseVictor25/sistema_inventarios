@@ -4,9 +4,12 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
-from verificar_catalogo_fase3 import preparar_entorno
 
 RAIZ = Path(__file__).resolve().parent.parent
+if str(RAIZ) not in sys.path:
+    sys.path.insert(0, str(RAIZ))
+
+from verificar_catalogo_fase3 import preparar_entorno
 
 
 def main():
@@ -23,7 +26,11 @@ def main():
     subprocess.run([sys.executable, '-m', 'PyInstaller', str(RAIZ / 'desktop/sistema.spec'),
                     '--distpath', str(temporal / 'dist'), '--workpath', str(temporal / 'work'), '--noconfirm', '--clean'],
                    cwd=RAIZ, env=env, check=True)
-    print('Paquete experimental:', temporal / 'dist/SistemaInventarios')
+    from desktop.release_gate import write_candidate_manifest
+    candidato = temporal / 'dist/SistemaInventarios'
+    huella = write_candidate_manifest(candidato)
+    print('CANDIDATO NO DISTRIBUIBLE (sin autorización ni T1-B):', candidato)
+    print('Manifiesto candidato SHA-256:', huella)
 
 
 if __name__ == '__main__':

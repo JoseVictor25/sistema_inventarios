@@ -1,0 +1,17 @@
+<div class="card p-2 mb-2 bg-light border fila-pago" data-fila-pago>
+  <div class="row g-2 align-items-center">
+    <div class="col-12 col-sm-5">
+      <select name="metodo_id" class="form-select form-select-sm select-metodo" aria-label="Método de pago">
+        {% for m in metodos_pago %}<option value="{{ m.id }}" data-es-qr="{% if m.nombre|upper == 'QR' %}1{% else %}0{% endif %}" data-es-efectivo="{% if m.es_efectivo %}1{% else %}0{% endif %}">{{ m.nombre }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-8 col-sm-5"><div class="input-group input-group-sm">
+      <span class="input-group-text px-1">{{ MONEDA_SIMBOLO }}</span>
+      <input type="number" name="monto" class="form-control form-control-sm text-end input-monto-pago" step="0.01" min="0.01" placeholder="0.00" value="{{ monto_inicial }}" aria-label="Monto a pagar">
+    </div></div>
+    <div class="col-4 col-sm-2 text-end">
+      <button type="button" class="btn btn-outline-danger btn-sm px-2 btn-quitar-metodo{% if not mostrar_quitar %} d-none{% endif %}" title="Quitar método" aria-label="Quitar método">{% include 'components/_icono.html' with icono='cerrar' tam=16 %}</button>
+    </div>
+  </div>
+  <div class="fila-referencia mt-1 d-none"><input type="text" name="referencia" class="form-control form-control-sm input-referencia" placeholder="N° comprobante / autorización (opcional)" aria-label="Referencia de pago"></div>
+</div>

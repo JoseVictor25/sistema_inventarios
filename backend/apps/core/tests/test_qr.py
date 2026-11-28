@@ -57,6 +57,19 @@ class QRTests(TestCase):
         self.assertEqual(self.client.post('/sistema/qr/', {'accion':'eliminar'}).status_code, 302)
         self.assertEqual(self.client.get('/sistema/qr/imagen/').status_code, 404)
 
+    def test_mensajes_de_guardado_y_eliminacion(self):
+        self.client.force_login(self.dueno)
+        respuesta = self.client.post('/sistema/qr/', {'accion': 'guardar', 'imagen': self.archivo()}, follow=True)
+        self.assertContains(respuesta, 'QR guardado correctamente.')
+        self.assertNotContains(self.client.get('/sistema/qr/'), 'QR guardado correctamente.')
+        self.assertContains(self.client.post('/sistema/qr/', {'accion': 'eliminar'}, follow=True),
+                            'QR eliminado correctamente.')
+        self.assertContains(self.client.post('/sistema/qr/', {'accion': 'eliminar'}, follow=True),
+                            'No había un QR configurado.')
+        error = self.client.post('/sistema/qr/', {'accion': 'guardar', 'imagen': SimpleUploadedFile('x.png', b'no imagen')})
+        self.assertEqual(error.status_code, 422)
+        self.assertNotContains(error, 'QR guardado correctamente.', status_code=422)
+
     def test_permisos(self):
         self.client.force_login(self.vendedor)
         self.assertEqual(self.client.post('/sistema/qr/', {'accion':'guardar','imagen':self.archivo()}).status_code,403)
@@ -68,7 +81,8 @@ class QRTests(TestCase):
         respuesta=self.client.get('/ventas/nueva/')
         self.assertContains(respuesta,'id="modal-qr"')
         self.assertContains(respuesta,'qr_confirmado')
-        self.assertContains(respuesta,'Total de la venta: Bs')
+        self.assertContains(respuesta,'Importe a pagar por QR:')
+        self.assertContains(respuesta,'no el total de la venta.')
         self.assertEqual(Venta.objects.count(), 0)
 
     def test_confirmacion_manual_backend(self):

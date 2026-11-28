@@ -1635,11 +1635,11 @@ Se ejecutan con `python manage.py test`. Cada servicio tiene como mínimo una pr
 
 ### Compatibilidad
 
-Windows 10 y 11 de 64 bits (Windows 11 recomendado). No requiere Python instalado. La ventana usa WebView2; si falta, abre el navegador.
+Solo Windows 11 x64 (compilación 22000 o posterior). Windows 10, Windows 7, Windows 8/8.1 y Windows ARM64 quedan fuera de soporte y no se probarán. No requiere Python instalado. La ventana usa WebView2; si falta, abre el navegador.
 
 ### Antes de entregar
 
-- [ ] Probar el instalador en máquinas virtuales limpias de Windows 10 y de Windows 11.
+- [ ] Probar el instalador en una máquina virtual limpia con Windows 11 x64 (compilación 22000 o posterior).
 - [ ] Probar en la laptop real del cliente, con el antivirus activo.
 - [ ] Explicar al cliente el aviso "Windows protegió su equipo" (el instalador no está firmado): *Más información → Ejecutar de todas formas*.
 - [ ] Verificar el respaldo automático y restaurar una copia de prueba.

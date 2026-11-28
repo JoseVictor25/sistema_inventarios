@@ -2,6 +2,7 @@
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.utils import timezone
+import json
 from apps.caja.models import Caja
 from apps.caja.services import obtener_caja
 from apps.inventario.services import obtener_alertas
@@ -9,6 +10,18 @@ from apps.reportes.services import ventas_agrupadas
 from .operaciones import autorizar
 from .permissions import tiene_permiso
 from .respaldos import crear_copia, listar_copias
+
+
+def _guardar_advertencia_externa(advertencia):
+    ruta = settings.DATA_DIR / 'estado_respaldo_externo.json'
+    try:
+        if advertencia:
+            ruta.write_text(json.dumps({'advertencia': advertencia}, ensure_ascii=False), encoding='utf-8')
+        else:
+            ruta.unlink(missing_ok=True)
+    except OSError:
+        pass
+    settings.BACKUP_ADVERTENCIA_EXTERNA = advertencia
 
 
 def datos_inicio(usuario):
@@ -55,8 +68,11 @@ def crear_respaldo(usuario):
     from .respaldos import ErrorRespaldo
     if settings.DATABASES['default']['ENGINE'] != 'django.db.backends.sqlite3':
         raise ErrorRespaldo('El respaldo disponible requiere SQLite.')
-    return crear_copia(settings.DATABASES['default']['NAME'], settings.BACKUP_DIR, settings.BACKUP_CONSERVAR,
-                      qr=settings.DATA_DIR / 'qr_bancario.png')
+    resultado = crear_copia(settings.DATABASES['default']['NAME'], settings.BACKUP_DIR, settings.BACKUP_CONSERVAR,
+                      qr=settings.DATA_DIR / 'qr_bancario.png',
+                      directorio_externo=getattr(settings, 'BACKUP_DIR_EXTERNO', None))
+    _guardar_advertencia_externa(resultado['advertencia'])
+    return resultado
 
 
 def consultar_respaldos(usuario):
@@ -65,4 +81,14 @@ def consultar_respaldos(usuario):
     Lanza: PermissionDenied o ErrorRespaldo.
     """
     autorizar(usuario, 'respaldar')
-    return listar_copias(settings.BACKUP_DIR)
+    filas = listar_copias(settings.BACKUP_DIR)
+    ultimo = next((fila['fecha'] for fila in filas if fila['verificado']), None)
+    advertencia = getattr(settings, 'BACKUP_ADVERTENCIA_EXTERNA', '')
+    try:
+        advertencia = json.loads((settings.DATA_DIR / 'estado_respaldo_externo.json').read_text(encoding='utf-8')).get('advertencia', advertencia)
+    except (OSError, ValueError, AttributeError):
+        pass
+    return {'filas': filas, 'directorio': str(settings.BACKUP_DIR.resolve()),
+            'ultimo_verificado': ultimo,
+            'externo_configurado': bool(getattr(settings, 'BACKUP_DIR_EXTERNO', None)),
+            'advertencia_externa': advertencia}

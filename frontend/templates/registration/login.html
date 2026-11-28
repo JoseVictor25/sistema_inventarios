@@ -3,11 +3,11 @@
 {% block contenido %}
 <section class="login card shadow-sm" aria-labelledby="titulo-login">
   <div class="card-body">
-    <h1 id="titulo-login" class="h4 mb-4">Ingresar</h1>
-    <p>{{ NOMBRE_NEGOCIO }}</p>
+    <div class="d-flex align-items-center gap-2 mb-3"><span class="marca-icono" aria-hidden="true">{% include 'components/_icono.html' with icono='carrito' %}</span><span>{{ NOMBRE_NEGOCIO }}</span></div>
+    <h1 id="titulo-login" class="titulo-pagina h4 mb-4">Ingresar</h1>
     <form method="post">
       {% csrf_token %}
-      {{ form.non_field_errors }}
+      {% if form.non_field_errors %}<div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>{% endif %}
       {% for field in form %}
       <div class="mb-3">
         {{ field.label_tag }}{{ field }}{{ field.errors }}

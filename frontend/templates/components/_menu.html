@@ -1,6 +1,6 @@
 {% load static %}
 <header class="encabezado-app">
-<button class="btn btn-outline-primary menu-toggler" id="menu-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#nav-collapsible" aria-controls="nav-collapsible" aria-label="Abrir navegaci&#243;n">&#9776;</button>
+<button class="btn btn-outline-primary menu-toggler" id="menu-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#nav-collapsible" aria-controls="nav-collapsible" aria-label="Abrir navegación">{% include 'components/_icono.html' with icono='menu' %}</button>
 <a class="marca-encabezado" href="{% url 'core:inicio' %}">{{ NOMBRE_NEGOCIO }}</a>
 <div id="menu-usuario"><span class="avatar-usuario" aria-hidden="true">{{ user.get_username|first|upper }}</span><span>{{ user.get_username }}</span><form method="post" action="{% url 'usuarios:logout' %}">{% csrf_token %}<button class="btn btn-outline-secondary btn-sm" id="btn-salir">Salir</button></form></div>
 </header>
@@ -22,8 +22,8 @@
            href="{% url 'ventas:pos' %}">{% include 'components/_icono.html' with icono='carrito' %}<span>Venta</span></a>
       </li>
       <li class="nav-item" role="listitem">
-        <a class="nav-link{% if request.resolver_match.app_name == 'ventas' and request.resolver_match.url_name != 'pos' %} active fw-bold{% endif %}"
-           {% if request.resolver_match.app_name == 'ventas' and request.resolver_match.url_name != 'pos' %}aria-current="page"{% endif %}
+        <a class="nav-link{% if request.resolver_match.view_name == 'ventas:lista' or request.resolver_match.view_name == 'ventas:detalle' or request.resolver_match.view_name == 'ventas:comprobante' %} active fw-bold{% endif %}"
+           {% if request.resolver_match.view_name == 'ventas:lista' or request.resolver_match.view_name == 'ventas:detalle' or request.resolver_match.view_name == 'ventas:comprobante' %}aria-current="page"{% endif %}
            href="{% url 'ventas:lista' %}">{% include 'components/_icono.html' with icono='reloj' %}<span>Historial de ventas</span></a>
       </li>
       {% else %}
@@ -84,6 +84,7 @@
 
       {% if 'ver_auditoria' in permisos %}<li class="nav-item"><a class="nav-link" href="{% url 'auditoria:lista' %}">{% include 'components/_icono.html' with icono='lista' %}<span>Bitácora</span></a></li>{% endif %}
       {% if 'respaldar' in permisos %}<li class="nav-item"><a class="nav-link" href="{% url 'core:respaldos' %}">{% include 'components/_icono.html' with icono='escudo' %}<span>Respaldos</span></a></li>{% endif %}
-      {% if 'gestionar_usuarios' in permisos %}<li class="nav-item"><a class="nav-link" href="{% url 'core:qr_configurar' %}">QR bancario</a></li>{% endif %}
+      {% if 'gestionar_usuarios' in permisos %}<li class="nav-item"><a class="nav-link{% if request.resolver_match.view_name == 'core:qr_configurar' %} active fw-bold{% endif %}" {% if request.resolver_match.view_name == 'core:qr_configurar' %}aria-current="page"{% endif %} href="{% url 'core:qr_configurar' %}">{% include 'components/_icono.html' with icono='qr' %}<span>QR bancario</span></a></li>{% endif %}
+      {% if 'gestionar_usuarios' in permisos %}<li class="nav-item"><a class="nav-link{% if request.resolver_match.view_name == 'ventas:configurar_impresion' %} active fw-bold{% endif %}" {% if request.resolver_match.view_name == 'ventas:configurar_impresion' %}aria-current="page"{% endif %} href="{% url 'ventas:configurar_impresion' %}">{% include 'components/_icono.html' with icono='impresora' %}<span>Impresión de tickets</span></a></li>{% endif %}
     </ul>
 </nav></div></aside>

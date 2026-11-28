@@ -1127,8 +1127,8 @@ rutas ni parámetros del navegador. No existe restauración web.
 | Agregar al carrito (HTMX) | `POST /ventas/carrito/agregar/` | `ventas:carrito_agregar` | `ventas/partials/_carrito.html` → `#carrito` | `carrito` |
 | Cambiar cantidad o presentación | `POST /ventas/carrito/actualizar/` | `ventas:carrito_actualizar` | `_carrito.html` → `#carrito` | `carrito`, `error` |
 | Quitar línea / vaciar | `POST /ventas/carrito/quitar/`, `.../vaciar/` | `ventas:carrito_quitar`, `ventas:carrito_vaciar` | `_carrito.html` → `#carrito` | `carrito` |
-| Confirmar venta | `POST /ventas/confirmar/` | `ventas:confirmar` | **200:** `_venta_confirmada.html` · **422:** `_carrito.html` con `error` | `venta` · `carrito`, `error` |
-| Ventas del día | `/ventas/` | `ventas:lista` | `ventas/venta_lista.html` | `page_obj`, `total_dia` |
+| Confirmar venta | `POST /ventas/confirmar/` | `ventas:confirmar` | **200:** `_venta_confirmada.html` · **422:** `_carrito.html` con `error` | `venta`, `ofrecer_comprobante`, `escpos_listo` · `carrito`, `error` |
+| Historial de ventas | `/ventas/` | `ventas:lista` | `ventas/venta_lista.html` | `page_obj`, `total_dia`, `filtros`, `filtros_query`, `desde`, `hasta` |
 | Detalle de venta | `/ventas/<int:pk>/` | `ventas:detalle` | `ventas/venta_detalle.html` | `venta`, `detalles`, `pagos` |
 
 Forma del objeto `carrito` que recibe `_carrito.html`:
@@ -1143,6 +1143,8 @@ carrito = {
 ```
 
 El **vuelto** se calcula en pantalla con JavaScript (`monto recibido − total`); no se envía ni se guarda.
+
+El historial muestra solo hoy si no recibe fechas; admite `desde`, `hasta` y `vendedor`, con un máximo de 366 días y páginas de 20 ventas. El parcial `_fila_pago.html` renderiza la fila inicial y la plantilla de nuevas filas del POS. Cuando ESC/POS está configurado y confirmado, `_venta_confirmada.html` ofrece enviar el ticket desde el POS; `frontend/static/js/escpos.js` comparte esa operación con el comprobante. La configuración de impresión y el QR bancario notifican el guardado mediante mensajes temporales de Django.
 
 ### 9.7 Caja (`caja`)
 

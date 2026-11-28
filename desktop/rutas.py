@@ -43,10 +43,15 @@ def validar_datos_instalados(ruta=None):
     - Enlaces simbólicos, uniones de directorio (junctions) y redirecciones.
     """
     if ruta is None:
-        ruta = os.environ.get('INVENTARIOS_DATOS_INSTALADOS') or PROGRAM_DATA_DIR
+        ruta = PROGRAM_DATA_DIR
     original = Path(ruta)
     if not original.is_absolute():
         raise ValueError('Indica una ruta absoluta para los datos instalados.')
+    esperada = Path(PROGRAM_DATA_DIR)
+    solicitada_norm = os.path.normcase(os.path.abspath(os.path.normpath(str(original))))
+    esperada_norm = os.path.normcase(os.path.abspath(os.path.normpath(str(esperada))))
+    if solicitada_norm != esperada_norm:
+        raise ValueError('La ruta instalada debe ser exactamente %ProgramData%\\SistemaInventarios.')
     destino = original.resolve()
 
     # Rechazar si coincide con la raíz de unidad

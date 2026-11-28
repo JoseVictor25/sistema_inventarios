@@ -13,7 +13,8 @@ datos = [(str(raiz / 'frontend/templates'), 'frontend/templates'),
 datos += collect_data_files('tzdata') + collect_data_files('reportlab') + collect_data_files('webview')
 ocultos = collect_submodules('apps') + collect_submodules('config') + collect_submodules('desktop')
 ocultos = [m for m in ocultos if '.tests' not in m]
-ocultos += ['django.db.backends.sqlite3', 'django.contrib.sessions.backends.db', 'webview.platforms.winforms']
+ocultos += ['django.db.backends.sqlite3', 'django.contrib.sessions.backends.db', 'webview.platforms.winforms',
+            'cryptography.hazmat.primitives.asymmetric.ed25519']
 ocultos += ['whitenoise.middleware', 'django.template.backends.django',
             'django.contrib.auth.backends', 'django.contrib.auth.password_validation',
             'django.contrib.messages.storage.fallback', 'django.contrib.sessions.serializers']

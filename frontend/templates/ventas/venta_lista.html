@@ -1,36 +1,42 @@
 {% extends "base.html" %}
 
-{% block titulo %}Ventas del día — {{ NOMBRE_NEGOCIO }}{% endblock %}
+{% block titulo %}Historial de ventas — {{ NOMBRE_NEGOCIO }}{% endblock %}
 
 {% block contenido %}
 <div class="container-fluid px-0">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <div>
-      <h1 class="h4 mb-0 fw-bold">Ventas del día</h1>
-      <span class="text-muted small">Registro inmutable de transacciones completadas</span>
+      <h1 class="titulo-pagina">Historial de ventas</h1>
+      <p class="subtitulo-pagina">{% if filtros_activos %}Del {{ desde|date:"d/m/Y" }} al {{ hasta|date:"d/m/Y" }}{% else %}Hoy{% endif %}</p>
     </div>
 
     <div class="d-flex flex-wrap gap-2 align-items-center">
-      <span class="fs-6 text-secondary me-2">Total del día: <strong class="fs-5 text-success">{{ MONEDA_SIMBOLO }} {{ total_dia|floatformat:2 }}</strong></span>
-      <a href="{% url 'ventas:pos' %}" class="btn btn-primary btn-sm" id="btn-ir-pos">
+      <span class="fs-6 text-secondary me-2">Total del período: <strong class="fs-5 text-success">{{ MONEDA_SIMBOLO }} {{ total_dia|floatformat:2 }}</strong></span>
+      <a href="{% url 'ventas:pos' %}" class="btn btn-outline-primary btn-sm" id="btn-ir-pos">
         + Nueva venta
       </a>
     </div>
   </div>
 
-  <div class="card shadow-sm border">
+  <form method="get" class="card shadow-sm border mb-3"><div class="card-body row g-3 align-items-end">
+    {% for campo in filtros %}<div class="col-12 col-md-3"><label class="form-label" for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}{% for error in campo.errors %}<div class="text-danger small" role="alert">{{ error }}</div>{% endfor %}</div>{% endfor %}
+    <div class="col-12 col-md-auto d-flex gap-2"><button type="submit" class="btn btn-primary">Filtrar</button><a href="{% url 'ventas:lista' %}" class="btn btn-outline-secondary">Hoy</a></div>
+    {% for error in filtros.non_field_errors %}<div class="col-12 text-danger" role="alert">{{ error }}</div>{% endfor %}
+  </div></form>
+  {% if page_obj %}<div class="card shadow-sm border">
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0" id="tabla-ventas">
+          <caption class="visually-hidden">Ventas del período seleccionado</caption>
           <thead class="table-light">
             <tr>
-              <th scope="col" style="width: 90px;">N° Venta</th>
-              <th scope="col">Hora</th>
+              <th scope="col" class="col-ancho-90">N° Venta</th>
+              <th scope="col">Fecha y hora</th>
               <th scope="col" class="d-none d-md-table-cell">Vendedor</th>
               <th scope="col" class="d-none d-md-table-cell">Turno</th>
               <th scope="col" class="d-none d-md-table-cell">Métodos de pago</th>
               <th scope="col" class="text-end">Total</th>
-              <th scope="col" class="text-center" style="width: 110px;">Acciones</th>
+              <th scope="col" class="col-ancho-110 text-center">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -50,7 +56,7 @@
                     </div>
                   </div>
                 </td>
-                <td class="text-nowrap">{{ venta.fecha|date:"H:i:s" }}</td>
+                <td class="text-nowrap">{{ venta.fecha|date:"d/m/Y H:i" }}</td>
                 <td class="d-none d-md-table-cell">{{ venta.usuario.get_username }}</td>
                 <td class="d-none d-md-table-cell">Turno #{{ venta.caja.id }}</td>
                 <td class="d-none d-md-table-cell">
@@ -67,12 +73,13 @@
                   <a href="{% url 'ventas:detalle' venta.pk %}" class="btn btn-outline-secondary btn-sm py-0 px-2">
                     Ver detalle
                   </a>
+                  <a href="{% url 'ventas:comprobante' venta.pk %}" class="btn btn-outline-primary btn-sm py-0 px-2">Comprobante</a>
                 </td>
               </tr>
             {% empty %}
               <tr>
                 <td colspan="7" class="text-center text-muted py-4">
-                  No hay ventas registradas en el día de hoy.
+                  {% if filtros_activos %}No hay ventas para estos filtros. Prueba con otro período.{% else %}No hay ventas registradas hoy. Registra una venta desde el POS.{% endif %}
                 </td>
               </tr>
             {% endfor %}
@@ -86,6 +93,6 @@
         {% include "components/_paginacion.html" %}
       </div>
     {% endif %}
-  </div>
+  </div>{% endif %}
 </div>
 {% endblock %}

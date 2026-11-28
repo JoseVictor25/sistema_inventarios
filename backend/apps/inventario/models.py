@@ -70,6 +70,7 @@ class Lote(models.Model):
 
     class Meta:
         ordering = ["fecha_vencimiento", "id"]
+        indexes = [models.Index(fields=["fecha_vencimiento"], name="lote_vencimiento_idx")]
         verbose_name = "lote"
         verbose_name_plural = "lotes"
         constraints = [
@@ -135,6 +136,7 @@ class MovimientoInventario(models.Model):
 
     class Meta:
         ordering = ["-fecha"]
+        indexes = [models.Index(fields=["fecha"], name="movimiento_fecha_idx")]
         verbose_name = "movimiento de inventario"
         verbose_name_plural = "movimientos de inventario"
         constraints = [

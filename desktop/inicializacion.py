@@ -24,10 +24,14 @@ def _validar_ruta(ruta, modo=None):
     if modo == 'temporal':
         return validar_temporal(ruta)
     if modo == 'instalado':
+        from .release_gate import require_installed_path_if_production
+        require_installed_path_if_production(ruta)
         return validar_datos_instalados(ruta)
     try:
         return validar_temporal(ruta)
     except ValueError:
+        from .release_gate import require_installed_path_if_production
+        require_installed_path_if_production(ruta)
         return validar_datos_instalados(ruta)
 
 
@@ -42,12 +46,9 @@ def configurar(ruta, autorizar_nueva=False, solo_respaldo=False, modo=None, sid_
     - Si ya existe esquema con migraciones pendientes, bloquea el inicio funcional (exige actualización sobre copia).
     """
     destino = _validar_ruta(ruta, modo=modo)
-    destino.mkdir(parents=True, exist_ok=True)
     base, entorno = destino / 'db.sqlite3', destino / '.env'
     logs_dir = destino / 'logs'
     respaldos_dir = destino / 'respaldos'
-    logs_dir.mkdir(parents=True, exist_ok=True)
-    respaldos_dir.mkdir(parents=True, exist_ok=True)
 
     nueva = not base.exists() and not entorno.exists()
     if nueva and not autorizar_nueva:
@@ -60,17 +61,26 @@ def configurar(ruta, autorizar_nueva=False, solo_respaldo=False, modo=None, sid_
         raise ValueError('No se permiten enlaces físicos para datos o configuración.')
 
     # Validación o registro del operador Windows autorizado en modo instalado
-    es_instalado = False
-    try:
-        validar_datos_instalados(destino)
+    if modo == 'temporal':
+       es_instalado = False
+    elif modo == 'instalado':
         es_instalado = True
-    except ValueError:
-        es_instalado = False
+    else:
+        try:
+            validar_temporal(destino)
+            es_instalado = False
+        except ValueError:
+            es_instalado = True
 
     if es_instalado:
         verificar_directorio_seguro(destino, sid_esperado=sid_operador if not nueva else None)
         if not nueva:
             validar_operador(destino, sid_actual=sid_operador)
+
+    # No crear rutas persistentes hasta superar autorización e integridad.
+    destino.mkdir(parents=True, exist_ok=True)
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    respaldos_dir.mkdir(parents=True, exist_ok=True)
 
     if nueva:
         # Escritura atómica de .env mediante archivo provisional

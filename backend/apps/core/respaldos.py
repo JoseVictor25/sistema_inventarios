@@ -21,12 +21,40 @@ from uuid import uuid4
 
 logger = logging.getLogger(__name__)
 PATRON = re.compile(r'^respaldo_\d{8}_\d{6}_[0-9a-f]{32}\.sqlite3$')
+PATRON_PARTE = re.compile(r'^(respaldo_\d{8}_\d{6}_[0-9a-f]{32}\.sqlite3)\.partial(?:-(?:wal|shm))?$')
 TABLAS = {'django_migrations', 'usuarios_usuario', 'usuarios_rol', 'usuarios_permiso',
           'catalogo_producto', 'inventario_lote', 'ventas_venta', 'compras_compra', 'caja_caja', 'auditoria_logauditoria'}
 
 
 class ErrorRespaldo(Exception):
     """Error operativo que puede mostrarse sin revelar datos ni credenciales."""
+
+
+def _borrar_auxiliares(ruta):
+    ruta = Path(ruta)
+    for auxiliar in (Path(str(ruta) + '-wal'), Path(str(ruta) + '-shm'),
+                     Path(str(ruta) + '.partial-wal'), Path(str(ruta) + '.partial-shm')):
+        auxiliar.unlink(missing_ok=True)
+
+
+def _limpiar_huerfanos(directorio):
+    directorio = Path(directorio)
+    for ruta in directorio.iterdir():
+        nombre = ruta.name
+        base = None
+        if PATRON.fullmatch(nombre):
+            base = ruta
+        else:
+            for sufijo in ('-wal', '-shm'):
+                if nombre.endswith(sufijo) and PATRON.fullmatch(nombre[:-len(sufijo)]):
+                    base = directorio / nombre[:-len(sufijo)]
+                    break
+            if base is None:
+                coincidencia = PATRON_PARTE.fullmatch(nombre)
+                if coincidencia:
+                    base = directorio / coincidencia.group(1)
+        if base is not None and not base.exists():
+            ruta.unlink(missing_ok=True)
 
 
 def _validar_qr(datos):
@@ -192,32 +220,105 @@ def listar_copias(directorio):
         raise ErrorRespaldo('No se pudo consultar la carpeta de respaldos.') from None
 
 
-def _retener(directorio, conservar, origen):
+def _retener(directorio, conservar, origen, *, ahora=None):
+    """Retiene hasta ocho copias recientes y cobertura diaria en UTC.
+
+    `conservar` es el número de días naturales de cobertura total. Se incluyen
+    primero todas las copias de las últimas 24 horas (máximo ocho); después,
+    una copia por día anterior hasta alcanzar esa cobertura.
+    """
+    directorio = Path(directorio).resolve()
+    ahora = ahora or datetime.now(timezone.utc)
+    if ahora.tzinfo is None:
+        raise ErrorRespaldo('La fecha de retención debe incluir zona horaria.')
+    limite = ahora.astimezone(timezone.utc).timestamp() - 24 * 60 * 60
     candidatos = []
     for ruta in directorio.glob('respaldo_*.sqlite3'):
-        datos = _metadatos(ruta, origen)
+        # Aceptar también `origen` si es el respaldo recién publicado en un
+        # destino externo; nunca excluir la copia más nueva de la retención.
+        datos = _metadatos(ruta)
         if datos:
             try:
                 verificar_copia(ruta)
             except ErrorRespaldo:
                 continue
-            candidatos.append((datos['fecha'], ruta.name, ruta))
-    for _, _, ruta in sorted(candidatos, reverse=True)[conservar:]:
+            fecha = datetime.fromisoformat(datos['fecha']).astimezone(timezone.utc)
+            candidatos.append((fecha, ruta.name, ruta))
+    candidatos.sort(reverse=True)
+    conservar_rutas = set()
+    recientes = [fila for fila in candidatos if fila[0].timestamp() >= limite]
+    conservar_rutas.update(fila[2] for fila in recientes[:8])
+    dias = {fila[0].date() for fila in recientes[:8]}
+    for fila in candidatos:
+        fecha, _, ruta = fila
+        if fecha.timestamp() >= limite:
+            continue
+        dia = fecha.date()
+        if dia not in dias and len(dias) < conservar:
+            conservar_rutas.add(ruta)
+            dias.add(dia)
+    # Por ejemplo, con BACKUP_CONSERVAR=1 y más de ocho copias en la última
+    # jornada, la copia globalmente más nueva debe sobrevivir siempre.
+    if candidatos:
+        conservar_rutas.add(candidatos[0][2])
+    origen = Path(origen).resolve()
+    for _, _, ruta in candidatos:
+        if ruta in conservar_rutas:
+            continue
         # Solo archivos gestionados, verificados y dentro del directorio resuelto.
         if ruta.resolve().parent != directorio or ruta.resolve() == origen:
             raise ErrorRespaldo('Se rechazó una ruta insegura durante la retención.')
         ruta.unlink()
         ruta.with_suffix('.json').unlink()
+        _borrar_auxiliares(ruta)
         logger.info('Retención: eliminado respaldo gestionado %s', ruta.name)
 
 
-def crear_copia(origen, directorio, conservar, *, limite_segundos=120, qr=None):
+def _copiar_externo(archivo, directorio, conservar):
+    """Copia un respaldo verificado y su manifiesto a un segundo destino."""
+    directorio = Path(directorio).resolve()
+    nombre = Path(archivo['archivo']).name
+    origen = Path(archivo['_directorio']) / nombre
+    destino = directorio / nombre
+    parcial, meta_parcial = directorio / (nombre + '.partial'), directorio / (nombre + '.json.partial')
+    try:
+        directorio.mkdir(parents=True, exist_ok=True)
+        with _bloqueo(directorio):
+            _limpiar_huerfanos(directorio)
+            if destino.exists() or destino.with_suffix('.json').exists():
+                raise ErrorRespaldo('El respaldo ya existe en el destino externo.')
+            try:
+                shutil.copyfile(origen, parcial)
+                if hash_archivo(parcial) != archivo['sha256']:
+                    raise ErrorRespaldo('La copia externa no coincide con el respaldo verificado.')
+                shutil.copyfile(origen.with_suffix('.json'), meta_parcial)
+                _publicar(parcial, destino)
+                _publicar(meta_parcial, destino.with_suffix('.json'))
+                if _metadatos(destino) is None:
+                    raise ErrorRespaldo('No se pudo verificar el respaldo en el destino externo.')
+                verificar_copia(destino)
+                _retener(directorio, conservar, destino)
+            finally:
+                parcial.unlink(missing_ok=True)
+                _borrar_auxiliares(parcial)
+                meta_parcial.unlink(missing_ok=True)
+        logger.info('Respaldo copiado al destino externo: %s', destino)
+        return ''
+    except (OSError, ErrorRespaldo):
+        logger.exception('No se pudo copiar el respaldo al destino externo')
+        return 'No se pudo copiar el respaldo al destino externo; verifica que la carpeta o unidad esté disponible.'
+
+
+def crear_copia(origen, directorio, conservar, *, limite_segundos=120, qr=None, directorio_externo=None):
     """Publica una copia consistente y luego aplica retención segura.
 
     Pasos: 1. Validar rutas/configuración. 2. Bloquear entre procesos.
         3. Copiar con API SQLite. 4. Verificar/publicar. 5. Retener y registrar.
     Lanza: ErrorRespaldo; nunca migra ni escribe en la base fuente.
     """
+    from desktop.release_gate import require_installed_path_if_production
+    require_installed_path_if_production(Path(origen).parent)
+    require_installed_path_if_production(directorio)
     # Paso 1: validar antes de abrir conexiones o crear el directorio destino.
     origen = Path(origen).resolve()
     directorio = Path(directorio).resolve()
@@ -232,6 +333,7 @@ def crear_copia(origen, directorio, conservar, *, limite_segundos=120, qr=None):
         directorio.mkdir(parents=True, exist_ok=True)
         # Paso 2: el mismo bloqueo cubre publicación y retención.
         with _bloqueo(directorio):
+            _limpiar_huerfanos(directorio)
             fecha = datetime.now(timezone.utc)
             nombre = f'respaldo_{fecha:%Y%m%d_%H%M%S}_{uuid4().hex}.sqlite3'
             final = directorio / nombre
@@ -251,6 +353,9 @@ def crear_copia(origen, directorio, conservar, *, limite_segundos=120, qr=None):
                 destino = sqlite3.connect(provisional)
                 try:
                     fuente.backup(destino, pages=256, progress=progreso, sleep=.05)
+                    modo = destino.execute('PRAGMA journal_mode=DELETE').fetchone()[0]
+                    if modo.lower() != 'delete':
+                        raise ErrorRespaldo('No se pudo preparar la copia SQLite para publicación.')
                 finally:
                     destino.close()
             finally:
@@ -290,8 +395,12 @@ def crear_copia(origen, directorio, conservar, *, limite_segundos=120, qr=None):
                 logger.exception('Respaldo creado; retención incompleta')
                 advertencia = 'Respaldo creado y verificado; no se pudo completar la retención.'
             logger.info('Respaldo verificado: %s, bytes=%s, sha256=%s', nombre, datos['tamano'], datos['sha256'])
-            return dict({k: v for k, v in datos.items() if k != 'qr'},
-                        qr_incluido='qr' in datos, advertencia=advertencia)
+            resultado = dict({k: v for k, v in datos.items() if k != 'qr'},
+                             qr_incluido='qr' in datos, advertencia=advertencia)
+            if directorio_externo:
+                aviso = _copiar_externo(dict(resultado, _directorio=directorio), directorio_externo, conservar)
+                resultado['advertencia'] = ' '.join(x for x in (advertencia, aviso) if x)
+            return resultado
     except ErrorRespaldo as error:
         logger.warning('Respaldo no completado: %s', error)
         raise
@@ -305,6 +414,7 @@ def crear_copia(origen, directorio, conservar, *, limite_segundos=120, qr=None):
                     ruta.unlink()
                 except OSError:
                     logger.warning('No se pudo retirar un archivo provisional de respaldo')
+            _borrar_auxiliares(ruta)
 
 
 def recuperar_temporal(copia, destino):

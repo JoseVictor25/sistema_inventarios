@@ -44,7 +44,7 @@
 
       // Botón quitar visible solo si hay más de 1 fila de pago
       if (btnQuitar) {
-        btnQuitar.style.display = filas.length > 1 ? "" : "none";
+        btnQuitar.classList.toggle('d-none', filas.length <= 1);
       }
 
       if (select) {
@@ -61,7 +61,7 @@
 
         // Mostrar u ocultar campo de referencia de transacción
         if (filaRef) {
-          filaRef.style.display = esEfectivo ? "none" : "";
+          filaRef.classList.toggle('d-none', esEfectivo);
         }
 
         const montoCents = centavos(inputMonto ? inputMonto.value : 0);
@@ -104,7 +104,7 @@
     const avisoInsuficiente = document.getElementById("aviso-efectivo-insuficiente");
 
     if (secEfectivo) {
-      secEfectivo.style.display = hayEfectivo ? "" : "none";
+      secEfectivo.classList.toggle('d-none', !hayEfectivo);
     }
     if (spanEfAplicado) {
       spanEfAplicado.textContent = formatoMoneda(efectivoAplicadoCents);
@@ -114,11 +114,11 @@
       const recvCents = centavos(recvInput.value);
       if (recvCents > 0 && recvCents < efectivoAplicadoCents) {
         chgSpan.textContent = "Bs 0.00";
-        if (avisoInsuficiente) avisoInsuficiente.style.display = "";
+        if (avisoInsuficiente) avisoInsuficiente.classList.remove('d-none');
       } else {
         const cambioCents = Math.max(0, recvCents - efectivoAplicadoCents);
         chgSpan.textContent = "Bs " + formatoMoneda(cambioCents);
-        if (avisoInsuficiente) avisoInsuficiente.style.display = "none";
+        if (avisoInsuficiente) avisoInsuficiente.classList.add('d-none');
       }
     }
 

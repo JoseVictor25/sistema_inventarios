@@ -1,4 +1,4 @@
-"""Inspecciona onedir y compila B3 bloqueado, exclusivamente en una salida TEMP nueva."""
+"""Inspecciona onedir y compila instaladores en una salida TEMP nueva."""
 import argparse
 import hashlib
 import json
@@ -10,6 +10,8 @@ import sys
 import tempfile
 
 RAIZ = Path(__file__).resolve().parent.parent
+if str(RAIZ) not in sys.path:
+    sys.path.insert(0, str(RAIZ))
 PRIVADOS = {'reporte_migraciones_fase1.md', 'solucion_error_terminal.md'}
 PROTEGIDOS = ['backend/datos/db.sqlite3', 'backend/.env',
               'backend/REPORTE_MIGRACIONES_FASE1.md', 'backend/SOLUCION_ERROR_TERMINAL.md']
@@ -65,6 +67,8 @@ def buscar_iscc():
 
 
 def preparar(paquete, salida):
+    from desktop.release_gate import verify_release_authorization
+    verify_release_authorization(paquete)
     archivos = inspeccionar(paquete)
     entradas, manifiesto = [], []
     for origen, relativa, huella in archivos:
@@ -79,38 +83,65 @@ def preparar(paquete, salida):
         manifiesto.append(dict(archivo=str(relativa), sha256=huella, bytes=destino.stat().st_size))
     (salida / 'archivos.iss').write_text('\n'.join(entradas), encoding='utf-8-sig')
     (salida / 'contenido.json').write_text(json.dumps(manifiesto, indent=2), encoding='utf-8')
+    verify_release_authorization(salida / 'payload')
     return manifiesto
+
+
+def comando_compilacion(iscc, salida, solo_pruebas_vm=False):
+    if solo_pruebas_vm:
+        raise ValueError('La variante VM sigue bloqueada hasta completar T1-B y B4.')
+    comando = [str(Path(iscc).resolve()), '/DVerifiedFiles=' + str(salida / 'archivos.iss'),
+               '/DBuildOutput=' + str(salida / 'salida')]
+    comando.append(str(RAIZ / 'desktop/installer/setup.iss'))
+    return comando
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--paquete', required=True, type=Path)
     parser.add_argument('--solo-verificar', action='store_true')
+    parser.add_argument('--solo-pruebas-vm', action='store_true',
+                        help='Genera una variante claramente marcada que permite probar en VM; nunca entregar.')
     parser.add_argument('--iscc', type=Path, help='Compilador Inno Setup previamente instalado por el operador.')
     args = parser.parse_args()
+    if args.solo_pruebas_vm:
+        parser.error('--solo-pruebas-vm está bloqueado hasta completar T1-B y B4.')
     if Path(sys.executable).resolve() != RAIZ / 'venv/Scripts/python.exe':
         parser.error('Utiliza venv/Scripts/python.exe.')
     antes = {p: sha(RAIZ / p) for p in PROTEGIDOS}
-    salida = Path(tempfile.mkdtemp(prefix='Inventarios_instalador_B3_'))
+    salida = Path(tempfile.mkdtemp(prefix='Inventarios_instalador_SOLO_PRUEBAS_VM_' if args.solo_pruebas_vm else 'Inventarios_instalador_B3_'))
     print('Evidencias y salida:', salida, flush=True)
     try:
-        contenido = preparar(args.paquete, salida)
-        print('Archivos inspeccionados:', len(contenido))
         if args.solo_verificar:
+            contenido = inspeccionar(args.paquete)
+            try:
+                from desktop.release_gate import verify_release_authorization
+                verify_release_authorization(args.paquete)
+                print('Artefacto autorizado y distribuible; el ejecutable no se inició.')
+            except Exception as exc:
+                print('CANDIDATO NO DISTRIBUIBLE:', exc)
+            print('Archivos inspeccionados estáticamente:', len(contenido))
             return 0
+        contenido = preparar(args.paquete, salida)
+        print('Archivos autorizados inspeccionados:', len(contenido))
         iscc = args.iscc or buscar_iscc()
         if not iscc or not iscc.is_file():
             print('ISCC.exe no encontrado. Consulta desktop/installer/README.md. No se instaló software.')
             return 2
-        comando = [str(iscc.resolve()), '/DVerifiedFiles=' + str(salida / 'archivos.iss'),
-                   '/DBuildOutput=' + str(salida / 'salida'), str(RAIZ / 'desktop/installer/setup.iss')]
+        comando = comando_compilacion(iscc, salida, args.solo_pruebas_vm)
+        from desktop.release_gate import verify_release_authorization
+        verify_release_authorization(salida / 'payload')
         with (salida / 'compilacion.txt').open('w', encoding='utf-8') as log:
             resultado = subprocess.run(comando, stdout=log, stderr=subprocess.STDOUT)
         if resultado.returncode:
             print('Error en compilación de Inno Setup (código %s). Revise %s' % (resultado.returncode, salida / 'compilacion.txt'))
             return resultado.returncode
+        # Detecta cambios ordinarios en la copia firmada durante la compilación.
+        # No sustituye un almacenamiento inmutable frente a procesos concurrentes.
+        verify_release_authorization(salida / 'payload')
         for exe in (salida / 'salida').glob('*.exe'):
-            print('Instalador BLOQUEADO B3, no ejecutado:', exe, 'SHA-256:', sha(exe))
+            etiqueta = 'SOLO PRUEBAS VM - NO ENTREGAR AL CLIENTE' if args.solo_pruebas_vm else 'BLOQUEADO B3'
+            print('Instalador ' + etiqueta + ', no ejecutado:', exe, 'SHA-256:', sha(exe))
         return 0
     finally:
         if antes != {p: sha(RAIZ / p) for p in PROTEGIDOS}:

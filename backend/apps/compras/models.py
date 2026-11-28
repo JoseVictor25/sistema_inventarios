@@ -76,6 +76,7 @@ class Compra(EntidadAuditable):
 
     class Meta:
         ordering = ["-fecha"]
+        indexes = [models.Index(fields=["fecha"], name="compra_fecha_idx")]
         constraints = [
             models.CheckConstraint(
                 condition=Q(total__gte=0),

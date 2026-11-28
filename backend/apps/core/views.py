@@ -20,11 +20,12 @@ def inicio(request):
 @require_GET
 def respaldos(request):
     try:
-        filas = services.consultar_respaldos(request.user)
+        datos = services.consultar_respaldos(request.user)
     except ErrorRespaldo as error:
         messages.error(request, str(error))
-        filas = []
-    respuesta = render(request, 'core/respaldos.html', {'respaldos': filas})
+        datos = {'filas': [], 'directorio': '', 'ultimo_verificado': None,
+                 'externo_configurado': False, 'advertencia_externa': ''}
+    respuesta = render(request, 'core/respaldos.html', dict(datos, respaldos=datos['filas']))
     respuesta['Cache-Control'] = 'private, no-store'
     return respuesta
 

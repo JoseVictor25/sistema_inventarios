@@ -1,96 +1,89 @@
-# Instalador preliminar B2
+# Instalador B3 y preparacion de B4
 
-Nombre: **Sistema de Inventarios**. Versión: **0.10.0**.
-AppId permanente: `{E3488284-3044-4D29-AB90-33D28FD02467}`.
-No cambiar AppId al actualizar la versión.
+Nombre: **Sistema de Inventarios**, version **0.10.0**. AppId permanente:
+`{E3488284-3044-4D29-AB90-33D28FD02467}`.
 
-## Estado y límite de seguridad
+## Sistemas compatibles
 
-`setup.iss` define instalación por equipo, Program Files, Windows 11 x64 nativo,
-Inicio y escritorio opcional. Conserva consola y paquete onedir del Bloque A.
-Windows 10 y ARM64 no se anuncian como compatibles en este preliminar.
+El unico sistema operativo soportado es **Windows 11 x64 (compilacion 22000 o posterior)**.
+Windows 10, Windows 7, Windows 8/8.1 y Windows ARM64 no son compatibles ni se probaran.
+En Windows 10, Setup debe mostrar en espanol que el sistema requiere Windows 11.
 
-**InitializeSetup siempre devuelve False**, también en modo silencioso. No hay
-interruptor de compilación para habilitarlo. Puede solicitar elevación por su
-manifiesto, pero no instala el programa ni prepara datos. No ejecutar en el equipo
-principal. No retirar el bloqueo antes de implementar, revisar y probar B3/B4.
+## Estados del artefacto y bloqueo
 
-Las rutas instaladas, SID del operador, ACL de ProgramData, primer inicio,
-coordinación de actualización/procesos y desinstalación operativa son B3.
-Los accesos directos previstos no reciben --datos-temporales ni --inicializar:
-el launcher actual no funciona en modo instalado, y por eso se bloquea todo Setup.
+- **Candidato:** onedir generado por `compilar_fase10.py`, con manifiesto sin firma.
+  No puede iniciar modo instalado ni preparar datos; no se compila a instalador.
+- **Autorizado:** payload inmutable cuyo manifiesto exacto tiene autorización Ed25519
+  válida, política compatible y evidencia T1-B aprobada. La clave de release y la
+  certificación T1-B aún no están provisionadas en este árbol.
+- **Distribuible:** payload autorizado aceptado por `compilar_instalador.py`; Setup
+  debe verificar el release aprobado. En el estado T1-A Setup sigue bloqueado.
 
-No se crean archivos de datos mediante [Files]/[Dirs], no se definen borrados
-adicionales ni ejecución al instalar/desinstalar. Inno registra únicamente archivos
-del programa y accesos. ProgramData, SQLite, .env y respaldos no se incluyen ni
-eliminan. No hay tareas Windows, migraciones o aplicación de ACL en B2.
+La ruta de candidato solo inspecciona o empaqueta en TEMP; no inicia EXE ni Setup.
+`--solo-pruebas-vm` está bloqueado. `InitializeSetup` retorna fallo antes de instalar.
+No se generan claves, firmas ficticias ni instaladores ejecutables en T1-A.
 
-No hay icono comercial aprobado ni términos legales. Se conserva el icono técnico
-del ejecutable; no se genera un icono ni un documento legal ficticio. Estos recursos
-deben aprobarse antes de distribuir una versión final.
+## Compilacion
 
-## Compilación reproducible
-
-Utilizar un onedir aprobado de `scripts/compilar_fase10.py`, nunca una carpeta de
-datos. Desde la raíz:
+Generar un candidato onedir con `scripts/compilar_fase10.py`. No se ejecuta el EXE.
+La autorización se firma después sobre el manifiesto de hashes del candidato; el
+payload no se reconstruye. La clave privada permanece fuera del repositorio y del
+paquete. La firma se rechaza mientras falten clave pública fijada o validación T1-B.
 
 ```powershell
 .\venv\Scripts\python.exe scripts/compilar_instalador.py --paquete "RUTA\SistemaInventarios" --solo-verificar
-.\venv\Scripts\python.exe scripts/compilar_instalador.py --paquete "RUTA\SistemaInventarios"
 ```
 
-El script copia el paquete inspeccionado a una carpeta nueva en TEMP y compara
-SHA-256 antes/después. Genera `contenido.json`, una entrada por archivo en
-`archivos.iss`, y, si está disponible ISCC, `compilacion.txt` y el instalador dentro
-de `salida`. No ejecuta ningún EXE del paquete o instalador. Salida 2 significa
-compilador ausente, no compilación exitosa. `--iscc RUTA` permite indicar un
-compilador instalado y confiable. No se necesita Python en el equipo del cliente;
-se usa el venv únicamente en construcción.
+`--solo-verificar` solo inspecciona archivos y comunica si el paquete sigue siendo
+candidato; no autoriza distribución. La compilación final exige autorización válida,
+copia el payload a TEMP y vuelve a verificar sus hashes. El instalador se compila
+desde esa copia exacta; no se reconstruyen los binarios firmados. El compilador
+rechaza `--solo-pruebas-vm` hasta cerrar T1-B/B4.
 
-La inspección rechaza enlaces, hardlinks, bases/auxiliares SQLite, .env, logs,
-respaldos, carpetas privadas y los dos informes protegidos. La lista explícita
-evita incorporar archivos añadidos al directorio fuente después de inspeccionarlo.
-Esto no es un detector universal de secretos dentro de binarios: el origen debe
-ser el paquete aprobado construido desde el proyecto, sin datos reales.
+No hay secciones `[Run]`, `[UninstallRun]` ni `[UninstallDelete]`. ProgramData se
+marca `uninsneveruninstall`. Los accesos directos de Inicio y escritorio apuntan
+directamente a `SistemaInventarios.exe` y pasan `--operador-sid`; no pasan
+`--inicializar`. En T1-A no se generan accesos directos instalables ni se permite
+el arranque congelado: launcher y settings exigen autorización válida y T1-B.
+`InitializeSetup` permanece bloqueado, incluso si se define la macro VM.
 
-## Inno Setup no instalado
+Inno Setup no se descarga ni instala mediante este script. `--iscc RUTA` permite
+indicar un compilador ya instalado.
 
-Obtener Inno Setup 6 desde su sitio oficial:
-https://jrsoftware.org/isdl.php
+## WebView2: decision pendiente
 
-El operador debe verificar procedencia/firma y autorizar e instalar la herramienta
-por separado. Este script no la descarga ni instala. Después proporcionar la ruta
-ISCC.exe o usar una ubicación habitual/PATH. La sintaxis Pascal e ISPP solo queda
-validada cuando ISCC compila correctamente; las pruebas estáticas no lo sustituyen.
+No se descarga ni incluye instalador de WebView2. El instalador registra si el
+Runtime por equipo aparece en HKLM32, pero no lo instala ni bloquea la instalacion.
+Si WebView2 falta o no puede abrirse, el launcher informa en espanol que abrira
+el navegador predeterminado y lo usa como respaldo.
 
-## WebView2
+Opciones para equipos sin Runtime, pendientes de decision antes de distribucion:
 
-Fuente oficial: https://developer.microsoft.com/microsoft-edge/webview2/
-Contrato de distribución y detección:
-https://learn.microsoft.com/microsoft-edge/webview2/concepts/distribution
+| Opcion | Ventajas | Desventajas |
+| --- | --- | --- |
+| Evergreen Bootstrapper en linea | Descarga el Runtime vigente y reduce el tamano inicial. | Requiere internet durante instalacion; la disponibilidad y el tiempo dependen de la red. |
+| Evergreen Standalone sin conexion | Se puede instalar en redes aisladas; se controla el artefacto y su verificacion. | Aumenta el paquete; requiere mantener version, procedencia, firma y hash, y decidir actualizaciones. |
+| Solo respaldo del navegador | No incorpora ni instala componentes compartidos; el launcher ya abre el navegador predeterminado. | La experiencia y descargas dependen del navegador y del perfil del usuario; requiere validar el flujo en B4. |
 
-Se prepara detección del Runtime por equipo mediante HKLM32 y valor `pv`,
-descartando valor vacío/0.0.0.0. No se considera Edge navegador como Runtime.
-El HKCU del instalador elevado puede pertenecer a otro administrador; la detección
-por identidad autorizada y la comprobación funcional quedan para B3/B4.
+No se eligio ni descargo ningun redistribuible. Para cualquier futura inclusion
+se requiere verificar procedencia oficial, firma Authenticode Microsoft, version,
+arquitectura y SHA-256. Si se elige distribuirlo, usar el paquete oficial
+Standalone x64 y registrar URL de origen/final, version, fecha y firma Microsoft;
+el hash por si solo no prueba procedencia. El Runtime compartido no se desinstala.
 
-`webview2.json` registra explícitamente la ausencia de un artefacto seleccionado.
-No hay versión/hash reales todavía y no se incluye ni ejecuta el redistribuible.
-Antes de incorporarlo, registrar URL oficial y URL final, versión del archivo,
-SHA-256, fecha y firma Authenticode válida de Microsoft. Comprobar que sea el
-Standalone x64, no el Bootstrapper dependiente de internet. El hash por sí solo
-no acredita procedencia. Si falla la firma, procedencia, arquitectura o integridad,
-no empaquetar. No desinstalar este Runtime compartido con la aplicación.
+La inspeccion no detecta secretos embebidos en binarios: el origen debe ser un
+onedir aprobado, construido sin datos reales. ISCC ausente produce salida 2 y no
+cuenta como compilacion; las pruebas estaticas no sustituyen compilar con Inno.
+Inno Setup no se descarga ni instala por este script. Verificar procedencia y
+firma antes de instalar ISCC. No hay icono comercial ni terminos legales
+aprobados para una version final.
 
-## Verificación y distribución
+El instalador normal y la variante VM siguen bloqueados. El modo productivo no
+puede considerarse preparado por una DACL correcta: requiere que T1-B valide el
+procedimiento de propietario BA y que la autorización firmada coincida con el
+manifiesto y el ejecutable exactos.
 
-```powershell
-.\venv\Scripts\python.exe -m unittest discover -s scripts/tests -p test_compilar_instalador.py -v
-```
+## Evidencia y pruebas
 
-No distribuir a usuarios finales. Un futuro EXE B2 se identifica como
-`Instalador_Sistema_Inventarios_0.10.0_B2_BLOQUEADO.exe`; compartirlo únicamente para
-revisión técnica con su manifiesto y hash, nunca como instalador funcional.
-Antes de distribución final: B3, B4 en VM limpia, términos/icono aprobados, política
-de firma y pruebas de conservación de datos. No se garantiza atomicidad de una
-actualización mediante las opciones de Inno presentes en este esqueleto.
+El plan manual esta en `docs/FASE_10_B4_PLAN_PRUEBAS.md`. Capturas, logs y otros
+resultados de la VM se guardan fuera del repositorio.

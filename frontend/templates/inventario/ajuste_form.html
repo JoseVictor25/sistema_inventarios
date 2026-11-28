@@ -5,7 +5,7 @@
 {% block contenido %}
 
 <div class="mb-3">
-  <h1 class="h3 fw-bold mb-1">Registrar ajuste o merma</h1>
+  <h1 class="titulo-pagina h3 fw-bold mb-1">Registrar ajuste o merma</h1>
   <p class="text-muted small mb-0">
     Corrección de existencias por diferencias de inventario físico
     o baja de productos por merma.
@@ -131,9 +131,8 @@
 
           {# INFORMACIÓN DINÁMICA DEL LOTE #}
           <div
-            class="card bg-light border p-3 mb-3"
+            class="card bg-light border p-3 mb-3{% if not lote_seleccionado %} d-none{% endif %}"
             id="card-detalle-lote"
-            style="{% if not lote_seleccionado %}display: none;{% endif %}"
             data-inicial="{{ lote_seleccionado.cantidad_inicial|default:'0' }}"
             data-actual="{{ lote_seleccionado.cantidad_actual|default:'0' }}"
             data-codigo-lote="{{ lote_seleccionado.codigo_lote|default:'' }}"
@@ -227,9 +226,8 @@
 
           {# ALERTA DE LÍMITES #}
           <div
-            class="alert alert-warning py-2 px-3 small mb-3"
+            class="alert alert-warning py-2 px-3 small mb-3 d-none"
             id="alerta-limite"
-            style="display: none;"
             role="alert"
           >
             <div id="alerta-limite-texto"></div>
@@ -598,14 +596,14 @@
     }
 
     if (!datos || datos.inicial <= 0) {
-      cardDetalle.style.display = "none";
+      cardDetalle.classList.add('d-none');
       if (alertaLimite) {
-        alertaLimite.style.display = "none";
+        alertaLimite.classList.add('d-none');
       }
       return;
     }
 
-    cardDetalle.style.display = "";
+    cardDetalle.classList.remove('d-none');
 
     cardDetalle.setAttribute("data-inicial", datos.inicial);
     cardDetalle.setAttribute("data-actual", datos.actual);
@@ -651,9 +649,9 @@
     const datos = obtenerDatosLoteActual();
 
     if (!datos || !cardDetalle ||
-        cardDetalle.style.display === "none") {
+        cardDetalle.classList.contains('d-none')) {
       if (alertaLimite) {
-        alertaLimite.style.display = "none";
+        alertaLimite.classList.add('d-none');
       }
       if (btnRegistrar && !enviando) {
         btnRegistrar.disabled = false;
@@ -716,7 +714,7 @@
     }
 
     if (alertaLimite) {
-      alertaLimite.style.display = errorMsg ? "" : "none";
+      alertaLimite.classList.toggle('d-none', !errorMsg);
     }
 
     if (alertaLimiteTexto) {

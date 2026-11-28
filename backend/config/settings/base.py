@@ -5,6 +5,8 @@ rutas, puertos, reglas del negocio) se leen del archivo .env. Ver
 backend/.env.example para la lista completa.
 """
 import os
+import sys
+import tempfile
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -68,8 +70,21 @@ ALLOWED_HOSTS = env_lista("ALLOWED_HOSTS", "localhost,127.0.0.1")
 
 # --- Rutas de datos ----------------------------------------------------------
 DATA_DIR = Path(env_str("DATA_DIR", BASE_DIR / "datos"))
+_program_data = Path(os.environ.get("ProgramData", "C:/ProgramData")) / "SistemaInventarios"
+_installed_data = os.path.normcase(os.path.abspath(DATA_DIR)) == os.path.normcase(os.path.abspath(_program_data))
+if _installed_data or getattr(sys, "frozen", False):
+    from desktop.release_gate import require_frozen_production
+    require_frozen_production(Path(sys.executable).resolve().parent)
 DB_PATH = Path(env_str("DB_PATH", DATA_DIR / "db.sqlite3"))
+# Una base de pruebas en archivo permite que SQLite aplique busy_timeout en
+# concurrencia WAL; Django la elimina al finalizar (también sus clones paralelos).
+TEST_DB_PATH = Path(tempfile.gettempdir()) / f"sistema_inventarios_test_{os.getpid()}.sqlite3"
+_test_db_resuelto = TEST_DB_PATH.resolve()
+_data_dir_resuelto = DATA_DIR.resolve()
+if _test_db_resuelto == DB_PATH.resolve() or _test_db_resuelto.is_relative_to(_data_dir_resuelto):
+    raise RuntimeError("La base de pruebas debe estar fuera de la carpeta de datos del programa.")
 BACKUP_DIR = Path(env_str("BACKUP_DIR", DATA_DIR / "respaldos"))
+BACKUP_DIR_EXTERNO = Path(os.environ["BACKUP_DIR_EXTERNO"]) if os.environ.get("BACKUP_DIR_EXTERNO", "").strip() else None
 LOG_DIR = Path(env_str("LOG_DIR", DATA_DIR / "logs"))
 for carpeta in (DATA_DIR, BACKUP_DIR, LOG_DIR):
     carpeta.mkdir(parents=True, exist_ok=True)
@@ -80,6 +95,7 @@ MONEDA_SIMBOLO = env_str("MONEDA_SIMBOLO", "Bs")
 DIAS_ALERTA_VENCIMIENTO = env_int("DIAS_ALERTA_VENCIMIENTO", 30, minimo=0)
 STOCK_MINIMO_DEFECTO = env_int("STOCK_MINIMO_DEFECTO", 5, minimo=0)
 BACKUP_CONSERVAR = env_int("BACKUP_CONSERVAR", 30, minimo=1)
+BACKUP_HORAS_MIN_CIERRE = env_int("BACKUP_HORAS_MIN_CIERRE", 6, minimo=1)
 
 # --- Aplicaciones ------------------------------------------------------------
 INSTALLED_APPS = [
@@ -140,12 +156,15 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": DB_PATH,
+        "TEST": {"NAME": TEST_DB_PATH},
         "OPTIONS": {
             # Esperar hasta 5 segundos antes de lanzar OperationalError por lock
             # de base de datos ocupada. Necesario para que operaciones concurrentes
             # (ej. cambios de precio simultáneos) sean serializadas correctamente
             # en lugar de fallar instantáneamente con busy_timeout=0 (valor por defecto).
             "timeout": 5,
+            "transaction_mode": "IMMEDIATE",
+            "init_command": "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL;",
         },
     }
 }

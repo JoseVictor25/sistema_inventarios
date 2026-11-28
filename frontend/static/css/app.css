@@ -1,4 +1,4 @@
-/* Estilos propios. Al integrar la plantilla (Bootstrap), conserva aquí solo lo tuyo. */
+/* Estilos propios de la interfaz de tienda. */
 
 body { font-family: system-ui, "Segoe UI", Arial, sans-serif; margin: 0; color: #222; background: #f6f7f9; }
 
@@ -30,17 +30,41 @@ body { font-family: system-ui, "Segoe UI", Arial, sans-serif; margin: 0; color: 
 .menu-enlaces .nav-link.active .icono-ui { color: #00a36e; }
 .interfaz-tienda .card { border: 1px solid #edf2fa; border-radius: 18px; box-shadow: 0 6px 24px #254d8510; }
 .interfaz-tienda .btn { border-radius: 9px; }
-.titulo-pagina { font-size: clamp(1.35rem, 2vw, 1.85rem); font-weight: 750; }
+.titulo-pagina { font-size: clamp(1.35rem, 2vw, 1.85rem); font-weight: 750; margin-bottom: 1rem; }
 .indicadores { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,210px),1fr)); gap: 1.1rem; }
-.tarjeta-indicador { height: 100%; padding: 1.25rem; background: linear-gradient(130deg,#2ec978,#20b7a5); color: #fff; }
+.tarjeta-indicador { height: 100%; padding: 1.25rem; background: linear-gradient(130deg,#0f7b4f,#0b6b5c); color: #fff; }
 .tarjeta-indicador h2 { font-size: 1rem; margin: 1rem 0 .5rem; }
 .tarjeta-indicador p { margin-bottom: .5rem; }
 .tarjeta-indicador .fs-3 { font-weight: 750; }
 .tarjeta-indicador a { color: white; text-underline-offset: 3px; margin-top: auto; }
-.indicador-caja { background: linear-gradient(130deg,#ff8d30,#eab332); }
-.indicador-alerta { background: linear-gradient(130deg,#f5657c,#db3a90); }
-.indicador-alerta.alerta-2 { background: linear-gradient(130deg,#bd840c,#df9c13); }
-.indicador-alerta.alerta-3 { background: linear-gradient(130deg,#e84f66,#c93268); }
+.indicador-caja { background: linear-gradient(130deg,#b45309,#9a4a07); }
+.indicador-alerta { background: linear-gradient(130deg,#c62a47,#a8236a); }
+.indicador-alerta.alerta-2 { background: linear-gradient(130deg,#92400e,#7c350b); }
+.indicador-alerta.alerta-3 { background: linear-gradient(130deg,#b8283f,#9f2465); }
+.subtitulo-pagina { color: var(--bs-secondary-color); margin-bottom: 0; }
+.punto-estado { display: inline-block; width: .5rem; height: .5rem; border-radius: 50%; background: currentColor; vertical-align: middle; }
+.control-ancho-total { max-width: 100%; }
+.col-ancho-50 { width: 50px; }
+.control-ancho-65 { width: 65px; }
+.col-ancho-90 { width: 90px; }
+.col-ancho-100 { width: 100px; }
+.col-ancho-110 { width: 110px; }
+.col-ancho-120 { width: 120px; }
+.col-ancho-130 { width: 130px; }
+.col-ancho-140 { width: 140px; }
+.col-ancho-150 { width: 150px; }
+.col-ancho-160 { width: 160px; }
+.col-min-220 { min-width: 220px; }
+.col-min-100-ancho-120 { min-width: 100px; width: 120px; }
+.col-min-120-ancho-140 { min-width: 120px; width: 140px; }
+.col-min-130-ancho-150 { min-width: 130px; width: 150px; }
+.col-min-110-ancho-130 { min-width: 110px; width: 130px; }
+.texto-max-250 { max-width: 250px; }
+.tarjeta-max-620 { max-width: 620px; }
+.texto-compacto { font-size: .78rem; }
+.texto-rompible { overflow-wrap: anywhere; }
+.imagen-qr { width: 100%; height: 55vh; object-fit: contain; }
+.cursor-puntero { cursor: pointer; }
 .icono-indicador { display: grid; place-items: center; width: 46px; height: 46px; background: #ffffff30; border-radius: 13px; }
 .accesos-rapidos { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,210px),1fr)); gap: 1rem; margin-top: 1rem; }
 .accesos-rapidos .btn { text-align: left; padding: 1.25rem; border: 1px solid #e6eefb; background: #fff; color: #24436c; box-shadow: 0 3px 12px #254d8509; }
@@ -83,10 +107,6 @@ body { font-family: system-ui, "Segoe UI", Arial, sans-serif; margin: 0; color: 
 .login {
   max-width: 340px; margin: 60px auto; background: #fff;
   padding: 20px; border-radius: 8px; border: 1px solid #ddd;
-}
-.login input:not([type="hidden"]) {
-  display: block; width: 100%; box-sizing: border-box;
-  padding: .6rem; border: 1px solid #89939e; border-radius: .375rem;
 }
 .login label  { display: block; margin-top: 1rem; margin-bottom: .4rem; }
 .login button { margin-top: 1rem; padding: .6rem 1rem; cursor: pointer; }

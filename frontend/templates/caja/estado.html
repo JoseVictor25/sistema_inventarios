@@ -2,13 +2,13 @@
 {% block titulo %}Caja{% endblock %}
 {% block contenido %}
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-  <h1 class="h3 mb-0">Caja{% if caja %} · Turno #{{ caja.pk }}{% endif %}</h1>
+  <h1 class="titulo-pagina h3 mb-0">Caja{% if caja %} · Turno #{{ caja.pk }}{% endif %}</h1>
   {% if 'ver_historial_caja' in permisos %}<a href="{% url 'caja:historial' %}" class="btn btn-outline-secondary">Historial de cierres</a>{% endif %}
 </div>
 {% if cajas_abiertas %}
 <form method="get" action="{% url 'caja:estado' %}" class="d-flex flex-wrap gap-2 mb-3">
   <label for="turno-consulta" class="align-self-center">Consultar turno abierto</label>
-  <select name="caja_id" id="turno-consulta" class="form-select w-auto" style="max-width:100%">
+  <select name="caja_id" id="turno-consulta" class="control-ancho-total form-select w-auto">
     {% for abierta in cajas_abiertas %}<option value="{{ abierta.pk }}" {% if abierta.pk == caja.pk %}selected{% endif %}>#{{ abierta.pk }} · {{ abierta.usuario }} · {{ abierta.turno|default:'Sin nombre' }}</option>{% endfor %}
   </select><button class="btn btn-outline-primary">Consultar</button>
 </form>
@@ -28,7 +28,7 @@
   <div class="col-12 col-lg-4"><div class="card border-warning"><div class="card-header"><h2 class="h5 mb-0">Cerrar turno #{{ caja.pk }}</h2></div><div class="card-body">
     {% if not propia %}<div class="alert alert-warning">Cierre excepcional de la caja de {{ caja.usuario }}. Tu identidad quedará registrada.</div>{% endif %}
     <p>Cuenta el efectivo físico. El cierre es definitivo.</p>
-    <form method="post" action="{% url 'caja:cerrar' %}">{% csrf_token %}{{ form_cerrar.as_p }}<button class="btn btn-warning">Cerrar caja definitivamente</button></form>
+    <form method="post" action="{% url 'caja:cerrar' %}" data-confirmar data-confirmar-titulo="Cerrar caja definitivamente" data-confirmar-mensaje="Contaste Bs {monto_contado} en efectivo. Después del cierre no podrás registrar más movimientos en este turno." data-confirmar-boton="Cerrar caja definitivamente" data-confirmar-variante="warning">{% csrf_token %}{{ form_cerrar.as_p }}<button class="btn btn-warning">Cerrar caja definitivamente</button></form>
   </div></div></div>
 </div>
 {% else %}
