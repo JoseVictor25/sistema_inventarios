@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 import sys
 import tempfile
+import uuid
 
 SID_SYSTEM = "S-1-5-18"
 SID_BA = "S-1-5-32-544"
@@ -43,8 +44,24 @@ FILE_SHARE_READ = 0x00000001
 FILE_SHARE_WRITE = 0x00000002
 OPEN_EXISTING = 3
 FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
+FILE_ATTRIBUTE_DIRECTORY = 0x00000010
 FILE_ATTRIBUTE_REPARSE_POINT = 0x00000400
 FILE_INFO_BY_HANDLE_CLASS_FILE_ATTRIBUTE_TAG_INFO = 9
+STATUS_OBJECT_NAME_COLLISION = 0xC0000035
+FILE_DIRECTORY_FILE = 0x00000001
+FILE_SYNCHRONOUS_IO_NONALERT = 0x00000020
+FILE_OPEN_REPARSE_POINT = 0x00200000
+FILE_OPEN = 1
+FILE_CREATE = 2
+FILE_CREATED = 2
+OBJ_CASE_INSENSITIVE = 0x00000040
+FILE_READ_ATTRIBUTES = 0x00000080
+FILE_ATTRIBUTE_NORMAL = 0x00000080
+FILE_TRAVERSE = 0x00000020
+FILE_ADD_SUBDIRECTORY = 0x00000004
+FILE_LIST_DIRECTORY = 0x00000001
+DELETE_ACCESS = 0x00010000
+SYNCHRONIZE_ACCESS = 0x00100000
 SE_FILE_OBJECT = 1
 OWNER_SECURITY_INFORMATION = 0x00000001
 DACL_SECURITY_INFORMATION = 0x00000004
@@ -55,6 +72,14 @@ SECURITY_DESCRIPTOR_REVISION = 1
 
 class PreparacionOwnerError(RuntimeError):
     """La carpeta no pudo prepararse y verificarse de forma completa."""
+
+
+class NtRelativeError(PreparacionOwnerError):
+    """Fallo de NtCreateFile relativo; conserva el NTSTATUS para clasificarlo."""
+
+    def __init__(self, message, status):
+        super().__init__(message)
+        self.status = status
 
 
 @dataclass(frozen=True)
@@ -110,6 +135,26 @@ class FILE_ATTRIBUTE_TAG_INFO(ctypes.Structure):
     _fields_ = [("FileAttributes", ctypes.c_uint32), ("ReparseTag", ctypes.c_uint32)]
 
 
+class UNICODE_STRING(ctypes.Structure):
+    _fields_ = [("Length", ctypes.c_ushort), ("MaximumLength", ctypes.c_ushort),
+                ("Buffer", wintypes.LPWSTR)]
+
+
+class OBJECT_ATTRIBUTES(ctypes.Structure):
+    _fields_ = [("Length", ctypes.c_ulong), ("RootDirectory", ctypes.c_void_p),
+                ("ObjectName", ctypes.POINTER(UNICODE_STRING)),
+                ("Attributes", ctypes.c_ulong), ("SecurityDescriptor", ctypes.c_void_p),
+                ("SecurityQualityOfService", ctypes.c_void_p)]
+
+
+class IO_STATUS_BLOCK(ctypes.Structure):
+    _fields_ = [("Status", ctypes.c_void_p), ("Information", ctypes.c_size_t)]
+
+
+class FILE_DISPOSITION_INFO(ctypes.Structure):
+    _fields_ = [("DeleteFile", ctypes.c_ubyte)]
+
+
 class Win32SecurityApi:
     """WinAPI tipada; instanciar solo en Windows."""
 
@@ -118,6 +163,7 @@ class Win32SecurityApi:
             raise OSError("La preparación T1-B solo está disponible en Windows.")
         self.kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
         self.advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
+        self.ntdll = ctypes.WinDLL("ntdll")
         self._declare_prototypes()
 
     def _declare_prototypes(self):
@@ -139,6 +185,14 @@ class Win32SecurityApi:
         k.GetFinalPathNameByHandleW.argtypes = [H, wintypes.LPWSTR, D, D]
         k.GetFinalPathNameByHandleW.restype = D
         k.LocalFree.argtypes, k.LocalFree.restype = [H], H
+        k.SetFileInformationByHandle.argtypes = [H, D, H, D]
+        k.SetFileInformationByHandle.restype = B
+        self.ntdll.NtCreateFile.argtypes = [ctypes.POINTER(ctypes.c_void_p), ctypes.c_ulong,
+                                            ctypes.POINTER(OBJECT_ATTRIBUTES),
+                                            ctypes.POINTER(IO_STATUS_BLOCK), ctypes.c_void_p,
+                                            ctypes.c_ulong, ctypes.c_ulong, ctypes.c_ulong,
+                                            ctypes.c_ulong, ctypes.c_void_p, ctypes.c_ulong]
+        self.ntdll.NtCreateFile.restype = ctypes.c_long
 
         a.OpenThreadToken.argtypes = [H, D, B, P(H)]
         a.OpenThreadToken.restype = B
@@ -171,6 +225,134 @@ class Win32SecurityApi:
         a.IsValidSid.argtypes, a.IsValidSid.restype = [H], B
         a.GetLengthSid.argtypes, a.GetLengthSid.restype = [H], D
         a.EqualSid.argtypes, a.EqualSid.restype = [H, H], B
+
+    def _nt_relative(self, parent, name, *, create=False, security_descriptor=None,
+                     desired_access=None):
+        """Abre/crea solo un hijo directo, relativo a un handle retenido."""
+        if not name or name in {".", ".."} or any(ch in name for ch in "\\/:"):
+            raise PreparacionOwnerError("Nombre hijo no válido para apertura relativa.")
+        buf = ctypes.create_unicode_buffer(name)
+        us = UNICODE_STRING(len(name) * 2, len(name) * 2, ctypes.cast(buf, wintypes.LPWSTR))
+        oa = OBJECT_ATTRIBUTES(ctypes.sizeof(OBJECT_ATTRIBUTES), parent,
+                               ctypes.pointer(us), OBJ_CASE_INSENSITIVE, security_descriptor, None)
+        iosb = IO_STATUS_BLOCK()
+        out = ctypes.c_void_p()
+        access = desired_access if desired_access is not None else (
+            SYNCHRONIZE_ACCESS | 0x00020000 | 0x00080000 | FILE_READ_ATTRIBUTES
+            | FILE_TRAVERSE | FILE_ADD_SUBDIRECTORY | FILE_LIST_DIRECTORY | DELETE_ACCESS)
+        share = FILE_SHARE_READ | FILE_SHARE_WRITE  # sin FILE_SHARE_DELETE: impide sustituir antecesores
+        disposition = FILE_CREATE if create else FILE_OPEN
+        options = FILE_DIRECTORY_FILE | FILE_OPEN_REPARSE_POINT
+        status = self.ntdll.NtCreateFile(
+            ctypes.byref(out), access, ctypes.byref(oa), ctypes.byref(iosb), None,
+            FILE_ATTRIBUTE_NORMAL, share, disposition, options, None, 0)
+        if status < 0:
+            raise NtRelativeError(
+                f"NtCreateFile relativo para {name!r} falló (NTSTATUS 0x{status & 0xffffffff:08x}).",
+                status)
+        try:
+            self.verify_handle_not_reparse(out)
+            return out, bool(create and iosb.Information == FILE_CREATED)
+        except Exception as exc:
+            residue = None
+            if create:
+                try:
+                    self.delete_directory_handle(out)
+                except Exception as cleanup_exc:
+                    residue = f"; posible residuo '{name}': {cleanup_exc}"
+            try:
+                self.close_handle(out)
+            except Exception as close_exc:
+                residue = f"{residue or ''}; fallo al cerrar handle: {close_exc}"
+            raise PreparacionOwnerError(f"No se verificó el hijo relativo: {exc}{residue or ''}") from exc
+
+    @contextmanager
+    def open_directory_chain(self, path):
+        """Abre la cadena desde la raíz del volumen, sin resolver componentes por nombre absoluto."""
+        target = Path(path)
+        if not target.is_absolute() or not target.drive or str(target).startswith("\\\\"):
+            raise PreparacionOwnerError("La ruta segura debe estar en un volumen local con letra.")
+        drive_root = "\\\\?\\" + target.drive + "\\"
+        root = self.kernel32.CreateFileW(drive_root,
+                                         FILE_READ_ATTRIBUTES | FILE_TRAVERSE | FILE_LIST_DIRECTORY,
+                                         FILE_SHARE_READ | FILE_SHARE_WRITE, None,
+                                         OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | 0x00200000, None)
+        if not root or root == ctypes.c_void_p(-1).value:
+            raise PreparacionOwnerError(f"No se pudo fijar raíz de volumen (WinError {ctypes.get_last_error()}).")
+        handles = [root]
+        try:
+            self.verify_handle_not_reparse(root)
+            current = root
+            for component in target.parts[1:]:
+                if component in {"", ".", ".."}:
+                    raise PreparacionOwnerError("TEMP contiene componente ambiguo.")
+                is_target = component == target.parts[-1]
+                access = (FILE_READ_ATTRIBUTES | FILE_TRAVERSE | FILE_LIST_DIRECTORY
+                          | (FILE_ADD_SUBDIRECTORY if is_target else 0))
+                child, _ = self._nt_relative(current, component, desired_access=access)
+                handles.append(child)
+                current = child
+            yield current
+        finally:
+            for handle in reversed(handles):
+                self.kernel32.CloseHandle(handle)
+
+    @contextmanager
+    def open_parent_chain(self, path):
+        """Fija el padre desde la raíz del volumen y entrega (handle, nombre final).
+
+        El hijo debe crearse o abrirse después de forma relativa a este handle.
+        No se vuelve a resolver el nombre absoluto del padre.
+        """
+        target = Path(path)
+        if not target.is_absolute() or not target.drive or str(target).startswith("\\\\"):
+            raise PreparacionOwnerError("La ruta segura debe estar en un volumen local con letra.")
+        if target == target.parent:
+            raise PreparacionOwnerError("No se admite la raíz de una unidad como destino.")
+        name = target.name
+        if not name or name in {".", ".."} or any(ch in name for ch in "\\/:"):
+            raise PreparacionOwnerError("Nombre final no válido para apertura relativa.")
+        with self.open_directory_chain(target.parent) as parent_handle:
+            yield parent_handle, name
+
+    def create_child_directory(self, parent_handle, name, sid_operator=None):
+        if sid_operator is None:
+            return self._nt_relative(parent_handle, name, create=True)
+        with self._descriptor(sid_operator) as descriptor:
+            return self._nt_relative(parent_handle, name, create=True,
+                                     security_descriptor=descriptor)
+
+    def create_or_open_child_directory(self, parent_handle, name, sid_operator=None):
+        """Crea el hijo con la DACL T1 si no existe; si existe, solo lo abre.
+
+        Nunca aplica el descriptor a un objeto preexistente. La colisión se
+        resuelve con una apertura relativa y la verificación posterior decide
+        si el objeto preexistente cumple la política exacta.
+        """
+        try:
+            if sid_operator is None:
+                return self._nt_relative(parent_handle, name, create=True)
+            with self._descriptor(sid_operator) as descriptor:
+                return self._nt_relative(parent_handle, name, create=True,
+                                         security_descriptor=descriptor)
+        except NtRelativeError as exc:
+            if (exc.status & 0xFFFFFFFF) != STATUS_OBJECT_NAME_COLLISION:
+                raise
+            return self._nt_relative(parent_handle, name, create=False)[0], False
+
+    def open_child_directory(self, parent_handle, name):
+        return self._nt_relative(parent_handle, name, create=False)[0]
+
+    def delete_directory_handle(self, handle):
+        info = FILE_DISPOSITION_INFO(1)
+        if not self.kernel32.SetFileInformationByHandle(
+                handle, 4, ctypes.byref(info), ctypes.sizeof(info)):
+            raise PreparacionOwnerError(
+                f"No se pudo eliminar directorio temporal por handle (WinError {ctypes.get_last_error()}).")
+
+    def close_handle(self, handle):
+        if not self.kernel32.CloseHandle(handle):
+            raise PreparacionOwnerError(f"CloseHandle falló (WinError {ctypes.get_last_error()}).")
 
     @staticmethod
     def _winerror(code=None):
@@ -456,6 +638,35 @@ class Win32SecurityApi:
         finally:
             self.kernel32.LocalFree(ba)
 
+    def verify_handle_not_reparse(self, handle):
+        """Comprueba por handle el objeto antes de cambiar su owner."""
+        tag_info = FILE_ATTRIBUTE_TAG_INFO()
+        if not self.kernel32.GetFileInformationByHandleEx(
+                handle, FILE_INFO_BY_HANDLE_CLASS_FILE_ATTRIBUTE_TAG_INFO,
+                ctypes.byref(tag_info), ctypes.sizeof(tag_info)):
+            raise PreparacionOwnerError(
+                f"No se pudieron consultar atributos del handle (WinError {ctypes.get_last_error()}).")
+        if tag_info.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT:
+            raise PreparacionOwnerError("El objeto abierto es un reparse point.")
+
+    def verify_handle_is_directory(self, handle):
+        """Exige que el handle sea un directorio real, no un archivo."""
+        tag_info = FILE_ATTRIBUTE_TAG_INFO()
+        if not self.kernel32.GetFileInformationByHandleEx(
+                handle, FILE_INFO_BY_HANDLE_CLASS_FILE_ATTRIBUTE_TAG_INFO,
+                ctypes.byref(tag_info), ctypes.sizeof(tag_info)):
+            raise PreparacionOwnerError(
+                f"No se pudieron consultar atributos del handle (WinError {ctypes.get_last_error()}).")
+        if not (tag_info.FileAttributes & FILE_ATTRIBUTE_DIRECTORY):
+            raise PreparacionOwnerError("El objeto abierto no es un directorio.")
+
+    def verify_handle_target(self, handle, expected_path=None):
+        """Verifica tipo, reparse y ruta final antes de aplicar seguridad."""
+        self.verify_handle_not_reparse(handle)
+        self.verify_handle_is_directory(handle)
+        if expected_path is not None:
+            self._verify_final_path(handle, expected_path)
+
     def verify_handle(self, handle, sid_operator, expected_path=None):
         owner = ctypes.c_void_p()
         dacl = ctypes.c_void_p()
@@ -537,16 +748,7 @@ class Win32SecurityApi:
                     raise PreparacionOwnerError("El owner observado no es BUILTIN\\Administradores.")
             finally:
                 self.kernel32.LocalFree(ba)
-            tag_info = FILE_ATTRIBUTE_TAG_INFO()
-            if not self.kernel32.GetFileInformationByHandleEx(
-                    handle, FILE_INFO_BY_HANDLE_CLASS_FILE_ATTRIBUTE_TAG_INFO,
-                    ctypes.byref(tag_info), ctypes.sizeof(tag_info)):
-                raise PreparacionOwnerError(
-                    f"No se pudieron consultar atributos del handle (WinError {ctypes.get_last_error()}).")
-            if tag_info.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT:
-                raise PreparacionOwnerError("El objeto abierto es un reparse point.")
-            if expected_path is not None:
-                self._verify_final_path(handle, expected_path)
+            self.verify_handle_target(handle, expected_path)
             return VerificacionDirectorio(SID_BA, True)
         finally:
             if descriptor:
@@ -569,7 +771,8 @@ class Win32SecurityApi:
 
 def _path_is_under(path, parent):
     try:
-        Path(path).resolve(strict=False).relative_to(Path(parent).resolve(strict=False))
+        Path(os.path.abspath(os.path.normpath(str(path)))).relative_to(
+            Path(os.path.abspath(os.path.normpath(str(parent)))))
         return True
     except (ValueError, OSError, RuntimeError):
         return False
@@ -609,9 +812,11 @@ def _validate_scope(path, *, n1_temp_root=None):
                 os.path.abspath(os.path.normpath(str(expected)))):
             raise PreparacionOwnerError("El ejecutable congelado solo admite ProgramData\\SistemaInventarios.")
     elif (n1_temp_root is None
-          or Path(n1_temp_root).resolve(strict=False) != Path(tempfile.gettempdir()).resolve(strict=False)
-          or Path(target).resolve(strict=False) == Path(tempfile.gettempdir()).resolve(strict=False)
-          or not _path_is_under(target, tempfile.gettempdir())):
+          or os.path.normcase(os.path.abspath(os.path.normpath(str(n1_temp_root)))) !=
+          os.path.normcase(os.path.abspath(os.path.normpath(tempfile.gettempdir())))
+          or os.path.normcase(os.path.abspath(os.path.normpath(str(target)))) ==
+          os.path.normcase(os.path.abspath(os.path.normpath(tempfile.gettempdir())))
+          or not _path_is_under(target, n1_temp_root)):
         raise PreparacionOwnerError("En desarrollo, el núcleo solo admite la raíz TEMP autorizada por el arnés N1.")
     if target == target.parent:
         raise PreparacionOwnerError("No se admite la raíz de una unidad.")
@@ -626,8 +831,10 @@ def _validate_scope(path, *, n1_temp_root=None):
 def _prepare_directory_b(path, sid_operator, *, api=None, n1_temp_root=None):
     """Núcleo común privado. En source solo admite TEMP; frozen, solo ruta fija.
 
-    No borra ni repara objetos existentes. Un objeto preexistente debe superar
-    owner y DACL exactos para ser reutilizado.
+    Fija el padre desde la raíz del volumen y crea/abre el hijo de forma
+    relativa a ese handle. Nunca resuelve el destino por nombre después de la
+    validación. Un objeto preexistente solo se abre y se verifica; nunca se
+    adopta ni se le aplica la DACL de creación.
     """
     target = _validate_scope(path, n1_temp_root=n1_temp_root)
     if getattr(sys, "frozen", False):
@@ -640,16 +847,50 @@ def _prepare_directory_b(path, sid_operator, *, api=None, n1_temp_root=None):
     api = api or Win32SecurityApi()
     with api.effective_token() as token:
         api.owner_assignment_available(token)
-        created = api.create_directory_protected(target, sid_operator)
-        with api.open_directory(target) as handle:
-            if created:
-                with api.restore_privilege_temporarily(token):
-                    api.set_owner_ba(handle)
-            result = api.verify_handle(handle, sid_operator, target)
+        with api.open_parent_chain(target) as (parent_handle, name):
+            handle = None
+            created = False
+            try:
+                handle, created = api.create_or_open_child_directory(
+                    parent_handle, name, sid_operator)
+                # Identidad, tipo y ruta final se comprueban antes de tocar
+                # owner o DACL. El handle ya está fijado al objeto relativo.
+                api.verify_handle_target(handle, target)
+                if created:
+                    with api.restore_privilege_temporarily(token):
+                        api.set_owner_ba(handle)
+                result = api.verify_handle(handle, sid_operator, target)
+            except Exception as exc:
+                residue = None
+                if created and handle is not None:
+                    try:
+                        api.delete_directory_handle(handle)
+                    except Exception as cleanup_exc:
+                        residue = f"; posible residuo en {target}: {cleanup_exc}"
+                if residue:
+                    raise PreparacionOwnerError(f"{exc}{residue}") from exc
+                raise
+            finally:
+                if handle is not None:
+                    api.close_handle(handle)
     return {"path": str(target), "created": created,
             "owner_sid": result.owner_sid,
             "dacl_exact_and_protected": result.dacl_exacta_y_protegida,
             "parent_access_assessed": False,
+            "production_prepared": False}
+
+
+def _prepare_open_directory_b(handle, created, sid_operator, *, api):
+    """Prepara un hijo creado/abierto desde el handle fijado de la raíz N1."""
+    api.verify_handle_target(handle, None)
+    with api.effective_token() as token:
+        api.owner_assignment_available(token)
+        if created:
+            with api.restore_privilege_temporarily(token):
+                api.set_owner_ba(handle)
+        result = api.verify_handle(handle, sid_operator)
+    return {"created": created, "owner_sid": result.owner_sid,
+            "dacl_exact_and_protected": result.dacl_exacta_y_protegida,
             "production_prepared": False}
 
 

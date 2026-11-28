@@ -145,15 +145,22 @@ def _is_reparse_stat(info):
 
 
 def _reject_reparse_components(path):
-    """Reject reparse points in existing path components without creating them."""
-    absolute = Path(os.path.abspath(os.path.normpath(str(path))))
+    """Valida la ruta léxica original; rechaza cada componente existente reparse."""
+    absolute = Path(path)
+    if not absolute.is_absolute():
+        absolute = Path.cwd() / absolute
+    if ".." in absolute.parts:
+        raise ReleaseGateError("La ruta contiene '..'; debe normalizarse antes de validarla.")
     prefix = Path(absolute.anchor)
     for component in absolute.parts[1:]:
         prefix = prefix / component
         try:
             info = os.lstat(prefix)
         except FileNotFoundError:
-            break
+            # No se puede inferir que componentes posteriores no existan: una
+            # ruta puede volver a entrar en una rama existente tras un elemento
+            # ausente (p. ej. con rutas especiales/UNC). Continúa inspeccionando.
+            continue
         except OSError as exc:
             raise ReleaseGateError(f"No se pudo clasificar el componente de ruta: {prefix}") from exc
         if _is_reparse_stat(info):

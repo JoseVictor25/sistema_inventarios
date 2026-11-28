@@ -45,39 +45,58 @@ class RutasB3Tests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validar_temporal(tempfile.gettempdir())
 
+    def test_validar_datos_instalados_acepta_ruta_exacta(self):
+        destino = validar_datos_instalados(PROGRAM_DATA_DIR)
+        self.assertEqual(destino, PROGRAM_DATA_DIR.resolve())
+
+    def test_validar_datos_instalados_acepta_ruta_exacta_con_otro_case(self):
+        variante = Path(str(PROGRAM_DATA_DIR).upper())
+        destino = validar_datos_instalados(variante)
+        self.assertEqual(os.path.normcase(str(destino)),
+                         os.path.normcase(str(PROGRAM_DATA_DIR.resolve())))
+
+    def test_validar_datos_instalados_rechaza_subcarpeta_arbitraria(self):
+        with self.assertRaisesRegex(ValueError, "exactamente"):
+            validar_datos_instalados(PROGRAM_DATA_DIR / "subcarpeta_arbitraria")
+
     def test_validar_datos_instalados_rechaza_ruta_relativa(self):
         with self.assertRaises(ValueError) as ctx:
             validar_datos_instalados("datos_relativos")
         self.assertIn("absoluta", str(ctx.exception))
 
     def test_validar_datos_instalados_rechaza_program_files(self):
-        pf = Path(os.environ.get("ProgramFiles", "C:/Program Files"))
-        ruta_pf = pf / "SistemaInventarios" / "datos"
-        with self.assertRaises(ValueError) as ctx:
+        ruta_pf = PROGRAM_FILES_DIR / "datos"
+        with self.assertRaisesRegex(ValueError, "exactamente"):
             validar_datos_instalados(ruta_pf)
-        self.assertIn("Program Files", str(ctx.exception))
 
     def test_validar_datos_instalados_rechaza_raiz_de_unidad(self):
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaisesRegex(ValueError, "exactamente"):
             validar_datos_instalados("C:\\")
-        self.assertIn("raíz de una unidad", str(ctx.exception))
 
     def test_validar_datos_instalados_rechaza_raiz_program_data(self):
         pd = Path(os.environ.get("ProgramData", "C:/ProgramData"))
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaisesRegex(ValueError, "exactamente"):
             validar_datos_instalados(pd)
-        self.assertIn("raíz de ProgramData", str(ctx.exception))
 
     def test_validar_datos_instalados_rechaza_dentro_de_recursos(self):
         ruta_en_codigo = recursos() / "backend" / "datos_inseguros"
-        with self.assertRaises(ValueError) as ctx:
+        with self.assertRaisesRegex(ValueError, "exactamente"):
             validar_datos_instalados(ruta_en_codigo)
-        self.assertIn("repositorio", str(ctx.exception))
 
-    def test_validar_datos_instalados_acepta_subcarpeta_valida(self):
-        sub = self.root / "SistemaInventarios"
-        destino = validar_datos_instalados(sub)
-        self.assertEqual(destino, sub.resolve())
+    @unittest.skipUnless(os.name == "nt", "ruta UNC es específica de Windows")
+    def test_validar_datos_instalados_rechaza_ruta_unc(self):
+        with self.assertRaisesRegex(ValueError, "exactamente"):
+            validar_datos_instalados(r"\\servidor\recurso\SistemaInventarios")
+
+    @unittest.skipUnless(os.name == "nt", "symlink requiere Windows")
+    def test_validar_datos_instalados_rechaza_alias_symlink(self):
+        alias = self.root / "alias_programdata"
+        try:
+            alias.symlink_to(PROGRAM_DATA_DIR, target_is_directory=True)
+        except OSError as exc:
+            self.skipTest(f"symlink no disponible en este entorno: {exc}")
+        with self.assertRaisesRegex(ValueError, "exactamente"):
+            validar_datos_instalados(alias)
 
     def test_resolver_rutas_estructura_canonica(self):
         sub = self.root / "datos_prueba"
@@ -101,11 +120,19 @@ class RutasB3Tests(unittest.TestCase):
 
         class ArgsInstaladoMock:
             datos_temporales = None
-            datos_instalados = str(self.root / "instalado_sub")
+            datos_instalados = str(PROGRAM_DATA_DIR)
 
         modo, ruta = obtener_ruta_datos(ArgsInstaladoMock())
         self.assertEqual(modo, "instalado")
-        self.assertEqual(ruta, (self.root / "instalado_sub").resolve())
+        self.assertEqual(ruta, PROGRAM_DATA_DIR.resolve())
+
+    def test_obtener_ruta_datos_rechaza_instalado_arbitrario(self):
+        class ArgsInstaladoInvalido:
+            datos_temporales = None
+            datos_instalados = str(self.root / "instalado_sub")
+
+        with self.assertRaisesRegex(ValueError, "exactamente"):
+            obtener_ruta_datos(ArgsInstaladoInvalido())
 
 
 if __name__ == "__main__":
